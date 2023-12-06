@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: BSD-2-Clause
+# Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
+# of Oxford, and the 'Galv' Developers. All rights reserved.
+
 # This docker-compose setup is for local dev purposes only.
 # Its role is to connect the backend to a postgres database.
 
