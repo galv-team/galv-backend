@@ -1,0 +1,62 @@
+# This docker-compose setup is for local dev purposes only.
+# Its role is to connect the backend to a postgres database.
+
+version: "3.8"
+
+services:
+  app:
+    image: app
+    build:
+      dockerfile: Dockerfile
+      context: .
+    depends_on:
+      - postgres
+    volumes:
+      - ./.dev/.static_files:/static
+      - ./backend_django:/usr/app/backend_django
+    working_dir: /usr/app
+    environment:
+      VIRTUAL_HOST: "localhost"
+      FRONTEND_VIRTUAL_HOST: "http://${VIRTUAL_HOST_ROOT},https://${VIRTUAL_HOST_ROOT}"
+      DJANGO_SETTINGS: "dev"
+      DJANGO_SUPERUSER_PASSWORD: "admin"
+    env_file:
+      - ./.env
+    restart: unless-stopped
+    ports:
+      - "8001:80"
+    command: ./server.sh
+
+  postgres:
+    image: "postgres:14"
+    stop_signal: SIGINT                 # Fast Shutdown mode
+    volumes:
+      - "./.dev/data:/var/lib/postgresql/data"
+    environment:
+      # variables listed as defaults in backend_django/config/settings_dev.py
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: "galv"
+      POSTGRES_PORT: "5432"
+    restart: unless-stopped
+
+  app_test:
+    image: app-test
+    build:
+      dockerfile: Dockerfile-test
+      context: .
+    depends_on:
+      - postgres
+    volumes:
+      - ./.test/.static_files:/static
+      - ./backend_django:/usr/app/backend_django
+    working_dir: /usr/app
+    environment:
+      FRONTEND_VIRTUAL_HOST: "http://localhost"
+      VIRTUAL_HOST: "localhost"
+      VIRTUAL_HOST_ROOT: "localhost"
+      DJANGO_SETTINGS: "dev"
+    env_file:
+      - ./.env
+    restart: "on-failure"
+    command: ./server.sh

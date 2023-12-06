@@ -1,0 +1,163 @@
+[
+    {
+        "pk": 1,
+        "model": "galv.CellManufacturers",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "value": "Sony",
+            "ld_value": {
+                "@id": "http://dbpedia.org/resource/Sony"
+            },
+            "include_in_autocomplete":true
+        }
+    },
+    {
+        "pk": 2,
+        "model": "galv.CellManufacturers",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "value": "LG",
+            "ld_value": {
+                "@id": "http://dbpedia.org/resource/LG_Corporation"
+            },
+            "include_in_autocomplete": true
+        }
+    },
+    {
+        "pk": 3,
+        "model": "galv.CellManufacturers",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "value": "Samsung",
+            "ld_value": {
+                "@id": "http://dbpedia.org/resource/Samsung"
+            },
+            "include_in_autocomplete": true
+        }
+    },
+    {
+        "pk": 1,
+        "model": "galv.CellModels",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "value": "VTC6",
+            "include_in_autocomplete": true
+        }
+    },
+    {
+        "pk": 2,
+        "model": "galv.CellModels",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "value": "HG2",
+            "include_in_autocomplete": true
+        }
+    },
+    {
+        "pk": 3,
+        "model": "galv.CellModels",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "value": "25R",
+            "include_in_autocomplete": true
+        }
+    },
+    {
+        "pk": 1,
+        "model": "galv.CellChemistries",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "value": "NMC",
+            "include_in_autocomplete": true
+        }
+    },
+    {
+        "pk": 1,
+        "model": "galv.CellFormFactors",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "value": "Pouch",
+            "include_in_autocomplete": true
+        }
+    },
+    {
+        "pk": 2,
+        "model": "galv.CellFormFactors",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "value": "Cyclindrical",
+            "include_in_autocomplete": true
+        }
+    },
+    {
+        "pk": "42fc4c44-efbb-4457-a734-f68ee28de617",
+        "model": "galv.CellFamily",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "team": 1,
+            "manufacturer": 1,
+            "model": 1,
+            "chemistry": 1,
+            "form_factor": 2,
+            "nominal_voltage": 3.6,
+            "additional_properties": {
+                "pattern": "diagonal stripes",
+                "standard_discharge_constant_current": 1
+            }
+        }
+    },
+    {
+        "pk": "5d19c8d6-a976-423d-ab5d-a624a0606d30",
+        "model": "galv.CellFamily",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "team": 1,
+            "manufacturer": 2,
+            "model": 2,
+            "chemistry": 1,
+            "form_factor": 2,
+            "nominal_voltage": 3.6,
+            "additional_properties": {
+                "standard_discharge_constant_current": 1.0,
+                "fast_charge_constant_current": 0.5,
+                "fast_charge_constant_voltage": 4.2
+            }
+        }
+    },
+    {
+        "pk": "6a3a910b-d42e-46f6-9604-6fb3c2f3d059",
+        "model": "galv.Cell",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "team": 1,
+            "family": "42fc4c44-efbb-4457-a734-f68ee28de617",
+            "identifier": "sny-vtc-1234-xx94",
+            "additional_properties": {
+                "color": "green and white"
+            }
+        }
+    },
+    {
+        "pk": "4281a89b-48ff-4f4a-bcd8-5fe427f87a81",
+        "model": "galv.Cell",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "team": 1,
+            "family": "5d19c8d6-a976-423d-ab5d-a624a0606d30",
+            "identifier": "lg-hg2-1234-xx94"
+        }
+    }
+]

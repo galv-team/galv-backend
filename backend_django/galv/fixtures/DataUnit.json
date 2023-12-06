@@ -1,0 +1,134 @@
+[
+    {
+        "pk": 1,
+        "model": "galv.DataUnit",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "name": "Unitless",
+            "symbol": "",
+            "description": "A value with no units",
+            "is_default": true
+        }
+    },
+    {
+        "pk": 2,
+        "model": "galv.DataUnit",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "name": "Time",
+            "symbol": "s",
+            "description": "Time in seconds",
+            "is_default": true
+        }
+    },
+    {
+        "pk": 3,
+        "model": "galv.DataUnit",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "name": "Volts",
+            "symbol": "V",
+            "description": "Voltage",
+            "is_default": true
+        }
+    },
+    {
+        "pk": 4,
+        "model": "galv.DataUnit",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "name": "Amps",
+            "symbol": "A",
+            "description": "Current",
+            "is_default": true
+        }
+    },
+    {
+        "pk": 5,
+        "model": "galv.DataUnit",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "name": "Energy",
+            "symbol": "Wh",
+            "description": "Energy in Watt-Hours",
+            "is_default": true
+        }
+    },
+    {
+        "pk": 6,
+        "model": "galv.DataUnit",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "name": "Charge",
+            "symbol": "Ah",
+            "description": "Charge in Amp-Hours",
+            "is_default": true
+        }
+    },
+    {
+        "pk": 7,
+        "model": "galv.DataUnit",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "name": "Temperature",
+            "symbol": "°c",
+            "description": "Temperature in Centigrade",
+            "is_default": true
+        }
+    },
+    {
+        "pk": 8,
+        "model": "galv.DataUnit",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "name": "Power",
+            "symbol": "W",
+            "description": "Power in Watts",
+            "is_default": true
+        }
+    },
+    {
+        "pk": 9,
+        "model": "galv.DataUnit",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "name": "Ohm",
+            "symbol": "Ω",
+            "description": "Resistance or impediance in Ohms",
+            "is_default": true
+        }
+    },
+    {
+        "pk": 10,
+        "model": "galv.DataUnit",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "name": "Degrees",
+            "symbol": "°",
+            "description": "Angle in degrees",
+            "is_default": true
+        }
+    },
+    {
+        "pk": 11,
+        "model": "galv.DataUnit",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "name": "Frequency",
+            "symbol": "Hz",
+            "description": "Frequency in Hz",
+            "is_default": true
+        }
+    }
+]
