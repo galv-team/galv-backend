@@ -37,7 +37,34 @@ from .utils import AdditionalPropertiesModelSerializer, GetOrCreateTextField, au
     TruncatedGroupHyperlinkedRelatedIdField, TruncatedHyperlinkedRelatedIdField, \
     CreateOnlyMixin, ValidationPresentationMixin
 
-
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='User details',
+        description='Full details are only available to the user themselves, or to superusers',
+        value={
+            "username": "admin",
+            "email": "",
+            "first_name": "",
+            "last_name": "",
+            "url": "http://localhost:8001/users/1/",
+            "id": 1,
+            "is_staff": True,
+            "is_superuser": True,
+            "groups": [
+                "http://localhost:8001/groups/1/",
+                "http://localhost:8001/groups/2/"
+            ],
+            "permissions": {
+                "create": True,
+                "destroy": False,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class UserSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     current_password = serializers.CharField(
         write_only=True,
@@ -87,6 +114,28 @@ class UserSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         })
 
 
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Group details',
+        description='Groups are used to manage permissions for a set of users',
+        value={
+            "id": 1,
+            "url": "http://localhost:8001/groups/1/",
+            "name": "example_lab_admins",
+            "users": [
+                "http://localhost:8001/users/1/"
+            ],
+            "permissions": {
+                "create": False,
+                "destroy": False,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class GroupSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     users = TruncatedUserHyperlinkedRelatedIdField(
         UserSerializer,
@@ -137,6 +186,82 @@ class GroupSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         read_only_fields = ['id', 'url', 'name', 'users', 'permissions']
         fields = [*read_only_fields, 'add_users', 'remove_users']
 
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Team details',
+        description='Teams are groups of users assigned to a project. They can easily create and share resources.',
+        value={
+            "url": "http://localhost:8001/teams/1/",
+            "id": 1,
+            "member_group": {
+                "id": 3,
+                "url": "http://localhost:8001/groups/3/",
+                "name": "example_team_members",
+                "users": [],
+                "permissions": {
+                    "create": False,
+                    "destroy": False,
+                    "write": True,
+                    "read": True
+                }
+            },
+            "admin_group": {
+                "id": 2,
+                "url": "http://localhost:8001/groups/2/",
+                "name": "example_team_admins",
+                "users": [
+                    "http://localhost:8001/users/1/"
+                ],
+                "permissions": {
+                    "create": False,
+                    "destroy": False,
+                    "write": True,
+                    "read": True
+                }
+            },
+            "monitored_paths": [],
+            "cellfamily_resources": [
+                "http://localhost:8001/cell_families/42fc4c44-efbb-4457-a734-f68ee28de617/",
+                "http://localhost:8001/cell_families/5d19c8d6-a976-423d-ab5d-a624a0606d30/"
+            ],
+            "cell_resources": [
+                "http://localhost:8001/cells/6a3a910b-d42e-46f6-9604-6fb3c2f3d059/",
+                "http://localhost:8001/cells/4281a89b-48ff-4f4a-bcd8-5fe427f87a81/"
+            ],
+            "equipmentfamily_resources": [
+                "http://localhost:8001/equipment_families/947e1f7c-c5b9-47b8-a121-d1e519a7154c/",
+                "http://localhost:8001/equipment_families/6ef7c3b4-cb3b-421f-b6bf-de1e1acfaae8/"
+            ],
+            "equipment_resources": [
+                "http://localhost:8001/equipment/a7bd4c43-29c7-40f1-bcf7-a2924ed474c2/",
+                "http://localhost:8001/equipment/31fd16ef-0667-4a31-9232-b5a649913227/",
+                "http://localhost:8001/equipment/12039516-72bf-42b7-a687-cb210ca4a087/"
+            ],
+            "schedulefamily_resources": [
+                "http://localhost:8001/schedule_families/e25f7c94-ca32-4f47-b95a-3b0e7ae4a47f/"
+            ],
+            "schedule_resources": [
+                "http://localhost:8001/schedules/5a2d7da9-393c-44ee-827a-5d15133c48d6/",
+                "http://localhost:8001/schedules/7771fc54-7209-4564-9ec7-e87855f7ee67/"
+            ],
+            "cyclertest_resources": [
+                "http://localhost:8001/cycler_tests/2b7313c9-94c2-4276-a4ee-e9d58d8a641b/",
+                "http://localhost:8001/cycler_tests/e5a1a806-ef9e-4da8-9dd4-caa6cb491af9/"
+            ],
+            "experiment_resources": [],
+            "permissions": {
+                "create": True,
+                "write": True,
+                "read": True
+            },
+            "name": "Example Team",
+            "description": "This Team exists to demonstrate the system.",
+            "lab": "http://localhost:8001/labs/1/"
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     member_group = GroupSerializer(read_only=True, help_text="Members of this Team")
     admin_group = GroupSerializer(read_only=True, help_text="Administrators of this Team")
@@ -236,6 +361,44 @@ class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         ]
         fields = [*read_only_fields, 'name', 'description', 'lab']
 
+
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Lab details',
+        description='Labs are collections of teams, and are used to organise access to raw data.',
+        value={
+            "url": "http://localhost:8001/labs/1/",
+            "id": 1,
+            "name": "Example Lab",
+            "description": "This Lab exists to demonstrate the system.",
+            "admin_group": {
+                "id": 1,
+                "url": "http://localhost:8001/groups/1/",
+                "name": "example_lab_admins",
+                "users": [
+                    "http://localhost:8001/users/1/"
+                ],
+                "permissions": {
+                    "create": False,
+                    "destroy": False,
+                    "write": True,
+                    "read": True
+                }
+            },
+            "harvesters": [],
+            "teams": [
+                "http://localhost:8001/teams/1/"
+            ],
+            "permissions": {
+                "create": True,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     admin_group = GroupSerializer(help_text="Group of users who can edit this Lab")
     teams = TruncatedHyperlinkedRelatedIdField(
@@ -278,6 +441,33 @@ class WithTeamMixin(serializers.Serializer):
                 raise ValidationError("You may only edit resources in your own team(s)")
         return value
 
+
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Cell details',
+        description='Cells are the electrical energy storage devices used in cycler tests. They are grouped into families.',
+        value={
+            "url": "http://localhost:8001/cells/6a3a910b-d42e-46f6-9604-6fb3c2f3d059/",
+            "uuid": "6a3a910b-d42e-46f6-9604-6fb3c2f3d059",
+            "identifier": "sny-vtc-1234-xx94",
+            "family": "http://localhost:8001/cell_families/42fc4c44-efbb-4457-a734-f68ee28de617/",
+            "cycler_tests": [
+                "http://localhost:8001/cycler_tests/2b7313c9-94c2-4276-a4ee-e9d58d8a641b/"
+            ],
+            "in_use": True,
+            "team": "http://localhost:8001/teams/1/",
+            "permissions": {
+                "create": True,
+                "destroy": True,
+                "write": True,
+                "read": True
+            },
+            "additional-property": "resources can have arbitrary additional JSON-serializable properties"
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class CellSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, WithTeamMixin, ValidationPresentationMixin):
     family = TruncatedHyperlinkedRelatedIdField(
         'CellFamilySerializer',
@@ -301,6 +491,43 @@ class CellSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, With
         read_only_fields = ['url', 'uuid', 'cycler_tests', 'in_use', 'permissions']
 
 
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Cell Family details',
+        description='Cell Families group together properties shared by multiple Cells of the same make and model.',
+        value={
+            "url": "http://localhost:8001/cell_families/5d19c8d6-a976-423d-ab5d-a624a0606d30/",
+            "uuid": "5d19c8d6-a976-423d-ab5d-a624a0606d30",
+            "manufacturer": "LG",
+            "model": "HG2",
+            "datasheet": None,
+            "chemistry": "NMC",
+            "nominal_voltage": 3.6,
+            "nominal_capacity": None,
+            "initial_ac_impedance": None,
+            "initial_dc_resistance": None,
+            "energy_density": None,
+            "power_density": None,
+            "form_factor": "Cyclindrical",
+            "cells": [
+                "http://localhost:8001/cells/4281a89b-48ff-4f4a-bcd8-5fe427f87a81/"
+            ],
+            "in_use": True,
+            "team": "http://localhost:8001/teams/1/",
+            "permissions": {
+                "create": True,
+                "destroy": True,
+                "write": True,
+                "read": True
+            },
+            "fast_charge_constant_current": 0.5,
+            "fast_charge_constant_voltage": 4.2,
+            "standard_discharge_constant_current": 1.0
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class CellFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, WithTeamMixin):
     manufacturer = GetOrCreateTextField(foreign_model=CellManufacturers, help_text="Manufacturer name")
     model = GetOrCreateTextField(foreign_model=CellModels, help_text="Model number")
@@ -339,6 +566,33 @@ class CellFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsMixin
         read_only_fields = ['url', 'uuid', 'cells', 'in_use', 'permissions']
 
 
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Equipment Family details',
+        description='Equipment Families group together properties shared by multiple pieces of Equipment of the same make and model.',
+        value={
+            "url": "http://localhost:8001/equipment_families/947e1f7c-c5b9-47b8-a121-d1e519a7154c/",
+            "uuid": "947e1f7c-c5b9-47b8-a121-d1e519a7154c",
+            "type": "Thermal Chamber",
+            "manufacturer": "Binder",
+            "model": "KB115",
+            "in_use": True,
+            "team": "http://localhost:8001/teams/1/",
+            "equipment": [
+                "http://localhost:8001/equipment/a7bd4c43-29c7-40f1-bcf7-a2924ed474c2/",
+                "http://localhost:8001/equipment/31fd16ef-0667-4a31-9232-b5a649913227/"
+            ],
+            "permissions": {
+                "create": True,
+                "destroy": False,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class EquipmentFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, WithTeamMixin):
     type = GetOrCreateTextField(foreign_model=EquipmentTypes, help_text="Equipment type")
     manufacturer = GetOrCreateTextField(foreign_model=EquipmentManufacturers, help_text="Manufacturer name")
@@ -368,6 +622,32 @@ class EquipmentFamilySerializer(AdditionalPropertiesModelSerializer, Permissions
         read_only_fields = ['url', 'uuid', 'in_use', 'equipment', 'permissions']
 
 
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Equipment details',
+        description='Equipment is used to perform cycler tests. It includes cyclers themselves, as well as temperature chambers. It is grouped into families.',
+        value={
+             "url": "http://localhost:8001/equipment/a7bd4c43-29c7-40f1-bcf7-a2924ed474c2/",
+            "uuid": "a7bd4c43-29c7-40f1-bcf7-a2924ed474c2",
+            "identifier": "1234567890",
+            "family": "http://localhost:8001/equipment_families/947e1f7c-c5b9-47b8-a121-d1e519a7154c/",
+            "calibration_date": "2019-01-01",
+            "in_use": True,
+            "team": "http://localhost:8001/teams/1/",
+            "cycler_tests": [
+                "http://localhost:8001/cycler_tests/2b7313c9-94c2-4276-a4ee-e9d58d8a641b/"
+            ],
+            "permissions": {
+                "create": True,
+                "destroy": False,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class EquipmentSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, WithTeamMixin, ValidationPresentationMixin):
     family = TruncatedHyperlinkedRelatedIdField(
         'EquipmentFamilySerializer',
@@ -390,6 +670,46 @@ class EquipmentSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin,
         fields = ['url', 'uuid', 'identifier', 'family', 'calibration_date', 'in_use', 'team', 'cycler_tests', 'permissions']
         read_only_fields = ['url', 'uuid', 'datasets', 'in_use', 'cycler_tests', 'permissions']
 
+
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Schedule Family details',
+        description='Schedule Families group together properties shared by multiple Schedules.',
+        value={
+            "url": "http://localhost:8001/schedule_families/e25f7c94-ca32-4f47-b95a-3b0e7ae4a47f/",
+            "uuid": "e25f7c94-ca32-4f47-b95a-3b0e7ae4a47f",
+            "identifier": "Cell Conditioning",
+            "description": "Each cell is cycled five times at 1C discharge and the standard charge. This test is completed at 25◦C.",
+            "ambient_temperature": 25.0,
+            "pybamm_template": [
+                "Charge at 1 A until 4.1 V",
+                "Discharge at {standard_discharge_constant_current} C for 10 hours or until 3.3 V",
+                "Charge at 1 A until 4.1 V",
+                "Discharge at {standard_discharge_constant_current} C for 10 hours or until 3.3 V",
+                "Charge at 1 A until 4.1 V",
+                "Discharge at C/1 for 10 hours or until 3.3 V",
+                "Charge at {fast_charge_constant_current} until {fast_charge_constant_voltage} V",
+                "Discharge at {standard_discharge_constant_current} C for 10 hours or until 3.3 V",
+                "Charge at 1 A until 4.1 V",
+                "Discharge at {standard_discharge_constant_current} C for 10 hours or until 3.3 V"
+            ],
+            "in_use": True,
+            "team": "http://localhost:8001/teams/1/",
+            "schedules": [
+                "http://localhost:8001/schedules/5a2d7da9-393c-44ee-827a-5d15133c48d6/",
+                "http://localhost:8001/schedules/7771fc54-7209-4564-9ec7-e87855f7ee67/"
+            ],
+            "permissions": {
+                "create": True,
+                "destroy": False,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class ScheduleFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, WithTeamMixin):
     identifier = GetOrCreateTextField(foreign_model=ScheduleIdentifiers)
     schedules = TruncatedHyperlinkedRelatedIdField(
@@ -415,6 +735,36 @@ class ScheduleFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsM
         read_only_fields = ['url', 'uuid', 'in_use', 'schedules', 'permissions']
 
 
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Schedule details',
+        description='Schedules are used to define the current profile used in a cycler test. They are grouped into families.',
+        value={
+            "url": "http://localhost:8001/schedules/5a2d7da9-393c-44ee-827a-5d15133c48d6/",
+            "uuid": "5a2d7da9-393c-44ee-827a-5d15133c48d6",
+            "family": "http://localhost:8001/schedule_families/e25f7c94-ca32-4f47-b95a-3b0e7ae4a47f/",
+            "schedule_file": None,
+            "pybamm_schedule_variables": {
+                "fast_charge_constant_current": 1.0,
+                "fast_charge_constant_voltage": 4.1,
+                "standard_discharge_constant_current": 1.0
+            },
+            "in_use": True,
+            "team": "http://localhost:8001/teams/1/",
+            "cycler_tests": [
+                "http://localhost:8001/cycler_tests/2b7313c9-94c2-4276-a4ee-e9d58d8a641b/"
+            ],
+            "permissions": {
+                "create": True,
+                "destroy": False,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class ScheduleSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, WithTeamMixin, ValidationPresentationMixin):
     family = TruncatedHyperlinkedRelatedIdField(
         'ScheduleFamilySerializer',
@@ -467,6 +817,42 @@ class ScheduleSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, 
         read_only_fields = ['url', 'uuid', 'in_use', 'cycler_tests', 'permissions']
 
 
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Cycler Test details',
+        description='Cycler Tests are the core of the system. They define the cell, equipment, and schedule used in a test, and are used to store the raw data produced by the test.',
+        value={
+            "url": "http://localhost:8001/cycler_tests/2b7313c9-94c2-4276-a4ee-e9d58d8a641b/",
+            "uuid": "2b7313c9-94c2-4276-a4ee-e9d58d8a641b",
+            "cell": "http://localhost:8001/cells/6a3a910b-d42e-46f6-9604-6fb3c2f3d059/",
+            "equipment": [
+                "http://localhost:8001/equipment/a7bd4c43-29c7-40f1-bcf7-a2924ed474c2/",
+                "http://localhost:8001/equipment/12039516-72bf-42b7-a687-cb210ca4a087/"
+            ],
+            "schedule": "http://localhost:8001/schedules/5a2d7da9-393c-44ee-827a-5d15133c48d6/",
+            "rendered_schedule": [
+                "Charge at 1 A until 4.1 V",
+                "Discharge at 1 C for 10 hours or until 3.3 V",
+                "Charge at 1 A until 4.1 V",
+                "Discharge at 1 C for 10 hours or until 3.3 V",
+                "Charge at 1 A until 4.1 V",
+                "Discharge at C/1 for 10 hours or until 3.3 V",
+                "Charge at 1.0 until 4.1 V",
+                "Discharge at 1 C for 10 hours or until 3.3 V",
+                "Charge at 1 A until 4.1 V",
+                "Discharge at 1 C for 10 hours or until 3.3 V"
+            ],
+            "permissions": {
+                "create": True,
+                "destroy": False,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class CyclerTestSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, WithTeamMixin):
     rendered_schedule = serializers.SerializerMethodField(help_text="Rendered schedule")
     schedule = TruncatedHyperlinkedRelatedIdField(
@@ -513,6 +899,32 @@ class CyclerTestSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin
         read_only_fields = ['url', 'uuid', 'rendered_schedule', 'permissions']
 
 
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Harvester details',
+        description='Harvesters are the interface between the system and the raw data produced by cycler tests. They are responsible for uploading data to the system.',
+        value={
+            "url": "http://localhost:8001/harvesters/1/",
+            "uuid": "1",
+            "name": "Example Harvester",
+            "sleep_time": 60,
+            "environment_variables": {
+                "EXAMPLE_ENV_VAR": "example value"
+            },
+            "active": True,
+            "last_check_in": "2021-08-18T15:23:45.123456Z",
+            "lab": "http://localhost:8001/labs/1/",
+            "permissions": {
+                "create": False,
+                "destroy": False,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class HarvesterSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     lab = TruncatedHyperlinkedRelatedIdField(
         'LabSerializer',
@@ -577,7 +989,24 @@ class HarvesterSerializer(serializers.HyperlinkedModelSerializer, PermissionsMix
         fields = [*read_only_fields, 'name', 'sleep_time', 'environment_variables', 'active']
         extra_kwargs = augment_extra_kwargs()
 
-
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Monitored Path details',
+        description='Monitored Paths are subdirectories on Harvesters that are monitored for new files. When a new file is detected, it is uploaded to the system.',
+        value={
+            "url": "http://localhost:8001/monitored_paths/1/",
+            # TODO
+            "permissions": {
+                "create": False,
+                "destroy": False,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin, WithTeamMixin, CreateOnlyMixin):
     files = serializers.SerializerMethodField(help_text="Files on this MonitoredPath")
 
@@ -667,6 +1096,27 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
         })
 
 
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Observed File details',
+        description='Observed Files are the raw data produced by cycler tests. They are uploaded to the system by Harvesters.',
+        value={
+            "url": "http://localhost:8001/observed_files/1/",
+            "uuid": "1",
+            "path": "/home/example_user/example_data.csv",
+            "harvester": "http://localhost:8001/harvesters/1/",
+            "team": "http://localhost:8001/teams/1/",
+            "permissions": {
+                "create": False,
+                "destroy": False,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     harvester = TruncatedHyperlinkedRelatedIdField(
         'HarvesterSerializer',
@@ -737,7 +1187,28 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
             'upload_errors': {'help_text': "Errors associated with this File"}
         })
 
-
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Harvest Error details',
+        description='Harvest Errors are errors encountered by Harvesters when uploading data to the system.',
+        value={
+            "url": "http://localhost:8001/harvest_errors/1/",
+            "uuid": "1",
+            "harvester": "http://localhost:8001/harvesters/1/",
+            "file": "http://localhost:8001/observed_files/1/",
+            "error": "Error message",
+            "timestamp": "2021-08-18T15:23:45.123456Z",
+            "permissions": {
+                "create": False,
+                "destroy": False,
+                "write": False,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class HarvestErrorSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     harvester = TruncatedHyperlinkedRelatedIdField(
         'HarvesterSerializer',
@@ -843,7 +1314,35 @@ class DataColumnSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
         read_only_fields = fields
         extra_kwargs = augment_extra_kwargs()
 
-
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Experiment details',
+        description='Experiments are the highest level of abstraction in the system. They are used to group cycler tests and define the protocol used in those tests.',
+        value={
+            "url": "http://localhost:8001/experiments/1/",
+            "uuid": "1",
+            "title": "Example Experiment",
+            "description": "Example description",
+            "authors": [
+                "http://localhost:8001/userproxies/1/"
+            ],
+            "protocol": "http://localhost:8001/validation_schemas/1/",
+            "protocol_file": None,
+            "cycler_tests": [
+                "http://localhost:8001/cycler_tests/2b7313c9-94c2-4276-a4ee-e9d58d8a641b/"
+            ],
+            "team": "http://localhost:8001/teams/1/",
+            "permissions": {
+                "create": True,
+                "destroy": True,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class ExperimentSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin, WithTeamMixin):
     cycler_tests = TruncatedHyperlinkedRelatedIdField(
         'CyclerTestSerializer',
@@ -879,6 +1378,37 @@ class ExperimentSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
         read_only_fields = ['url', 'uuid', 'permissions']
         extra_kwargs = augment_extra_kwargs()
 
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Validation Schema details',
+        description='Validation Schemas are used to define the expected format of data.',
+        value={
+            "url": "http://localhost:8001/validation_schemas/1/",
+            "uuid": "1",
+            "name": "Example Validation Schema",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "example_property": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "example_property"
+                ]
+            },
+            "team": "http://localhost:8001/teams/1/",
+            "permissions": {
+                "create": True,
+                "destroy": True,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class ValidationSchemaSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin, WithTeamMixin):
     def validate_schema(self, value):
         try:
@@ -893,6 +1423,24 @@ class ValidationSchemaSerializer(serializers.HyperlinkedModelSerializer, Permiss
         model = ValidationSchema
         fields = ['url', 'uuid', 'team', 'name', 'schema', 'permissions']
 
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Knox Token details',
+        description='Knox Tokens are used to authenticate users with the system.',
+        value={
+            "url": "http://localhost:8001/tokens/1/",
+            "name": "Example Token",
+            "permissions": {
+                "create": False,
+                "destroy": False,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class KnoxTokenSerializer(serializers.HyperlinkedModelSerializer):
     created = serializers.SerializerMethodField(help_text="Date and time of creation")
     expiry = serializers.SerializerMethodField(help_text="Date and time token expires (blank = never)")
@@ -920,6 +1468,25 @@ class KnoxTokenSerializer(serializers.HyperlinkedModelSerializer):
         extra_kwargs = augment_extra_kwargs()
 
 
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Knox Token Full details',
+        description='Knox Tokens are used to authenticate users with the system. This serializer includes the token value.',
+        value={
+            "url": "http://localhost:8001/tokens/1/",
+            "name": "Example Token",
+            "token": "example_token_value",
+            "permissions": {
+                "create": False,
+                "destroy": False,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class KnoxTokenFullSerializer(KnoxTokenSerializer):
     token = serializers.SerializerMethodField(help_text="Token value")
 
@@ -932,7 +1499,60 @@ class KnoxTokenFullSerializer(KnoxTokenSerializer):
         read_only_fields = fields
         extra_kwargs = augment_extra_kwargs()
 
-
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Harvester Configuration details',
+        description='When Harvesters contact the system, they are given a configuration containing information about the system and the Harvester.',
+        value={
+            "url": "http://localhost:8001/harvesters/1/",
+            "uuid": "1",
+            "api_key": "example_api_key",
+            "name": "Example Harvester",
+            "sleep_time": 60,
+            "monitored_paths": [
+                "http://localhost:8001/monitored_paths/1/"
+            ],
+            "standard_units": [
+                {
+                    "url": "http://localhost:8001/data_units/1/",
+                    "id": 1,
+                    "name": "Example Unit",
+                    "symbol": "e",
+                    "description": "Example description"
+                }
+            ],
+            "standard_columns": [
+                {
+                    "url": "http://localhost:8001/data_column_types/1/",
+                    "id": 1,
+                    "name": "Example Column Type",
+                    "description": "Example description",
+                    "is_default": True,
+                    "unit": {
+                        "url": "http://localhost:8001/data_units/1/",
+                        "id": 1,
+                        "name": "Example Unit",
+                        "symbol": "e",
+                        "description": "Example description"
+                    }
+                }
+            ],
+            "max_upload_bytes": 26214400,
+            "environment_variables": {
+                "EXAMPLE_ENV_VAR": "example value"
+            },
+            "deleted_environment_variables": [],
+            "permissions": {
+                "create": False,
+                "destroy": False,
+                "write": False,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
 class HarvesterConfigSerializer(HarvesterSerializer, PermissionsMixin):
     standard_units = serializers.SerializerMethodField(help_text="Units recognised by the initial database")
     standard_columns = serializers.SerializerMethodField(help_text="Column Types recognised by the initial database")
