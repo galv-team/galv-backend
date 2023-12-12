@@ -1,8 +1,18 @@
 # Galv backend (REST API)
+> A metadata secretary for battery science
 
-The Galv backend provides a REST API powered by [Django]() and [Django REST Framework]().
+[![Django test](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/test.yml/badge.svg)](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/test.yml)
+
+The Galv backend provides a REST API powered by [Django](https://www.djangoproject.com/) and [Django REST Framework](https://www.django-rest-framework.org/).
 
 ## Deploying
+
+The Galv backend is deployed using [Docker](https://www.docker.com/).
+It can be deployed using the Dockerfile provided in this repository.
+
+You should ensure that all variables in the `.env` file are set correctly before deploying.
+These variables can be set by editing and including the `.env` file, by setting them in the environment, 
+or by setting them via a hosting platform's interface.
 
 ## Development
 
