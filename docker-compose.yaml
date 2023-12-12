@@ -18,6 +18,7 @@ services:
     volumes:
       - ./.dev/.static_files:/static
       - ./backend_django:/usr/app/backend_django
+      - ./.dev/spec:/spec
     working_dir: /usr/app
     environment:
       VIRTUAL_HOST: "localhost"
@@ -64,3 +65,14 @@ services:
       - ./.env
     restart: "on-failure"
     command: ./server.sh
+
+  check_spec:
+    image: openapitools/openapi-diff
+    volumes:
+      - ./.dev/spec:/spec
+    entrypoint: /bin/sh -c
+    environment:
+      REMOTE_SPEC_URL: "https://github.com/Battery-Intelligence-Lab/galv-spec/releases/latest/download/galv-spec.json"
+    command: ["java -jar /app/openapi-diff.jar --fail-on-incompatible --markdown /spec/diff.md $${REMOTE_SPEC_URL} $$(ls /spec/openapi-*.json | tail -n 1)"]
+    depends_on:
+      - app  # app has to run for the spec to be generated

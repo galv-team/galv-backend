@@ -2,6 +2,7 @@
 > A metadata secretary for battery science
 
 [![Django test](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/test.yml/badge.svg)](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/test.yml)
+[![galv-spec compatibility](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/check-spec.yml/badge.svg)](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/check-spec.yml)
 
 The Galv backend provides a REST API powered by [Django](https://www.djangoproject.com/) and [Django REST Framework](https://www.django-rest-framework.org/).
 
@@ -25,6 +26,10 @@ docker-compose up app
 
 The server will be available at http://localhost:8001.
 
+### Gotchas
+
+- The docker-compose file only mounts the `galv-backend` directory, so if you add a new file or directory, to the project root, you will need to rebuild the container.
+
 ### Setting up in PyCharm
 
 To set up the development environment in PyCharm, make sure there's a project interpreter set up for the Docker container.
@@ -41,3 +46,16 @@ The following command will run the tests:
 ```bash
 docker-compose run --rm app_test
 ```
+
+## Compatibility checking
+
+The Galv backend is tested for compatibility with the [galv-spec](/Battery-Intelligence-Lab/galv-spec)
+OpenAPI specification using GitHub actions. 
+To run the compatibility checks locally, run the following command:
+
+```bash
+docker-compose run --rm check_spec
+```
+
+You can edit the docker-compose.yml file to run the compatibility checks against a different version of the galv-spec.
+If you do that, please don't commit the change to the docker-compose.yml file.

@@ -46,6 +46,11 @@ if [ -z "${DJANGO_TEST}" ]; then
   #python manage.py loaddata galv/fixtures/ValidationSchemaFixtures.json
   >&2 echo "... starting validation monitor loop"
   ../validation_monitor.sh &
+
+  >&2 echo "... generating openapi specification"
+  API_VERSION=$(python manage.py diffsettings | grep API_VERSION | grep -oEi '[0-9]+\.[0-9]+\.[0-9]+')
+  python manage.py spectacular --format openapi-json >> /spec/openapi-$API_VERSION.json
+  >&2 echo "Openapi specification saved to /spec/openapi-$API_VERSION.json"
 else
   >&2 echo "... skipping remaining setup steps [DJANGO_TEST=${DJANGO_TEST}]"
 fi
