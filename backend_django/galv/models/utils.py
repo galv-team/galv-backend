@@ -127,7 +127,7 @@ class ScheduleRenderError(ValueError):
     pass
 
 
-def render_pybamm_schedule(schedule, cell, validate = True):
+def render_pybamm_schedule(schedule, cell, validate = True) -> list[str]|None:
     """
     Return the PyBaMM representation of the schedule, with variables filled in.
     Variables are taken from the cell properties, cell family properties, and schedule variables (most preferred first).

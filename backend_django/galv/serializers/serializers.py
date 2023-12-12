@@ -44,9 +44,9 @@ from .utils import AdditionalPropertiesModelSerializer, GetOrCreateTextField, au
         description='Full details are only available to the user themselves, or to superusers',
         value={
             "username": "admin",
-            "email": "",
-            "first_name": "",
-            "last_name": "",
+            "email": "admin@galv.ox",
+            "first_name": "Adam",
+            "last_name": "Minotaur",
             "url": "http://localhost:8001/users/1/",
             "id": 1,
             "is_staff": True,
@@ -843,6 +843,7 @@ class ScheduleSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, 
                 "Charge at 1 A until 4.1 V",
                 "Discharge at 1 C for 10 hours or until 3.3 V"
             ],
+            "team": "http://localhost:8001/teams/1/",
             "permissions": {
                 "create": True,
                 "destroy": False,
@@ -878,7 +879,7 @@ class CyclerTestSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin
         help_text="Equipment this Cycler Test uses"
     )
 
-    def get_rendered_schedule(self, instance) -> str | None:
+    def get_rendered_schedule(self, instance) -> list[str] | None:
         if instance.schedule is None:
             return None
         return instance.rendered_pybamm_schedule(False)
@@ -905,8 +906,8 @@ class CyclerTestSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin
         summary='Harvester details',
         description='Harvesters are the interface between the system and the raw data produced by cycler tests. They are responsible for uploading data to the system.',
         value={
-            "url": "http://localhost:8001/harvesters/1/",
-            "uuid": "1",
+            "url": "http://localhost:8001/harvesters/d8290e68-bfbb-3bc8-b621-5a9590aa29fd/",
+            "uuid": "d8290e68-bfbb-3bc8-b621-5a9590aa29fd",
             "name": "Example Harvester",
             "sleep_time": 60,
             "environment_variables": {
@@ -995,8 +996,15 @@ class HarvesterSerializer(serializers.HyperlinkedModelSerializer, PermissionsMix
         summary='Monitored Path details',
         description='Monitored Paths are subdirectories on Harvesters that are monitored for new files. When a new file is detected, it is uploaded to the system.',
         value={
-            "url": "http://localhost:8001/monitored_paths/1/",
-            # TODO
+            "url": "http://localhost:8001/monitored_paths/172f2460-9528-11ee-8454-eb9d381d3cc4/",
+            "uuid": "172f2460-9528-11ee-8454-eb9d381d3cc4",
+            "files": ["http://localhost:8001/files/c690ddf0-9527-11ee-8454-eb9d381d3cc4/"],
+            "path": "/home/example_user/example_data.csv",
+            "regex": ".*\\.csv",
+            "stable_time": 60,
+            "active": True,
+            "harvester": "http://localhost:8001/harvesters/d8290e68-bfbb-3bc8-b621-5a9590aa29fd/",
+            "team": "http://localhost:8001/teams/1/",
             "permissions": {
                 "create": False,
                 "destroy": False,
@@ -1103,9 +1111,27 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
         description='Observed Files are the raw data produced by cycler tests. They are uploaded to the system by Harvesters.',
         value={
             "url": "http://localhost:8001/observed_files/1/",
-            "uuid": "1",
+            "uuid": "c690ddf0-9527-11ee-8454-eb9d381d3cc4",
             "path": "/home/example_user/example_data.csv",
-            "harvester": "http://localhost:8001/harvesters/1/",
+            "name": "example_data.csv",
+            "state": "IMPORTED",
+            "parser": "Biologic",
+            "num_rows": 100,
+            "first_sample_no": 1,
+            "last_sample_no": 100,
+            "extra_metadata": {},
+            "has_required_columns": True,
+            "last_observed_time": "2021-08-18T15:23:45.123456Z",
+            "last_observed_size": 123456,
+            "upload_errors": [],
+            "upload_info": {},
+            "harvester": "http://localhost:8001/harvesters/d8290e68-bfbb-3bc8-b621-5a9590aa29fd/",
+            "columns": [
+                "http://localhost:8001/columns/1/",
+                "http://localhost:8001/columns/2/",
+                "http://localhost:8001/columns/3/"
+            ],
+            "column_errors": [],
             "team": "http://localhost:8001/teams/1/",
             "permissions": {
                 "create": False,
@@ -1194,8 +1220,8 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
         description='Harvest Errors are errors encountered by Harvesters when uploading data to the system.',
         value={
             "url": "http://localhost:8001/harvest_errors/1/",
-            "uuid": "1",
-            "harvester": "http://localhost:8001/harvesters/1/",
+            "id": 1,
+            "harvester": "http://localhost:8001/harvesters/d8290e68-bfbb-3bc8-b621-5a9590aa29fd/",
             "file": "http://localhost:8001/observed_files/1/",
             "error": "Error message",
             "timestamp": "2021-08-18T15:23:45.123456Z",
@@ -1321,13 +1347,15 @@ class DataColumnSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
         description='Experiments are the highest level of abstraction in the system. They are used to group cycler tests and define the protocol used in those tests.',
         value={
             "url": "http://localhost:8001/experiments/1/",
-            "uuid": "1",
+            "uuid": "d8290e68-bfbb-3bc8-b621-5a9590aa29fd",
             "title": "Example Experiment",
             "description": "Example description",
             "authors": [
                 "http://localhost:8001/userproxies/1/"
             ],
-            "protocol": "http://localhost:8001/validation_schemas/1/",
+            "protocol": {
+                "detail": "JSON representation of experiment protocol"
+            },
             "protocol_file": None,
             "cycler_tests": [
                 "http://localhost:8001/cycler_tests/2b7313c9-94c2-4276-a4ee-e9d58d8a641b/"
@@ -1385,7 +1413,7 @@ class ExperimentSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
         description='Validation Schemas are used to define the expected format of data.',
         value={
             "url": "http://localhost:8001/validation_schemas/1/",
-            "uuid": "1",
+            "uuid": "df383510-9527-11ee-8454-eb9d381d3cc4",
             "name": "Example Validation Schema",
             "schema": {
                 "type": "object",
@@ -1430,7 +1458,10 @@ class ValidationSchemaSerializer(serializers.HyperlinkedModelSerializer, Permiss
         description='Knox Tokens are used to authenticate users with the system.',
         value={
             "url": "http://localhost:8001/tokens/1/",
+            "id": 1,
             "name": "Example Token",
+            "created": "2021-08-18T15:23:45.123456Z",
+            "expiry": "2023-08-18T15:23:45.123456Z",
             "permissions": {
                 "create": False,
                 "destroy": False,
@@ -1475,8 +1506,11 @@ class KnoxTokenSerializer(serializers.HyperlinkedModelSerializer):
         description='Knox Tokens are used to authenticate users with the system. This serializer includes the token value.',
         value={
             "url": "http://localhost:8001/tokens/1/",
+            "id": 1,
             "name": "Example Token",
             "token": "example_token_value",
+            "created": "2021-08-18T15:23:45.123456Z",
+            "expiry": "2023-08-18T15:23:45.123456Z",
             "permissions": {
                 "create": False,
                 "destroy": False,
@@ -1505,13 +1539,13 @@ class KnoxTokenFullSerializer(KnoxTokenSerializer):
         summary='Harvester Configuration details',
         description='When Harvesters contact the system, they are given a configuration containing information about the system and the Harvester.',
         value={
-            "url": "http://localhost:8001/harvesters/1/",
-            "uuid": "1",
+            "url": "http://localhost:8001/harvesters/d8290e68-bfbb-3bc8-b621-5a9590aa29fd/",
+            "uuid": "d8290e68-bfbb-3bc8-b621-5a9590aa29fd",
             "api_key": "example_api_key",
             "name": "Example Harvester",
             "sleep_time": 60,
             "monitored_paths": [
-                "http://localhost:8001/monitored_paths/1/"
+                "http://localhost:8001/monitored_paths/172f2460-9528-11ee-8454-eb9d381d3cc4/"
             ],
             "standard_units": [
                 {

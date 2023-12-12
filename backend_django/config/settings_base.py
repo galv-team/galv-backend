@@ -159,4 +159,5 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     'PREPROCESSING_HOOKS': ['galv.schema.custom_preprocessing_hook'],
     'POSTPROCESSING_HOOKS': ['galv.schema.custom_postprocessing_hook'],
+    'COMPONENT_SPLIT_REQUEST': True,  # handle read/writeOnly issues
 }
