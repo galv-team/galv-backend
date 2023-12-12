@@ -23,10 +23,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y docker-compose
+
+      - name: Generate spec
+        run: |
           mkdir -p .dev/spec
           sudo chmod 777 .dev/spec
           # app will create a spec file tagged with the version, but we create our own spec for comparison
           # using x rather than a number means it appears later and gets picked up by `tail -n 1` in check_spec
-          docker-compose run --rm app python backend_django/manage.py spectacular --format openapi-json >> .dev/spec/openapi-x.json
+          docker-compose run --rm app bash -c "python backend_django/manage.py spectacular --format openapi-json >> .dev/spec/openapi-x.json"
           sudo chmod 777 .dev/spec/*
+
+      - name: Run spec check
+        run: |
           docker-compose run --rm check_spec
