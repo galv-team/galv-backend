@@ -33,13 +33,12 @@ jobs:
               echo "Release version v$API_VERSION does not match version in branch name ${{ github.ref_name }}"
               exit 1
           fi
+          echo "Release version v$API_VERSION matches version in branch name ${{ github.ref_name }}"
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: "${{ github.ref_name }}"
           body: "Release ${{ github.ref_name }}."
-          target_commitish: "${{ github.ref_name }}"
 
       - name: Log in to the Container registry
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
