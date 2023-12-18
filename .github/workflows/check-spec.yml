@@ -6,6 +6,8 @@ on:
     tags:
       - v*.*.*
     workflows: [Django test]
+    types:
+      - completed
   workflow_dispatch:
     inputs:
       debug_enabled:
@@ -51,7 +53,7 @@ jobs:
           # using x rather than a number means it appears later and gets picked up by `tail -n 1` in check_spec
           docker-compose run --rm app bash -c "python backend_django/manage.py spectacular --format openapi-json >> /spec/openapi-x.json"
           # Copy spec for upload
-          cp /spec/openapi-x.json /spec/openapi-${{ needs.version.outputs.version }}.json
+          cp .dev/spec/openapi-x.json .dev/spec/openapi-${{ needs.version.outputs.version }}.json
 
       - name: Run spec check vs prev version
         if: ${{ needs.version.outputs.prev_version != '' && !needs.version.outputs.is_major_release }}

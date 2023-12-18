@@ -39,14 +39,14 @@ jobs:
           echo "version=v$API_VERSION" >> $GITHUB_OUTPUT
 
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+#      - name: Setup tmate session
+#        uses: mxschmitt/action-tmate@v3
 
       - name: Search for previous version tag
         id: search
         run: |
           # Get a list of all repository tags
-          git fetch --tags
+          git fetch --tags --force
           # Save tag list to a temporary file
           git tag --list > tags.txt
           # Get the previous tag
