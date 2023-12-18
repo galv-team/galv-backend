@@ -4,8 +4,8 @@ name: Docker image
 on:
   # Run when Docs workflow completes
   push:
-    branches:
-      - release/*
+    tags:
+      - v*.*.*
   workflow_dispatch:
     inputs:
       debug_enabled:
@@ -29,8 +29,8 @@ jobs:
           # Extract release version from settings
           API_VERSION=$(cat backend_django/config/settings_base.py | grep "API_VERSION =" | cut -d'"' -f2)
           # Assert that the release version matches the branch name
-          if [ "release/v$API_VERSION" != "${{ github.ref_name }}" ]; then
-              echo "Release version $API_VERSION does not match version in branch name ${{ github.ref_name }}"
+          if [ "v$API_VERSION" != "${{ github.ref_name }}" ]; then
+              echo "Release version v$API_VERSION does not match version in branch name ${{ github.ref_name }}"
               exit 1
           fi
 
@@ -60,17 +60,11 @@ jobs:
         uses: mxschmitt/action-tmate@v3
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
 
-      - name: Update tags
-        id: tweak
-        run: |
-          echo "tags=$(sed 'r/${{steps.meta.outputs.tags}}//g')" >> $GITHUB_OUTPUT
-          echo "labels=$(sed 'r/${{steps.meta.outputs.labels}}//g')" >> $GITHUB_OUTPUT
-
       - name: Build and push Docker image
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ steps.tweak.outputs.tags }}
-          labels: ${{ steps.tweak.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
