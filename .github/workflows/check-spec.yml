@@ -66,5 +66,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: spec
-          path: /spec/openapi-${{ needs.version.outputs.version }}.json
+          path: .dev/spec/openapi-${{ needs.version.outputs.version }}.json
           retention-days: 1
