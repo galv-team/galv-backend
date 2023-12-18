@@ -329,6 +329,8 @@ class ExperimentFactory(factory.django.DjangoModelFactory):
         self.authors.add(*extracted)
 
 def to_validation_schema(obj):
+    # Suppress errors when 'not' is a key
+    obj = {f"x{k}": v for k, v in obj.items()}
     return {'$id': 'abc', '$defs': {}, **obj}
 
 class ValidationSchemaFactory(factory.django.DjangoModelFactory):
