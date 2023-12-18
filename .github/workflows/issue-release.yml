@@ -24,11 +24,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      # Enable tmate debugging of manually-triggered workflows if the input option was provided
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
-
       - name: Check version matches ref
         run: |
           # Extract release version from settings
@@ -60,10 +55,22 @@ jobs:
         with:
           images: "ghcr.io/${{ github.repository }}"
 
+      # Enable tmate debugging of manually-triggered workflows if the input option was provided
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+
+      - name: Update tags
+        id: tweak
+        run: |
+          echo "tags=$(sed 'r/${{steps.meta.outputs.tags}}//g')" >> $GITHUB_OUTPUT
+          echo "labels=$(sed 'r/${{steps.meta.outputs.labels}}//g')" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
           context: .
+          file: ./Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.tweak.outputs.tags }}
+          labels: ${{ steps.tweak.outputs.labels }}
