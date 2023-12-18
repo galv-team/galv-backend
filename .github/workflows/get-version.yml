@@ -49,7 +49,9 @@ jobs:
           git fetch --tags --force
           # Create our tag if this is a branch rather than a tag
           if [ "${{ github.ref_type }}" == "branch" ]; then
-              git tag -a ${{ steps.scrape.outputs.version }} || true
+            git config --global user.email gg@example.com
+            git config --global user.name "GitHub Actions"
+            git tag ${{ steps.scrape.outputs.version }} || true
           fi
           # Save tag list to a temporary file
           git tag --list > tags.txt
