@@ -36,7 +36,7 @@ jobs:
               exit 1
           fi
           echo "API_VERSION: v$API_VERSION"
-          echo "::set-output name=version::v$API_VERSION"
+          echo "version=v$API_VERSION" >> $GITHUB_OUTPUT
 
       - name: Search for previous version tag
         id: search
@@ -47,24 +47,24 @@ jobs:
           git tag --list > tags.txt
           # Get the previous tag
           python -c "
-            import os, re
-            with open('tags.txt', 'r') as f:
-              tags = f.read().splitlines()
-            tags = [tag for tag in tags if re.match(r'^v[0-9]+\.[0-9]+\.[0-9]+$', tag)]
-            tags.sort(key=lambda s: list(map(int, s[1:].split('.'))))
-            i = tags.index('v${{ steps.scrape.outputs.version }}')
-            if i == 0:
-              print('::set-output name=prev_version_tag::')
+          import os, re
+          with open('tags.txt', 'r') as f:
+            tags = f.read().splitlines()
+          tags = [tag for tag in tags if re.match(r'^v[0-9]+\.[0-9]+\.[0-9]+$', tag)]
+          tags.sort(key=lambda s: list(map(int, s[1:].split('.'))))
+          i = tags.index('v${{ steps.scrape.outputs.version }}')
+          if i == 0:
+            os.system('echo prev_version_tag= >> $GITHUB_OUTPUT')
+          else:
+            os.system(f'echo prev_version_tag={tags[i-1]} >> $GITHUB_OUTPUT')
+          # Get the previous major version tag
+          if i == 0:
+            os.system('echo previous_major_version_tag= >> $GITHUB_OUTPUT')
+          else:
+            major_version = tags[i].split('.')[0]
+            prev_ver_tags = [tag for tag in tags if tag.split('.')[0] < major_version]
+            if len(prev_ver_tags) == 0:
+                os.system('echo previous_major_version_tag= >> $GITHUB_OUTPUT')
             else:
-              print('::set-output name=prev_version_tag::' + tags[i-1])
-            # Get the previous major version tag
-            if i == 0:
-              print('::set-output name=previous_major_version_tag::')
-            else:
-              major_version = tags[i].split('.')[0]
-              prev_ver_tags = [tag for tag in tags if tag.split('.')[0] < major_version]
-              if len(prev_ver_tags) == 0:
-                  print('::set-output name=previous_major_version_tag::')
-              else:
-                  print('::set-output name=previous_major_version_tag::' + prev_ver_tags[-1])
+                os.system(f'echo previous_major_version_tag={prev_ver_tags[-1]} >> $GITHUB_OUTPUT')
           "
