@@ -28,6 +28,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      # Enable tmate debugging of manually-triggered workflows if the input option was provided
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+
       - name: Check version matches ref
         run: |
           # Assert that the release version matches the branch name
@@ -35,11 +40,6 @@ jobs:
               echo "Release version ${{ needs.version.outputs.version }} does not match version in tag name ${{ github.ref_name }}"
               exit 1
           fi
-
-      # Enable tmate debugging of manually-triggered workflows if the input option was provided
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
 
       - name: Setup docker-compose
         run: |
