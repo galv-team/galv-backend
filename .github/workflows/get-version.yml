@@ -52,7 +52,7 @@ jobs:
             tags = f.read().splitlines()
           tags = [tag for tag in tags if re.match(r'^v[0-9]+\.[0-9]+\.[0-9]+$', tag)]
           tags.sort(key=lambda s: list(map(int, s[1:].split('.'))))
-          i = tags.index('v${{ steps.scrape.outputs.version }}')
+          i = tags.index('${{ steps.scrape.outputs.version }}')
           if i == 0:
             os.system('echo prev_version_tag= >> $GITHUB_OUTPUT')
           else:
