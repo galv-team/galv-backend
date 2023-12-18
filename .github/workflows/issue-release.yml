@@ -20,13 +20,13 @@ jobs:
     uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/check-spec.yml@main
     secrets: inherit
     with:
-        debug_enabled: ${{ inputs.debug_enabled }}
+        debug_enabled: ${{ github.event.name == 'workflow_dispatch' && inputs.debug_enabled }}
   publish-package:
     uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/publish-package.yml@main
     secrets: inherit
     needs: check-spec
     with:
-        debug_enabled: ${{ inputs.debug_enabled }}
+        debug_enabled: ${{ github.event.name == 'workflow_dispatch' && inputs.debug_enabled }}
 
   issue-release:
     needs: [check-spec, publish-package]
