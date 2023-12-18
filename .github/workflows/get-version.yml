@@ -38,6 +38,10 @@ jobs:
           echo "API_VERSION: v$API_VERSION"
           echo "version=v$API_VERSION" >> $GITHUB_OUTPUT
 
+      # Enable tmate debugging of manually-triggered workflows if the input option was provided
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Search for previous version tag
         id: search
         run: |
@@ -68,3 +72,4 @@ jobs:
             else:
                 os.system(f'echo previous_major_version_tag={prev_ver_tags[-1]} >> $GITHUB_OUTPUT')
           "
+          cat $GITHUB_OUTPUT
