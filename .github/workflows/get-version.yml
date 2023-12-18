@@ -3,6 +3,12 @@ name: Get version
 on:
   # reusable workflow
   workflow_call:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
     outputs:
       version:
         description: "API_VERSION defined in settings_base.py"
@@ -39,8 +45,9 @@ jobs:
           echo "version=v$API_VERSION" >> $GITHUB_OUTPUT
 
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
-#      - name: Setup tmate session
-#        uses: mxschmitt/action-tmate@v3
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ inputs.debug_enabled }}
 
       - name: Search for previous version tag
         id: search

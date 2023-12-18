@@ -1,20 +1,49 @@
-name: Docker image
+name: Release
 
 on:
   workflow_run:
     tags:
       - v*.*.*
-    workflows: [Create API clients]
+    workflows: [Django test]
     types:
       - completed
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
 
 jobs:
+  check-spec:
+    uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/check-spec.yml@main
+    secrets: inherit
+    with:
+        debug_enabled: ${{ inputs.debug_enabled }}
   publish-package:
+    uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/publish-package.yml@main
+    secrets: inherit
+    needs: check-spec
+    with:
+        debug_enabled: ${{ inputs.debug_enabled }}
+
+  issue-release:
+    needs: [check-spec, publish-package]
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - name: Check ref is semver
+        if: ${{ github.event.name == 'workflow_dispatch' }}
+        run: |
+          # Assert that the release version matches the branch name
+          if ! [[ "${{ github.ref_name }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Release version ${{ github.ref_name }} is not valid semver, expected vMajor.Minor.Patch"
+              exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v3
 
