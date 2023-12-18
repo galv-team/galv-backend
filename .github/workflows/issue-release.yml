@@ -1,0 +1,71 @@
+# Simple workflow for deploying static content to GitHub Pages
+name: Docker image
+
+on:
+  # Run when Docs workflow completes
+  push:
+    branches:
+      - release/*
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
+
+jobs:
+  issue-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: 'api-clients'
+
+      # Enable tmate debugging of manually-triggered workflows if the input option was provided
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+
+      - name: Check version matches ref
+        run: |
+          # Extract release version from settings
+          API_VERSION=$(cat backend_django/config/settings_base.py | grep "API_VERSION =" | cut -d'"' -f2)
+          # Assert that the release version matches the branch name
+          if [ "release/v$API_VERSION" != "${{ github.ref_name }}" ]; then
+              echo "Release version $API_VERSION does not match version in branch name ${{ github.ref_name }}"
+              exit 1
+          fi
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "${{ github.ref_name }}"
+          body: "Release ${{ github.ref_name }}."
+          target_commitish: "${{ github.ref_name }}"
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: "ghcr.io"
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: "ghcr.io/${{ github.repository }}"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
