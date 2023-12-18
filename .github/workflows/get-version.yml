@@ -47,6 +47,10 @@ jobs:
         run: |
           # Get a list of all repository tags
           git fetch --tags --force
+          # Create our tag if this is a branch rather than a tag
+          if [ "${{ github.ref_type }}" == "branch" ]; then
+              git tag -a ${{ steps.scrape.outputs.version }} || true
+          fi
           # Save tag list to a temporary file
           git tag --list > tags.txt
           # Get the previous tag
