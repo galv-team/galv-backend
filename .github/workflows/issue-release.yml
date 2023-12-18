@@ -17,20 +17,21 @@ on:
 
 jobs:
   check-spec:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} || ${{ github.event_name == 'workflow_dispatch' }}
     uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/check-spec.yml@main
     secrets: inherit
     with:
         debug_enabled: ${{ github.event.name == 'workflow_dispatch' && inputs.debug_enabled }}
   publish-package:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} || ${{ github.event_name == 'workflow_dispatch' }}
     uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/publish-package.yml@main
     secrets: inherit
-    needs: check-spec
     with:
         debug_enabled: ${{ github.event.name == 'workflow_dispatch' && inputs.debug_enabled }}
 
   issue-release:
     needs: [check-spec, publish-package]
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} || ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
