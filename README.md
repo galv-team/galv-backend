@@ -3,6 +3,7 @@
 
 [![Django test](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/test.yml/badge.svg)](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/test.yml)
 [![galv-spec compatibility](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/check-spec.yml/badge.svg)](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/check-spec.yml)
+[![Docker image](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/issue-release.yml/badge.svg)](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/issue-release.yml)
 
 The Galv backend provides a REST API powered by [Django](https://www.djangoproject.com/) and [Django REST Framework](https://www.django-rest-framework.org/).
 
@@ -53,15 +54,28 @@ The following command will run the tests:
 docker-compose run --rm app_test
 ```
 
-## Compatibility checking
+## GitHub Actions
 
-The Galv backend is tested for compatibility with the [galv-spec](/Battery-Intelligence-Lab/galv-spec)
-OpenAPI specification using GitHub actions. 
+We use a fairly complicated GitHub Actions flow to ensure we don't publish breaking changes.
+When you push to a branch, we do the following:
+- Run the tests
+  - If tests succeed, and branch or tag is `v*.*.*`, we check compatibility with the previous version
+    - If the API_VERSION in `backend_django/config/settings_base.py` is different to the branch/tag name, fail.
+    - If incompatible, and we're not publishing a new major version, fail.
+    - Create clients for TypeScript (axios) and Python
+    - Create a docker image hosted on GitHub Packages
+    - Create a GitHub release
+
 To run the compatibility checks locally, run the following command:
 
 ```bash
 docker-compose run --rm check_spec
 ```
 
-You can edit the docker-compose.yml file to run the compatibility checks against a different version of the galv-spec.
-If you do that, please don't commit the change to the docker-compose.yml file.
+You can optionally specify the `REMOTE_SPEC_SOURCE` environment variable to check against a different version of the galv-spec.
+
+```bash
+cp my_spec.json .dev/spec
+# .dev/spec is mounted as a volume at /spec in the container
+docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/my_spec.json check_spec
+```

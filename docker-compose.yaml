@@ -72,5 +72,5 @@ services:
       - ./.dev/spec:/spec
     entrypoint: /bin/sh -c
     environment:
-      REMOTE_SPEC_URL: "https://github.com/Battery-Intelligence-Lab/galv-spec/releases/latest/download/galv-spec.json"
-    command: ["java -jar /app/openapi-diff.jar --fail-on-incompatible --markdown /spec/diff.md $${REMOTE_SPEC_URL} $$(ls /spec/openapi-*.json | tail -n 1)"]
+      REMOTE_SPEC_SOURCE: "https://github.com/Battery-Intelligence-Lab/galv-spec/releases/latest/download/galv-spec.json"
+    command: ["java -jar /app/openapi-diff.jar --fail-on-incompatible --markdown /spec/diff.md $${REMOTE_SPEC_SOURCE} $$(ls /spec/openapi-*.json | tail -n 1)"]

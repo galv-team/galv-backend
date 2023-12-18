@@ -1,0 +1,65 @@
+name: Create API clients
+on:
+  workflow_run: 
+    tags:
+      - v*.*.*
+    workflows: [OpenAPI spec compatibility]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
+
+jobs:
+  make-clients:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} || ${{ github.event_name == 'workflow_dispatch' }}
+    env:
+      POSTGRES_PASSWORD: "galv"
+      DJANGO_SECRET_KEY: "long-and-insecure-key-12345"
+    steps:
+      - uses: actions/checkout@v3
+
+      # Enable tmate debugging of manually-triggered workflows if the input option was provided
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+
+      - name: Make clients directory
+        run: |
+          mkdir clients
+        
+      - name: Create API client - python
+        run: |
+          echo "{\"lang\": \"python\", \"type\": \"CLIENT\", \"codegenVersion\": \"V3\", \"spec\": $(cat galv-spec.json)}" > payload.json
+          curl -d @payload.json --output clients/galv-client-python.zip -H "Content-Type: application/json" https://generator3.swagger.io/api/generate
+          # Check size
+          if [ ! -s clients/galv-client-python.zip ]; then
+            echo "Downloaded python client zip file is zero bytes"
+            exit 1
+          fi
+          # Check we can unzip
+          unzip -t clients/galv-client-python.zip
+
+      - name: Create API client - typescript-axios
+        run: |
+          echo "{\"lang\": \"python\", \"type\": \"CLIENT\", \"codegenVersion\": \"V3\", \"spec\": $(cat galv-spec.json)}" > payload.json
+          curl -d @payload.json --output clients/galv-client-typescript-axios.zip -H "Content-Type: application/json" https://generator3.swagger.io/api/generate
+          # Check size
+          if [ ! -s clients/galv-client-typescript-axios.zip ]; then
+            echo "Downloaded typescript-axios client zip file is zero bytes"
+            exit 1
+          fi
+          # Check we can unzip
+          unzip -t clients/galv-client-typescript-axios.zip
+
+      - name: Upload clients
+        uses: actions/upload-artifact@v4
+        with:
+          name: clients
+          path: clients/**
+          retention-days: 1

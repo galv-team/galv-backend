@@ -1,0 +1,70 @@
+name: Get version
+
+on:
+  # reusable workflow
+  workflow_call:
+    outputs:
+      version:
+        description: "API_VERSION defined in settings_base.py"
+        value: ${{ jobs.get-version.outputs.version }}
+      prev_version_tag:
+        description: "Previous version tag"
+        value: ${{ jobs.get_version.outputs.prev_version_tag }}
+      is_major_release:
+        description: "Is this a major release?"
+        value: ${{ jobs.get_version.outputs.is_major_release }}
+
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.scrape.outputs.version }}
+      prev_version_tag: ${{ steps.search.outputs.prev_version_tag }}
+      is_major_release: ${{ steps.search.outputs.previous_major_version_tag != steps.search.outputs.prev_version_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Extract version
+        id: scrape
+        run: |
+          # Extract release version from settings
+          API_VERSION=$(cat backend_django/config/settings_base.py | grep "API_VERSION =" | cut -d'"' -f2)
+          # Assert version is valid semver
+          if ! [[ "$API_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Release version v$API_VERSION is not valid semver"
+              exit 1
+          fi
+          echo "API_VERSION: v$API_VERSION"
+          echo "::set-output name=version::v$API_VERSION"
+
+      - name: Search for previous version tag
+        id: search
+        run: |
+          # Get a list of all repository tags
+          git fetch --tags
+          # Save tag list to a temporary file
+          git tag --list > tags.txt
+          # Get the previous tag
+          python -c "
+            import os, re
+            with open('tags.txt', 'r') as f:
+              tags = f.read().splitlines()
+            tags = [tag for tag in tags if re.match(r'^v[0-9]+\.[0-9]+\.[0-9]+$', tag)]
+            tags.sort(key=lambda s: list(map(int, s[1:].split('.'))))
+            i = tags.index('v${{ steps.scrape.outputs.version }}')
+            if i == 0:
+              print('::set-output name=prev_version_tag::')
+            else:
+              print('::set-output name=prev_version_tag::' + tags[i-1])
+            # Get the previous major version tag
+            if i == 0:
+              print('::set-output name=previous_major_version_tag::')
+            else:
+              major_version = tags[i].split('.')[0]
+              prev_ver_tags = [tag for tag in tags if tag.split('.')[0] < major_version]
+              if len(prev_ver_tags) == 0:
+                  print('::set-output name=previous_major_version_tag::')
+              else:
+                  print('::set-output name=previous_major_version_tag::' + prev_ver_tags[-1])
+          "
