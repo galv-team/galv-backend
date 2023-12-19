@@ -26,11 +26,11 @@ os.environ["pages_root"] = "https://Battery-Intelligence-Lab.github.io/galv-back
 
 # manually the main branch build in the current supported languages
 build_doc("main")
-move_dir("./_build/html/", "../pages/")
+move_dir("./build/html/", "../pages/")
 
 tags = json.load(open("tags.json", "r"))
 
 # and looping over all values to call our build with version, language and its tag
 for tag in tags:
     build_doc(tag)
-    move_dir("./_build/html/", f"../pages/{tag}/")
+    move_dir("./build/html/", f"../pages/{tag}/")
