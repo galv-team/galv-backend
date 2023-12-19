@@ -29,10 +29,13 @@ jobs:
         uses: mxschmitt/action-tmate@v3
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
 
-      - name: build
+      - name: setup
         run: |
           # ... installation of all tools ...
           sudo apt-get install -y python3-sphinx
+
+      - name: build
+        run: |
           # get all tags, and run a python script
           # which you find below to build all documents
           git fetch --tags
