@@ -41,5 +41,5 @@ if build_all_docs is not None:
   # we set the html_context with current version and versions from json file
   html_context = {
     'current_version' : os.environ.get("current_version", "no-curent-version-envvar"),
-    'versions' : json.load(open("tags.json", "r")),
+    'versions' : json.load(open("../tags.json", "r")),
   }

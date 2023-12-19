@@ -10,7 +10,7 @@ import subprocess
 def build_doc(tag):
     os.environ["current_version"] = tag
     subprocess.run("git checkout " + tag, shell=True)
-    subprocess.run("git checkout main -- conf.py", shell=True)
+    subprocess.run("git checkout main -- source/conf.py", shell=True)
     subprocess.run("git checkout main -- tags.json", shell=True)
     subprocess.run("make html", shell=True)
 
