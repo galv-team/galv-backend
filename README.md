@@ -7,7 +7,6 @@
 The Galv backend provides a REST API powered by [Django](https://www.djangoproject.com/) and [Django REST Framework](https://www.django-rest-framework.org/).
 
 ## Galv Project
-- [Specification](/Battery-Intelligence-Lab/galv-spec)
 - [**Backend**](/Battery-Intelligence-Lab/galv-backend)
 - [Frontend](/Battery-Intelligence-Lab/galv-frontend)
 - [Harvester](/Battery-Intelligence-Lab/galv-harvester)
@@ -15,9 +14,35 @@ The Galv backend provides a REST API powered by [Django](https://www.djangoproje
 ## Deploying
 
 The Galv backend is deployed using [Docker](https://www.docker.com/).
-It can be deployed using the Dockerfile provided in this repository.
+You can deploy the Galv backend in a number of ways.
 
-You should ensure that all variables in the `.env` file are set correctly before deploying.
+### Docker image
+
+Each [release](/Battery-Intelligence-Lab/galv-backend/releases) is accompanied by a [Docker image](/Battery-Intelligence-Lab/packages?repo_name=galv-backend).
+You can acquire the image by pulling it from GitHub Packages:
+
+```bash
+docker pull ghcr.io/battery-intelligence-lab/galv-backend:latest
+```
+
+You can then run the image using the following command:
+
+```bash
+docker run -p 8001:80 ghcr.io/battery-intelligence-lab/galv-backend:latest
+```
+
+You will need to add in a database and set the environment variables appropriately.
+You will also need to add environment variables as detailed [below](#Envvars).
+
+### Docker Compose
+
+Galv can be deployed using the Dockerfile provided in this repository.
+Example usage is provided in the [docker-compose.yml](/Battery-Intelligence-Lab/galv-backend/blob/main/docker-compose.yml) file.
+This is generally for development, however, so you will need to add a database and set the [environment variables](#Envvars) appropriately.
+
+## Envvars
+
+You should ensure that all environment variables in the `.env` file are set correctly before deploying.
 These variables can be set by editing and including the `.env` file, by setting them in the environment, 
 or by setting them via a hosting platform's interface.
 
@@ -35,6 +60,7 @@ The server will be available at http://localhost:8001.
 ### Gotchas
 
 - The docker-compose file only mounts the `galv-backend` directory, so if you add a new file or directory, to the project root, you will need to rebuild the container.
+- The `app` container is started with `server.sh`. If this file has acquired non-LF line endings, the container will report that it can't be found when starting.
 
 ### Setting up in PyCharm
 
@@ -42,6 +68,15 @@ To set up the development environment in PyCharm, make sure there's a project in
 Once you have that, create a Django server configuration with the following settings:
 - Host: `0.0.0.0` (this allows you to reach the server from your host machine)
 - Port: `80` (**not** `8001` - this is the port on the Docker container, not the host machine)
+
+## Documentation
+
+Documentation is generated using [Sphinx](https://www.sphinx-doc.org/en/master/).
+To make it easy to develop documentation, a Dockerfile is provided that will build the documentation and serve it using a webserver.
+It should refresh automatically when changes are made to the documentation.
+
+The docs container is started with `docker-compose up docs`. 
+By default, it will serve at http://localhost:8005.
 
 ## Testing
 

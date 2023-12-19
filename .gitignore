@@ -46,3 +46,5 @@ node_modules/
 .tmp/test/
 
 .dev/
+
+docs/build-dev/
