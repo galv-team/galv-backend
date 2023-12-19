@@ -79,6 +79,15 @@ It should refresh automatically when changes are made to the documentation.
 The docs container is started with `docker-compose up docs`. 
 By default, it will serve at http://localhost:8005.
 
+### Versioning
+
+The documentation supports multiple versions. 
+To add a new version, add a new entry to `docs/tags.json`.
+These tags must be in the format `v*.*.*` and must be available as a git tag.
+
+There is a fairly complex workflow that will update the documentation for all versions when a new version is released.
+This workflow is defined in `.github/workflows/docs.yml`, with help from `docs/build_docs.py`.
+
 ## Testing
 
 Tests are most easily run using the provided Dockerfile and docker-compose.yml files.  
