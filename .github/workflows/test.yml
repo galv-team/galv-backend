@@ -27,4 +27,4 @@ jobs:
 
       - name: Validate spec
         run: |
-          docker-compose run --rm app_test bash -c "python backend_django/manage.py spectacular --fail-on-warn --fail-on-errors"
+          docker-compose run --rm app_test bash -c "python backend_django/manage.py spectacular --fail-on-warn --validate"
