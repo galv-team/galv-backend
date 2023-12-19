@@ -27,7 +27,7 @@ jobs:
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event.name == 'workflow_dispatch' && inputs.debug_enabled }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
 
       - name: build
         run: |
@@ -50,8 +50,8 @@ jobs:
           path: './pages'
 
       - name: Deploy to GitHub Pages
-        if: (github.ref_name == 'main' && github.event_name == 'push') || (github.event.name == 'workflow_dispatch' && inputs.deploy_docs)
+        if: (github.ref_name == 'main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.deploy_docs)
         id: deployment
         uses: actions/deploy-pages@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
