@@ -89,38 +89,34 @@ jobs:
         uses: mxschmitt/action-tmate@v3
         if: ${{ inputs.debug_enabled }}
 
-      # Enable tmate debugging of manually-triggered workflows if the input option was provided
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ inputs.debug_enabled }}
+      - name: Specify openapi-generator version
+        run: docker pull openapitools/openapi-generator-cli:v6.6.0
 
       - name: Create API client - python
         run: |
-          echo "{\"lang\": \"python\", \"type\": \"CLIENT\", \"codegenVersion\": \"V3\", \"spec\": $(cat .dev/spec/*.json)}" > payload.json
-          curl -d @payload.json --output clients/galv-client-python.zip -H "Content-Type: application/json" https://generator3.swagger.io/api/generate
-          # Check size
-          if [ ! -s clients/galv-client-python.zip ]; then
-            echo "Downloaded python client zip file is zero bytes"
-            exit 1
-          fi
-          # Check we can unzip
-          unzip -t clients/galv-client-python.zip
+          JSON_FILE=$(ls .dev/spec/*.json)
+          docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
+          -i "$JSON_FILE" \
+          -g python \
+          -o /local/clients/python
+          
+          # zip the client
+          zip -r clients/galv-client-python.zip clients/python
 
       - name: Create API client - typescript-axios
         run: |
-          echo "{\"lang\": \"python\", \"type\": \"CLIENT\", \"codegenVersion\": \"V3\", \"spec\": $(cat .dev/spec/*.json)}" > payload.json
-          curl -d @payload.json --output clients/galv-client-typescript-axios.zip -H "Content-Type: application/json" https://generator3.swagger.io/api/generate
-          # Check size
-          if [ ! -s clients/galv-client-typescript-axios.zip ]; then
-            echo "Downloaded typescript-axios client zip file is zero bytes"
-            exit 1
-          fi
-          # Check we can unzip
-          unzip -t clients/galv-client-typescript-axios.zip
+          JSON_FILE=$(ls .dev/spec/*.json)
+          docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
+          -i "$JSON_FILE" \
+          -g typescript-axios \
+          -o /local/clients/typescript-axios
+          
+          # zip the client
+          zip -r clients/galv-client-typescript-axios.zip clients/typescript-axios
 
       - name: Upload clients
         uses: actions/upload-artifact@v4
         with:
           name: clients
-          path: clients/**
+          path: clients/*.zip
           retention-days: 1

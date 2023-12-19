@@ -1,4 +1,4 @@
-name: Django test
+name: CI Tests
 on:
   push:
   workflow_dispatch:
@@ -24,3 +24,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y docker-compose
             docker-compose run --rm app_test
+
+      - name: Validate spec
+        run: |
+          docker-compose run --rm app_test bash -c "python backend_django/manage.py spectacular --fail-on-warn --fail-on-errors"
