@@ -1,7 +1,8 @@
 # Galv backend (REST API)
 > A metadata secretary for battery science
 
-[![CI Tests](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/test.yml/badge.svg)](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/test.yml)
+[![CI tests](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/test.yml/badge.svg)](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/test.yml)
+[![Build docs](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/docs.yml/badge.svg)](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/docs.yml)
 [![Release](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/issue-release.yml/badge.svg)](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/issue-release.yml)
 
 The Galv backend provides a REST API powered by [Django](https://www.djangoproject.com/) and [Django REST Framework](https://www.django-rest-framework.org/).

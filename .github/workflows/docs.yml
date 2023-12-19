@@ -1,4 +1,6 @@
 # https://www.codingwiththomas.com/blog/my-sphinx-best-practice-for-a-multiversion-documentation-in-different-languages
+name: Build docs
+
 on:
   push:
     branches:
@@ -30,6 +32,7 @@ jobs:
       - name: build
         run: |
           # ... installation of all tools ...
+          sudo apt-get install -y python3-sphinx
           # get all tags, and run a python script
           # which you find below to build all documents
           git fetch --tags
