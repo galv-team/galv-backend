@@ -15,10 +15,18 @@ cd backend_django || exit 1
 >&2 echo "Collecting static files"
 python manage.py collectstatic --noinput
 
+if [ -z "${DATABASE_URL}" ]; then
+  >&2 echo "DATABASE_URL not set - using separate envvars for DB connection"
+  DB_URL="postgresql://postgres:galv@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/postgres"
+else
+  >&2 echo "Using DATABASE_URL for DB connection"
+  DB_URL="${DATABASE_URL}"
+fi
+
 >&2 echo "Waiting for Postgres to start"
 
 while [ $PGUP -ne 0 ]; do
-  pg_isready -d "postgresql://postgres:galv@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/postgres"
+  pg_isready -d "$DB_URL"
   PGUP=$?
   >&2 echo "Postgres is unavailable - sleeping"
   sleep 1
@@ -44,6 +52,12 @@ if [ -z "${DJANGO_TEST}" ]; then
   #python manage.py loaddata galv/fixtures/ScheduleFixtures.json
   #python manage.py loaddata galv/fixtures/CyclerTestFixtures.json
   #python manage.py loaddata galv/fixtures/ValidationSchemaFixtures.json
+
+  if [ -n "$1" ]; then
+    >&2 echo "Initialization complete - exiting"
+    exit 0
+  fi
+
   >&2 echo "... starting validation monitor loop"
   ../validation_monitor.sh &
 
@@ -58,7 +72,7 @@ fi
 >&2 echo "Initialisation complete - starting server"
 
 if [ -z "${DJANGO_TEST}" ]; then
-  if [ "${DJANGO_SETTINGS}" = "dev" ]; then
+  if [ "${DJANGO_SETTINGS}" == "dev" ]; then
     >&2 echo "Launching dev server"
     python manage.py runserver 0.0.0.0:80
   else

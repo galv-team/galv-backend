@@ -14,6 +14,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 import os
+import dj_database_url
 
 key = os.environ.get('DJANGO_SECRET_KEY')
 if not key:
@@ -38,27 +39,37 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-db_host = os.environ.get('POSTGRES_HOST')
-db_port = os.environ.get('POSTGRES_PORT')
-db_user = os.environ.get('POSTGRES_USER')
-db_password = os.environ.get('POSTGRES_PASSWORD')
+# First port of call is the DATABASE_URL environment variable
+# This means we can support fly.io's postgresql service
 
-if not db_host or not db_port or not db_user or not db_password:
-    vars = {
-        "POSTGRES_HOST": db_host,
-        "POSTGRES_PORT": db_port,
-        "POSTGRES_USER": db_user,
-        "POSTGRES_PASSWORD": db_password
+if os.environ.get('DATABASE_URL'):
+    print("Setting DATABASES from DATABASE_URL")
+    DATABASES = {
+        'default': dj_database_url.config()
     }
-    raise Exception(f"Missing environment variables: {', '.join([k for k, v in vars.items() if not v])}")
+else:
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'postgres',
-        'HOST': db_host,
-        'PORT': db_port,
-        'USER': db_user,
-        'PASSWORD': db_password
+    db_host = os.environ.get('POSTGRES_HOST')
+    db_port = os.environ.get('POSTGRES_PORT')
+    db_user = os.environ.get('POSTGRES_USER')
+    db_password = os.environ.get('POSTGRES_PASSWORD')
+
+    if not db_host or not db_port or not db_user or not db_password:
+        vars = {
+            "POSTGRES_HOST": db_host,
+            "POSTGRES_PORT": db_port,
+            "POSTGRES_USER": db_user,
+            "POSTGRES_PASSWORD": db_password
+        }
+        raise Exception(f"Missing environment variables: {', '.join([k for k, v in vars.items() if not v])}")
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'postgres',
+            'HOST': db_host,
+            'PORT': db_port,
+            'USER': db_user,
+            'PASSWORD': db_password
+        }
     }
-}
