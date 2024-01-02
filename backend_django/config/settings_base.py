@@ -20,7 +20,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.0.0"
+API_VERSION = "2.1.0"
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

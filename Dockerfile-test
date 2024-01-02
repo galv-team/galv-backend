@@ -2,29 +2,37 @@
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 
-FROM python:3.10.4-slim@sha256:a2e8240faa44748fe18c5b37f83e14101a38dd3f4a1425d18e9e0e913f89b562
+ARG PYTHON_VERSION=3.10-slim-bullseye
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV DJANGO_TEST=TRUE
+FROM python:${PYTHON_VERSION}
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+ENV DJANGO_SETTINGS_MODULE config.settings
 
 # Install postgresql-client for healthchecking
-RUN apt-get update && \
-    apt-get install -y \
-    	git \
-    	postgresql-client \
-    	build-essential libssl-dev libffi-dev python3-dev python-dev && \
-    apt-get autoremove && \
-    apt-get autoclean
+# install psycopg2 dependencies.
+RUN apt-get update && apt-get install -y \
+    postgresql-client \
+    build-essential libssl-dev libffi-dev python3-dev python-dev \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /usr/app
-WORKDIR /usr/app
-COPY requirements.txt /requirements.txt
-RUN pip install -r /requirements.txt
-COPY requirements-test.txt /requirements-test.txt
-RUN pip install -r /requirements-test.txt
-COPY . /usr/app
+RUN mkdir -p /code
+RUN mkdir /static
 
-RUN chmod +x /usr/app/server.sh
+WORKDIR /code
 
-EXPOSE 80
+COPY requirements.txt /tmp/requirements.txt
+COPY requirements-test.txt /tmp/requirements-test.txt
+RUN set -ex && \
+    pip install --upgrade pip && \
+    pip install -r /tmp/requirements.txt && \
+    pip install -r /tmp/requirements-test.txt && \
+    rm -rf /root/.cache/
+COPY . /code
+RUN chmod +x /code/*.sh
+
+WORKDIR /code/backend_django
+CMD ["bash", "-c", "python manage.py test --noinput"]
