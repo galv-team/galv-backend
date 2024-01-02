@@ -3,20 +3,19 @@
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = "galv-backend-dev-debug"
+app = "galv-backend-dev"
 primary_region = "lhr"
 console_command = "/code/manage.py shell"
 
 [build]
 
 [deploy]
-  release_command = "/code/fly_setup.sh"
+#  release_command = "/code/fly_setup.sh"
 
 [env]
   PORT = "8000"
-  DJANGO_SECRET_KEY = "08ab.m.owuweorku2626262908908alkjlaguooiubam.,mdhsd."
-  VIRTUAL_HOST = "galv-backend-dev-debug.fly.dev"
-  FRONTEND_VIRTUAL_HOST = "http://galv-frontend-dev-debug.fly.dev,http://galv-frontend-dev-debug.fly.dev"
+  VIRTUAL_HOST = "galv-backend-dev.fly.dev"
+  FRONTEND_VIRTUAL_HOST = "http://galv-frontend-dev.fly.dev,https://galv-frontend-dev.fly.dev"
   DJANGO_SETTINGS_MODULE = "config.settings"
 
 [http_service]
@@ -33,5 +32,5 @@ console_command = "/code/manage.py shell"
   memory_mb = 1024
 
 [[statics]]
-  guest_path = "/static"
+  guest_path = "/static/"
   url_prefix = "/django_static/"

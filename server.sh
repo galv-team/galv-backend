@@ -10,10 +10,7 @@
 set -e
 PGUP=1
 
-cd backend_django || exit 1
-
->&2 echo "Collecting static files"
-python manage.py collectstatic --noinput
+#cd backend_django || exit 1
 
 if [ -z "${DATABASE_URL}" ]; then
   >&2 echo "DATABASE_URL not set - using separate envvars for DB connection"
@@ -74,14 +71,14 @@ fi
 if [ -z "${DJANGO_TEST}" ]; then
   if [ "${DJANGO_SETTINGS}" == "dev" ]; then
     >&2 echo "Launching dev server"
-    python manage.py runserver 0.0.0.0:80
+    python manage.py runserver 0.0.0.0:8000
   else
     WORKERS_PER_CPU=${GUNICORN_WORKERS_PER_CPU:-2}
     WORKERS=$(expr $WORKERS_PER_CPU \* $(grep -c ^processor /proc/cpuinfo))
     >&2 echo "Launching production server with gunicorn ($WORKERS workers [${WORKERS_PER_CPU} per CPU])"
     gunicorn config.wsgi \
       --env DJANGO_SETTINGS_MODULE=config.settings \
-      --bind 0.0.0.0:80 \
+      --bind 0.0.0.0:8000 \
       --access-logfile - \
       --error-logfile - \
       --workers=$WORKERS
