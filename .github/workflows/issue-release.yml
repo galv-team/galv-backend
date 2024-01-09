@@ -4,7 +4,8 @@ on:
   workflow_run:
     tags:
       - v*.*.*
-    workflows: [CI Tests]
+    workflows:
+      - "CI Tests"
     types:
       - completed
   workflow_dispatch:
