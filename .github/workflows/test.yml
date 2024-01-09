@@ -47,8 +47,9 @@ jobs:
           fi
 
   release:
-    needs: run-tests
-    if: ${{ needs.run-tests.release == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.issue_release == 'true') }}
+    needs:
+      - run-tests
+    if: ${{ needs.run-tests.outputs.release == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.issue_release == 'true') }}
     uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/issue-release.yml@main
     secrets: inherit
     with:
