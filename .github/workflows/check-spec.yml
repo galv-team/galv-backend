@@ -95,8 +95,8 @@ jobs:
       - name: Create API client - python
         run: |
           JSON_FILE=$(ls .dev/spec/*.json)
-          docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
-          -i "$JSON_FILE" \
+          docker run --rm -v "${PWD}:.dev/spec" openapitools/openapi-generator-cli generate \
+          -i "/local/$JSON_FILE" \
           -g python \
           -o /local/clients/python
           
@@ -107,7 +107,7 @@ jobs:
         run: |
           JSON_FILE=$(ls .dev/spec/*.json)
           docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
-          -i "$JSON_FILE" \
+          -i "/local/$JSON_FILE" \
           -g typescript-axios \
           -o /local/clients/typescript-axios
           

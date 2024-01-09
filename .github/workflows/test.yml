@@ -8,10 +8,17 @@ on:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
+      issue_release:
+        type: boolean
+        description: 'Issue a release'
+        required: false
+        default: false
 
 jobs:
   run-tests:
     runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.check-tag.outputs.match }}
     steps:
       - uses: actions/checkout@v3
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
@@ -30,3 +37,19 @@ jobs:
       - name: Validate spec
         run: |
           docker-compose run --rm app_test bash -c "python manage.py spectacular --fail-on-warn --validate"
+
+      - name: Check if tagged release is required
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        id: check-tag
+        run: |
+          if [[ ${{ github.event.ref }} =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "match=true" >> $GITHUB_OUTPUT
+          fi
+
+  release:
+    needs: run-tests
+    if: ${{ needs.run-tests.release == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.issue_release == 'true') }}
+    uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/issue-release.yml@main
+    secrets: inherit
+    with:
+      debug_enabled: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
