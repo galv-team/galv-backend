@@ -63,6 +63,7 @@ urlpatterns = [
     # path('data/{pk}/', views.TimeseriesDataViewSet.as_view({'get': 'detail'}), name='timeseriesdata-detail'),
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    path('activate/', views.activate_user, name='activate_user'),
     path(r'login/', views.LoginView.as_view(), name='knox_login'),
     path(r'logout/', views.LogoutView.as_view(), name='knox_logout'),
     path(r'logoutall/', views.LogoutAllView.as_view(), name='knox_logoutall'),

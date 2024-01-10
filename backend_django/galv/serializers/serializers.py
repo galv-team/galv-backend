@@ -25,7 +25,7 @@ from ..models import Harvester, \
     KnoxAuthToken, CellFamily, EquipmentTypes, CellFormFactors, CellChemistries, CellModels, CellManufacturers, \
     EquipmentManufacturers, EquipmentModels, EquipmentFamily, Schedule, ScheduleIdentifiers, CyclerTest, \
     render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, user_labs, \
-    user_teams, SchemaValidation
+    user_teams, SchemaValidation, UserActivation
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
 from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
@@ -96,6 +96,9 @@ class UserSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
 
     def create(self, validated_data):
         user = UserProxy.objects.create_user(**validated_data)
+        user.is_active = False
+        user.save()
+        UserActivation.objects.create(user=user)
         return user
 
     def update(self, instance, validated_data):

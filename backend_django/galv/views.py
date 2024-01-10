@@ -48,7 +48,8 @@ from .models import Harvester, \
     FileState, \
     KnoxAuthToken, CellFamily, EquipmentTypes, EquipmentModels, EquipmentManufacturers, CellModels, CellManufacturers, \
     CellChemistries, CellFormFactors, ScheduleIdentifiers, EquipmentFamily, Schedule, CyclerTest, ScheduleFamily, \
-    ValidationSchema, Experiment, Lab, Team, UserProxy, GroupProxy, ValidatableBySchemaMixin, SchemaValidation
+    ValidationSchema, Experiment, Lab, Team, UserProxy, GroupProxy, ValidatableBySchemaMixin, SchemaValidation, \
+    UserActivation
 from .permissions import HarvesterFilterBackend, TeamFilterBackend, LabFilterBackend, GroupFilterBackend, \
     ResourceFilterBackend, ObservedFileFilterBackend, UserFilterBackend, SchemaValidationFilterBackend
 from .serializers.utils import get_GetOrCreateTextStringSerializer
@@ -117,6 +118,19 @@ class _GetOrCreateTextStringViewSet(ListModelMixin, viewsets.GenericViewSet):
     # def details(self, request, pk: int = None):
     #     text_string = get_object_or_404(self.queryset, pk=pk)
     #     return Response(GetOrCreateTextStringSerializer(text_string).data)
+
+
+def activate_user(request):
+    # Request should have a token in the querystring
+    token = request.GET.get('token')
+    if not token:
+        return error_response("No token provided")
+    try:
+        activation = UserActivation.objects.get(token=token)
+        activation.activate_user()
+    except (UserActivation.DoesNotExist, ValueError, RuntimeError) as e:
+        return error_response(str(e))
+    return Response({"detail": f"User {activation.user.username} activated"})
 
 
 @extend_schema(

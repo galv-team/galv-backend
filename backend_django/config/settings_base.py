@@ -22,6 +22,13 @@ import os
 
 API_VERSION = "2.1.0"
 
+try:
+    USER_ACTIVATION_TOKEN_EXPIRY_S = int(os.environ.get("GALV_USER_ACTIVATION_TOKEN_EXPIRY_S"))
+except (ValueError, TypeError):
+    USER_ACTIVATION_TOKEN_EXPIRY_S = 60 * 15  # 15 minutes
+
+DEFAULT_FROM_EMAIL = os.environ.get("GALV_DEFAULT_FROM_EMAIL", "admin@galv")
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
