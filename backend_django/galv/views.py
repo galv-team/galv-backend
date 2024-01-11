@@ -1633,7 +1633,7 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [UserFilterBackend]
     serializer_class = UserSerializer
-    queryset = UserProxy.objects.all()
+    queryset = UserProxy.objects.filter(is_active=True).order_by('id')
     http_method_names = ['get', 'post', 'patch', 'options']
 
 

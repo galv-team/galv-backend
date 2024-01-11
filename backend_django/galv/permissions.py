@@ -61,7 +61,7 @@ class UserFilterBackend(DRYPermissionFiltersBase):
         if request.user.is_superuser or request.user.is_staff or user_is_lab_admin(request.user):
             return queryset
         labs = user_labs(request.user)
-        all_users = UserProxy.objects.all()
+        all_users = queryset.all()
         users_to_return = []
         for user in all_users:
             for lab in user_labs(user):
