@@ -121,6 +121,7 @@ class _GetOrCreateTextStringViewSet(ListModelMixin, viewsets.GenericViewSet):
     #     return Response(GetOrCreateTextStringSerializer(text_string).data)
 
 
+@extend_schema_view(exclude=True)
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
 def activate_user(request):
