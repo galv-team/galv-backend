@@ -14,8 +14,11 @@ import random
 from django.conf import settings
 from django.db import models
 from django.test import RequestFactory
+from django.utils import timezone
+from django.utils.crypto import get_random_string
 from jsonschema.exceptions import _WrappedReferencingError
 from rest_framework import serializers
+from rest_framework.reverse import reverse
 
 #from dry_rest_permissions.generics import allow_staff_or_superuser
 
@@ -43,6 +46,74 @@ class ValidationStatus(models.TextChoices):
 
 VALIDATION_MOCK_ENDPOINT = "/validation_mock_request_target/"
 
+
+class UserActivation(TimestampedModel):
+    """
+    Model to store activation tokens for users
+    """
+    token_length = 8
+    user = models.OneToOneField(
+        to=User,
+        on_delete=models.CASCADE,
+        null=False,
+        blank=False,
+        related_name="activation"
+    )
+    token = models.CharField(
+        max_length=token_length,
+        null=True,
+        blank=True
+    )
+    token_update_date = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+    redemption_date = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    def save(
+            self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        super(UserActivation, self).save(force_insert, force_update, using, update_fields)
+        if not self.user.is_active:
+            if self.token is None or self.get_is_expired():
+                self.generate_token()
+
+    def send_email(self, request):
+        from django.core.mail import send_mail
+        send_mail(
+            'Galv account activation',
+            (
+                f'Your activation token is {self.token}\n\n'
+                f"Your token is valid for {int(settings.USER_ACTIVATION_TOKEN_EXPIRY_S / 60)} minutes.\n\n"
+                f"Please visit {reverse('activate_user', request=request)}?token={self.token} to activate your account."
+            ),
+            settings.DEFAULT_FROM_EMAIL,
+            [self.user.email],
+            fail_silently=False,
+        )
+
+    def generate_token(self):
+        self.token = get_random_string(length=self.token_length, allowed_chars='1234567890')
+        self.token_update_date = timezone.now()
+        self.save()
+
+    def get_is_expired(self) -> bool:
+        return self.token_update_date is None or \
+                  (timezone.now() - self.token_update_date).total_seconds() > settings.USER_ACTIVATION_TOKEN_EXPIRY_S
+
+    def activate_user(self):
+        if self.get_is_expired():
+            self.generate_token()
+            raise ValueError("Activation token expired. A new token has been generated and emailed to you.")
+        if self.user.is_active:
+            raise RuntimeError("User already active")
+        self.user.is_active = True
+        self.user.save()
+        self.redemption_date = timezone.now()
+        self.save()
 
 # Proxy User and Group models so that we can apply DRYPermissions
 class UserProxy(User):

@@ -22,6 +22,11 @@ import os
 
 API_VERSION = "2.1.0"
 
+try:
+    USER_ACTIVATION_TOKEN_EXPIRY_S = int(os.environ.get("DJANGO_USER_ACTIVATION_TOKEN_EXPIRY_S"))
+except (ValueError, TypeError):
+    USER_ACTIVATION_TOKEN_EXPIRY_S = 60 * 15  # 15 minutes
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
@@ -161,3 +166,17 @@ SPECTACULAR_SETTINGS = {
     'POSTPROCESSING_HOOKS': ['galv.schema.custom_postprocessing_hook'],
     'COMPONENT_SPLIT_REQUEST': True,  # handle read/writeOnly issues
 }
+
+
+# Mailserver
+EMAIL_HOST = os.environ.get("DJANGO_EMAIL_HOST", 'mailhog')  # 'mail' is the default for docker-compose
+try:
+    EMAIL_PORT = int(os.environ.get("DJANGO_EMAIL_PORT", "1025"))  # '1025' is the default for smtpd
+except ValueError:
+    EMAIL_PORT = 1025
+EMAIL_HOST_USER = os.environ.get("DJANGO_EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("DJANGO_EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("DJANGO_EMAIL_USE_TLS") == "True"
+EMAIL_USE_SSL = os.environ.get("DJANGO_EMAIL_USE_SSL") == "True"
+
+DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_DEFAULT_FROM_EMAIL", "admin@galv")

@@ -12,6 +12,7 @@ from django.urls import NoReverseMatch
 from drf_spectacular.types import OpenApiTypes
 from dry_rest_permissions.generics import DRYPermissions
 from rest_framework.mixins import ListModelMixin
+from rest_framework.renderers import JSONRenderer
 from rest_framework.reverse import reverse
 
 from .serializers import HarvesterSerializer, \
@@ -48,14 +49,15 @@ from .models import Harvester, \
     FileState, \
     KnoxAuthToken, CellFamily, EquipmentTypes, EquipmentModels, EquipmentManufacturers, CellModels, CellManufacturers, \
     CellChemistries, CellFormFactors, ScheduleIdentifiers, EquipmentFamily, Schedule, CyclerTest, ScheduleFamily, \
-    ValidationSchema, Experiment, Lab, Team, UserProxy, GroupProxy, ValidatableBySchemaMixin, SchemaValidation
+    ValidationSchema, Experiment, Lab, Team, UserProxy, GroupProxy, ValidatableBySchemaMixin, SchemaValidation, \
+    UserActivation
 from .permissions import HarvesterFilterBackend, TeamFilterBackend, LabFilterBackend, GroupFilterBackend, \
     ResourceFilterBackend, ObservedFileFilterBackend, UserFilterBackend, SchemaValidationFilterBackend
 from .serializers.utils import get_GetOrCreateTextStringSerializer
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import viewsets, serializers, permissions
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, renderer_classes
 from rest_framework.response import Response
 from knox.views import LoginView as KnoxLoginView
 from knox.views import LogoutView as KnoxLogoutView
@@ -117,6 +119,27 @@ class _GetOrCreateTextStringViewSet(ListModelMixin, viewsets.GenericViewSet):
     # def details(self, request, pk: int = None):
     #     text_string = get_object_or_404(self.queryset, pk=pk)
     #     return Response(GetOrCreateTextStringSerializer(text_string).data)
+
+
+@extend_schema(exclude=True)
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
+def activate_user(request):
+    # Request should have a token in the querystring
+    token = request.GET.get('token')
+    if not token:
+        return error_response("No token provided")
+    try:
+        activation = UserActivation.objects.get(token=token)
+        try:
+            activation.activate_user()
+        except ValueError as e:
+            # Token expired - send another
+            activation.send_email(request)
+            raise e
+    except (UserActivation.DoesNotExist, ValueError, RuntimeError) as e:
+        return error_response(str(e))
+    return Response({"detail": f"User {activation.user.username} activated"})
 
 
 @extend_schema(
