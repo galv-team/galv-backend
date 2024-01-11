@@ -7,6 +7,7 @@ from django.urls import reverse
 from rest_framework import status
 import logging
 
+from ..models import UserActivation
 from .utils import assert_response_property, APITestCaseWrapper
 from .factories import UserFactory, LabFactory, TeamFactory
 from django.contrib.auth.models import User
@@ -105,6 +106,16 @@ class UserTests(APITestCaseWrapper):
         assert_response_property(self, response, self.assertEqual, response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.json()['username'], data['username'])
         response_user = response.json()
+        # Check user is inactive and can't be logged in as
+        self.assertFalse(User.objects.get(id=response_user['id']).is_active)
+        self.client.force_authenticate(User.objects.get(id=response_user['id']))
+        self.assertEqual(self.client.get(response_user['url']).status_code, status.HTTP_404_NOT_FOUND)
+        # Check user can be activated
+        activation = UserActivation.objects.get(user__id=response_user['id'])
+        response = self.client.get(f"{reverse('activate_user')}?token={activation.token}")
+        assert_response_property(self, response, self.assertEqual, response.status_code, status.HTTP_200_OK)
+        self.assertTrue(User.objects.get(id=response_user['id']).is_active)
+        # Check user can be logged in as
         self.client.force_authenticate(User.objects.get(id=response_user['id']))
         self.assertEqual(self.client.get(response_user['url']).status_code, status.HTTP_200_OK)
 
