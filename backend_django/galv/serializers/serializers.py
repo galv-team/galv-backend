@@ -98,7 +98,8 @@ class UserSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         user = UserProxy.objects.create_user(**validated_data)
         user.is_active = False
         user.save()
-        UserActivation.objects.create(user=user)
+        activation = UserActivation.objects.create(user=user)
+        activation.send_email(request=self.context['request'])
         return user
 
     def update(self, instance, validated_data):
