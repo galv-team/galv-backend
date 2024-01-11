@@ -36,12 +36,41 @@ class FileState(models.TextChoices):
     IMPORTED = "IMPORTED"
 
 
+class UserLevel(models.Choices):
+    """
+    User levels for access control.
+    Team/Lab levels only make sense in the context of a Resource.
+    """
+    ANONYMOUS = 0
+    REGISTERED_USER = 1
+    LAB_MEMBER = 2
+    TEAM_MEMBER = 3
+    TEAM_ADMIN = 4
+
+
 class ValidationStatus(models.TextChoices):
     VALID = "VALID"
     INVALID = "INVALID"
     SKIPPED = "SKIPPED"
     UNCHECKED = "UNCHECKED"
     ERROR = "ERROR"
+
+
+ALLOWED_USER_LEVELS_DELETE = [UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]]
+ALLOWED_USER_LEVELS_EDIT_PATH = [UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]]
+ALLOWED_USER_LEVELS_EDIT = [UserLevel(v) for v in [
+    UserLevel.TEAM_ADMIN,
+    UserLevel.TEAM_MEMBER,
+    UserLevel.LAB_MEMBER,
+    UserLevel.REGISTERED_USER
+]]
+ALLOWED_USER_LEVELS_READ = [UserLevel(v) for v in [
+    UserLevel.TEAM_ADMIN,
+    UserLevel.TEAM_MEMBER,
+    UserLevel.LAB_MEMBER,
+    UserLevel.REGISTERED_USER,
+    UserLevel.ANONYMOUS
+]]
 
 
 VALIDATION_MOCK_ENDPOINT = "/validation_mock_request_target/"
@@ -376,30 +405,52 @@ class ResourceModelPermissionsMixin(TimestampedModel):
         blank=False,
         related_name="%(class)s_resources"
     )
-    team_members_can_edit = models.BooleanField(default=True)
-    team_members_can_delete = models.BooleanField(default=True)
-    lab_members_can_read = models.BooleanField(default=True)
-    lab_members_can_edit = models.BooleanField(default=False)
-    any_user_can_read = models.BooleanField(default=False)
-    any_user_can_edit = models.BooleanField(default=False)
-    anonymous_can_read = models.BooleanField(default=False)
+    delete_access_level = models.IntegerField(
+        default=UserLevel.TEAM_MEMBER.value,
+        choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_DELETE]
+    )
+    edit_access_level = models.IntegerField(
+        default=UserLevel.TEAM_MEMBER.value,
+        choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_EDIT]
+    )
+    read_access_level = models.IntegerField(
+        default=UserLevel.LAB_MEMBER.value,
+        choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_READ]
+    )
+
+    def get_user_level(self, user):
+        if self.team in user_teams(user, True):
+            return UserLevel.TEAM_ADMIN.value
+        if self.team in user_teams(user):
+            return UserLevel.TEAM_MEMBER.value
+        if self.team.lab in user_labs(user):
+            return UserLevel.LAB_MEMBER.value
+        if user.is_authenticated:
+            return UserLevel.REGISTERED_USER.value
+        return UserLevel.ANONYMOUS.value
+
+    def save(
+        self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        """
+        Ensure that access levels are valid.
+        Read <= Edit <= Delete
+        """
+        if self.read_access_level > self.edit_access_level:
+            self.read_access_level = self.edit_access_level
+        if self.edit_access_level > self.delete_access_level:
+            self.edit_access_level = self.delete_access_level
+        super(ResourceModelPermissionsMixin, self).save(force_insert, force_update, using, update_fields)
+
 
     def has_object_read_permission(self, request):
-        return self.anonymous_can_read or \
-            (self.any_user_can_read and user_is_active(request.user)) or \
-            (self.lab_members_can_read and self.team.lab in user_labs(request.user)) or \
-            self.team.member_group in request.user.groups.all() or \
-            self.team.admin_group in request.user.groups.all()
+        return self.get_user_level(request.user) >= self.read_access_level
 
     def has_object_write_permission(self, request):
-        return self.team.admin_group in request.user.groups.all() or \
-            (self.lab_members_can_edit and self.team.lab in user_labs(request.user)) or \
-            (self.team_members_can_edit and self.team.member_group in request.user.groups.all()) or \
-            (self.any_user_can_edit and user_is_active(request.user))
+        return self.get_user_level(request.user) >= self.edit_access_level
 
     def has_object_destroy_permission(self, request):
-        return self.team.admin_group in request.user.groups.all() or \
-            (self.team_members_can_delete and self.team.member_group in request.user.groups.all())
+        return self.get_user_level(request.user) >= self.delete_access_level
 
     @staticmethod
     def has_create_permission(request):
@@ -412,19 +463,6 @@ class ResourceModelPermissionsMixin(TimestampedModel):
     @staticmethod
     def has_write_permission(request):
         return True
-
-    def save(
-            self, force_insert=False, force_update=False, using=None, update_fields=None
-    ):
-        if self.any_user_can_edit and not self.any_user_can_read:
-            self.any_user_can_read = True
-        if self.lab_members_can_edit and not self.team_members_can_edit:
-            self.team_members_can_edit = True
-        if self.lab_members_can_edit and not self.lab_members_can_read:
-            self.lab_members_can_read = True
-        if self.team_members_can_delete and not self.team_members_can_edit:
-            self.team_members_can_edit = True
-        super(ResourceModelPermissionsMixin, self).save(force_insert, force_update, using, update_fields)
 
     class Meta:
         abstract = True
@@ -864,7 +902,10 @@ class MonitoredPath(UUIDModel, ResourceModelPermissionsMixin):
         help_text="Team with access to this Path"
     )
 
-    team_members_can_edit = models.BooleanField(default=False)
+    edit_access_level = models.IntegerField(
+        default=UserLevel.TEAM_ADMIN.value,
+        choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_EDIT_PATH]
+    )
 
     def __str__(self):
         return self.path

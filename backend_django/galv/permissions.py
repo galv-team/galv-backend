@@ -8,7 +8,8 @@ from urllib.parse import urlparse
 from django.db.models import Q
 from dry_rest_permissions.generics import DRYPermissionFiltersBase
 from rest_framework import permissions
-from .models import Harvester, MonitoredPath, user_labs, user_teams, ObservedFile, UserProxy, user_is_lab_admin
+from .models import Harvester, MonitoredPath, user_labs, user_teams, ObservedFile, UserProxy, user_is_lab_admin, \
+    UserLevel
 from .utils import get_monitored_paths
 
 class HarvesterFilterBackend(DRYPermissionFiltersBase):
@@ -93,9 +94,10 @@ class ResourceFilterBackend(DRYPermissionFiltersBase):
         user_approved = len(labs) > 0
         return queryset.filter(
             Q(team__in=user_teams(request.user)) |
-            (Q(lab_members_can_read=True) & Q(team__lab__in=labs)) |
-            (Q(any_user_can_read=True) & Q(any_user_can_read=user_approved)) |
-            Q(anonymous_can_read=True)
+            (Q(read_access_level=UserLevel.LAB_MEMBER.value) & Q(team__lab__in=labs)) |
+            # Bit of a hack to chain True/False with Q object
+            (Q(read_access_level=UserLevel.REGISTERED_USER.value) & Q(pk__isnull=not user_approved)) |
+            Q(read_access_level=UserLevel.ANONYMOUS.value)
         )
 
 class SchemaValidationFilterBackend(ResourceFilterBackend):

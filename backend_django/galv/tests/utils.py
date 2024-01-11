@@ -10,6 +10,7 @@ from openapi_tester import SchemaTester
 from openapi_tester.clients import OpenAPIClient
 
 from .factories import LabFactory, TeamFactory, UserFactory, generate_create_dict
+from ..models import UserLevel
 
 
 def assert_response_property(self, response, assertion, *args, **kwargs):
@@ -134,23 +135,14 @@ class GalvTeamResourceTestCase(GalvTestCase):
     - self.stub: the stub name of the resource for URL lookups, e.g. 'cell'
     - self.get_edit_kwargs(): the kwargs to send to update calls
 
-    Access is governed by a waterfall model such that the most open criterion
-    is tested first.
-    The access is tested in this order:
-    * Create requests allowed if:
-        * user is a member of the team
-    * Read requests allowed if any of:
-        * anonymous_can_read=True
-        * any_user_can_read=True and user is in a lab
-        * lab_members_can_read and user is in Team's Lab
-        * user is a member of the team
-    * Write requests allowed if any of:
-        * any_user_can_write=True and user is in a lab
-        * lab_members_can_edit and user is in Team's Lab
-        * team_members_can_edit=True and user is a member of the team
-        * user is an admin of the team
-    * Delete requests allowed if:
-        * user is a member of the team
+    Access is governed by defining a minimum UserLevel required.
+    Not all UserLevels can be set for all operations,
+    see ALLOWED_USER_LEVELS_[OPERATION] in galv/models.py for details.
+    The default UserLevel requirements are:
+    * Create: REGISTERED_USER
+    * Read: LAB_MEMBER
+    * Edit: TEAM_MEMBER
+    * Delete: TEAM_MEMBER
     """
     def __init__(self, *args, **kwargs):
         abstract = self.__class__.__name__ == 'GalvTeamResourceTestCase'
@@ -183,14 +175,14 @@ class GalvTeamResourceTestCase(GalvTestCase):
 
         self.access_test_default = self.create_with_perms()
         self.access_test_team_no_write = self.create_with_perms(
-            team_members_can_edit=False,
-            team_members_can_delete=False
+            edit_access_level=UserLevel.TEAM_ADMIN.value,
+            delete_access_level=UserLevel.TEAM_ADMIN.value
         )
-        self.access_test_lab_no_read = self.create_with_perms(lab_members_can_read=False)
-        self.access_test_lab_write = self.create_with_perms(lab_members_can_edit=True)
-        self.access_test_authorised_read = self.create_with_perms(any_user_can_read=True)
-        self.access_test_authorised_write = self.create_with_perms(any_user_can_edit=True)
-        self.access_test_open = self.create_with_perms(anonymous_can_read=True)
+        self.access_test_lab_no_read = self.create_with_perms(read_access_level=UserLevel.TEAM_MEMBER.value)
+        self.access_test_lab_write = self.create_with_perms(edit_access_level=UserLevel.LAB_MEMBER.value)
+        self.access_test_authorised_read = self.create_with_perms(read_access_level=UserLevel.REGISTERED_USER.value)
+        self.access_test_authorised_write = self.create_with_perms(edit_access_level=UserLevel.REGISTERED_USER.value)
+        self.access_test_open = self.create_with_perms(read_access_level=UserLevel.ANONYMOUS.value)
 
         self.create_test_resources_run = True
 
@@ -266,7 +258,7 @@ class GalvTeamResourceTestCase(GalvTestCase):
     def test_read_anonymous(self):
         """
         * Read requests allowed if any of:
-            * anonymous_can_read=True
+            * read_access_level == 0
         """
         self.client.logout()
         response = self.client.get(reverse(f'{self.stub}-list'))
@@ -279,8 +271,8 @@ class GalvTeamResourceTestCase(GalvTestCase):
     def test_read_authorised(self):
         """
         * Read requests allowed if any of:
-            * anonymous_can_read=True
-            * any_user_can_read=True and user is in a lab
+            * read_access_level == 0
+            * read_access_level <= 1=True and user is in a lab
         """
         self.client.force_authenticate(self.strange_lab_admin)
         response = self.client.get(reverse(f'{self.stub}-list'))
@@ -295,9 +287,9 @@ class GalvTeamResourceTestCase(GalvTestCase):
     def test_read_lab_member(self):
         """
         * Read requests allowed if any of:
-            * anonymous_can_read=True
-            * any_user_can_read=True and user is in a lab
-            * lab_members_can_read and user is in Team's Lab
+            * read_access_level == 0
+            * read_access_level <= 1=True and user is in a lab
+            * read_access_level <= 2 and user is in Team's Lab
         """
         self.client.force_authenticate(self.lab_admin)
         response = self.client.get(reverse(f'{self.stub}-list'))
@@ -319,8 +311,8 @@ class GalvTeamResourceTestCase(GalvTestCase):
     def test_read_team_member(self):
         """
         * Read requests allowed if any of:
-            * anonymous_can_read=True
-            * any_user_can_read=True and user is in a lab
+            * read_access_level == 0
+            * read_access_level <= 1=True and user is in a lab
             * user is a member of the team
         """
         for user in [self.admin, self.user]:
@@ -365,7 +357,7 @@ class GalvTeamResourceTestCase(GalvTestCase):
     def test_update_authorised(self):
         """
         * Write requests allowed if any of:
-            * any_user_can_write=True and user is in a lab
+            * edit_access_level <= 1 and user is in a lab
         """
         self.client.force_authenticate(self.strange_lab_admin)
         for resource, code in [
@@ -387,8 +379,8 @@ class GalvTeamResourceTestCase(GalvTestCase):
     def test_update_lab_member(self):
         """
         * Write requests allowed if any of:
-            * any_user_can_write=True and user is in a lab
-            * lab_members_can_edit and user is in Team's Lab
+            * edit_access_level <= 1 and user is in a lab
+            * edit_access_level <= 2 and user is in Team's Lab
         """
         self.client.force_authenticate(self.lab_admin)
         for resource, code in [
@@ -411,8 +403,8 @@ class GalvTeamResourceTestCase(GalvTestCase):
     def test_update_team_member(self):
         """
         * Write requests allowed if any of:
-            * any_user_can_write=True and user is in a lab
-            * team_members_can_edit=True and user is a member of the team
+            * edit_access_level <= 1 and user is in a lab
+            * edit_access_level <= 3 and user is a member of the team
         """
         self.client.force_authenticate(self.user)
         for resource, code in [
@@ -432,8 +424,8 @@ class GalvTeamResourceTestCase(GalvTestCase):
     def test_update_team_admin(self):
         """
         * Write requests allowed if any of:
-            * any_user_can_write=True and user is in a lab
-            * team_members_can_edit=True and user is a member of the team
+            * edit_access_level <= 1 and user is in a lab
+            * edit_access_level <= 3 and user is a member of the team
             * user is an admin of the team
         """
         self.client.force_authenticate(self.admin)
@@ -461,8 +453,8 @@ class GalvTeamResourceTestCase(GalvTestCase):
             'anonymous': lambda: self.client.logout()
         }.items():
             for perms, code in [
-                ({'team_members_can_delete': True}, 403 if user != 'anonymous' else 401),
-                ({'team_members_can_delete': False}, 403 if user != 'anonymous' else 401)
+                ({'delete_access_level': UserLevel.TEAM_MEMBER.value}, 403 if user != 'anonymous' else 401),
+                ({'delete_access_level': UserLevel.TEAM_ADMIN.value}, 403 if user != 'anonymous' else 401)
             ]:
                 with self.subTest(user=user, perms=perms):
                     login()
@@ -481,8 +473,8 @@ class GalvTeamResourceTestCase(GalvTestCase):
         """
         for user in [self.admin, self.user]:
             for perms, code in [
-                ({'team_members_can_delete': True}, 204),
-                ({'team_members_can_delete': False}, 204 if user == self.admin else 403)
+                ({'delete_access_level': UserLevel.TEAM_MEMBER.value}, 204),
+                ({'delete_access_level': UserLevel.TEAM_ADMIN.value}, 204 if user == self.admin else 403)
             ]:
                 with self.subTest(username=user.username, perms=perms):
                     self.client.force_authenticate(user)

@@ -25,7 +25,8 @@ from ..models import Harvester, \
     KnoxAuthToken, CellFamily, EquipmentTypes, CellFormFactors, CellChemistries, CellModels, CellManufacturers, \
     EquipmentManufacturers, EquipmentModels, EquipmentFamily, Schedule, ScheduleIdentifiers, CyclerTest, \
     render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, user_labs, \
-    user_teams, SchemaValidation, UserActivation
+    user_teams, SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
+    ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
 from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
@@ -427,6 +428,24 @@ class WithTeamMixin(serializers.Serializer):
         queryset=Team.objects.all(),
         help_text="Team this resource belongs to"
     )
+    read_access_level = serializers.ChoiceField(
+        choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_READ],
+        help_text="Minimum user level required to read this resource",
+        allow_null=True,
+        required=False
+    )
+    edit_access_level = serializers.ChoiceField(
+        choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_EDIT],
+        help_text="Minimum user level required to edit this resource",
+        allow_null=True,
+        required=False
+    )
+    delete_access_level = serializers.ChoiceField(
+        choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_EDIT],
+        help_text="Minimum user level required to create this resource",
+        allow_null=True,
+        required=False
+    )
 
     def validate_team(self, value):
         """
@@ -445,6 +464,32 @@ class WithTeamMixin(serializers.Serializer):
                 raise ValidationError("You may only edit resources in your own team(s)")
         return value
 
+    def access_level_to_user_level(self, access_level):
+        try:
+            if isinstance(access_level, int):
+                return UserLevel(access_level)
+            return getattr(UserLevel, access_level)
+        except AttributeError:
+            # Support access by label
+            return [v for v in UserLevel if v.label == access_level][0]
+        except IndexError:
+            raise ValidationError((
+                f"Invalid access level '{access_level}'. "
+                f"Expected one of {[v.value for v in UserLevel.choices]} or {[v.label for v in UserLevel.choices]}"
+            ))
+
+    def validate_read_access_level(self, value):
+        v = self.access_level_to_user_level(value)
+        if self.instance is not None:
+            try:
+                assert v in ALLOWED_USER_LEVELS_READ
+            except:
+                raise ValidationError((
+                    f"Invalid read access level '{value}'. "
+                    f"Expected one of {[v.value for v in ALLOWED_USER_LEVELS_READ]} or "
+                    f"{[v.label for v in ALLOWED_USER_LEVELS_READ]}"
+                ))
+        return v.value
 
 @extend_schema_serializer(examples = [
     OpenApiExample(
@@ -491,7 +536,7 @@ class CellSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, With
 
     class Meta:
         model = Cell
-        fields = ['url', 'uuid', 'identifier', 'family', 'cycler_tests', 'in_use', 'team', 'permissions']
+        fields = ['url', 'uuid', 'identifier', 'family', 'cycler_tests', 'in_use', 'team', 'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level']
         read_only_fields = ['url', 'uuid', 'cycler_tests', 'in_use', 'permissions']
 
 
@@ -1021,6 +1066,12 @@ class HarvesterSerializer(serializers.HyperlinkedModelSerializer, PermissionsMix
 ])
 class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin, WithTeamMixin, CreateOnlyMixin):
     files = serializers.SerializerMethodField(help_text="Files on this MonitoredPath")
+    edit_access_level = serializers.ChoiceField(
+        choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_EDIT_PATH],
+        help_text="Minimum user level required to edit this resource",
+        allow_null=True,
+        required=False
+    )
 
     def get_files(self, instance) -> list[OpenApiTypes.URI]:
         request = self.context['request']
