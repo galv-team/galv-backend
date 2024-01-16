@@ -902,6 +902,10 @@ class MonitoredPath(UUIDModel, ResourceModelPermissionsMixin):
         help_text="Team with access to this Path"
     )
 
+    delete_access_level = models.IntegerField(
+        default=UserLevel.TEAM_ADMIN.value,
+        choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_DELETE]
+    )
     edit_access_level = models.IntegerField(
         default=UserLevel.TEAM_ADMIN.value,
         choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_EDIT_PATH]

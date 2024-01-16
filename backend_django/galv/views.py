@@ -50,7 +50,8 @@ from .models import Harvester, \
     KnoxAuthToken, CellFamily, EquipmentTypes, EquipmentModels, EquipmentManufacturers, CellModels, CellManufacturers, \
     CellChemistries, CellFormFactors, ScheduleIdentifiers, EquipmentFamily, Schedule, CyclerTest, ScheduleFamily, \
     ValidationSchema, Experiment, Lab, Team, UserProxy, GroupProxy, ValidatableBySchemaMixin, SchemaValidation, \
-    UserActivation
+    UserActivation, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, ALLOWED_USER_LEVELS_DELETE, \
+    ALLOWED_USER_LEVELS_EDIT_PATH
 from .permissions import HarvesterFilterBackend, TeamFilterBackend, LabFilterBackend, GroupFilterBackend, \
     ResourceFilterBackend, ObservedFileFilterBackend, UserFilterBackend, SchemaValidationFilterBackend
 from .serializers.utils import get_GetOrCreateTextStringSerializer
@@ -140,6 +141,18 @@ def activate_user(request):
     except (UserActivation.DoesNotExist, ValueError, RuntimeError) as e:
         return error_response(str(e))
     return Response({"detail": f"User {activation.user.username} activated"})
+
+
+@extend_schema(exclude=True)
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
+def access_levels(request):
+    return Response({
+        'read_access_level': [{v.label: v.value for v in ALLOWED_USER_LEVELS_READ}],
+        'edit_access_level': [{v.label: v.value for v in ALLOWED_USER_LEVELS_EDIT}],
+        'delete_access_level': [{v.label: v.value for v in ALLOWED_USER_LEVELS_DELETE}],
+        'path.edit_access_level': [{v.label: v.value for v in ALLOWED_USER_LEVELS_EDIT_PATH}],
+    })
 
 
 @extend_schema(

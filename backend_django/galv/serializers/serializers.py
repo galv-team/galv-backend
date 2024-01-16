@@ -441,7 +441,7 @@ class WithTeamMixin(serializers.Serializer):
         required=False
     )
     delete_access_level = serializers.ChoiceField(
-        choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_EDIT],
+        choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_DELETE],
         help_text="Minimum user level required to create this resource",
         allow_null=True,
         required=False
@@ -464,32 +464,67 @@ class WithTeamMixin(serializers.Serializer):
                 raise ValidationError("You may only edit resources in your own team(s)")
         return value
 
-    def access_level_to_user_level(self, access_level):
+    def validate_access_level(self, value, allowed_values):
         try:
-            if isinstance(access_level, int):
-                return UserLevel(access_level)
-            return getattr(UserLevel, access_level)
-        except AttributeError:
-            # Support access by label
-            return [v for v in UserLevel if v.label == access_level][0]
-        except IndexError:
+            v = UserLevel(value)
+        except ValueError:
             raise ValidationError((
-                f"Invalid access level '{access_level}'. "
-                f"Expected one of {[v.value for v in UserLevel.choices]} or {[v.label for v in UserLevel.choices]}"
+                f"Invalid access level '{value}'. "
+                f"Expected one of {[v.value for v in allowed_values]}"
             ))
-
-    def validate_read_access_level(self, value):
-        v = self.access_level_to_user_level(value)
         if self.instance is not None:
             try:
-                assert v in ALLOWED_USER_LEVELS_READ
+                assert v in allowed_values
             except:
                 raise ValidationError((
                     f"Invalid read access level '{value}'. "
-                    f"Expected one of {[v.value for v in ALLOWED_USER_LEVELS_READ]} or "
-                    f"{[v.label for v in ALLOWED_USER_LEVELS_READ]}"
+                    f"Expected one of {[v.value for v in allowed_values]}"
                 ))
         return v.value
+
+    def validate_read_access_level(self, value):
+        return self.validate_access_level(value, ALLOWED_USER_LEVELS_READ)
+
+    def validate_edit_access_level(self, value):
+        return self.validate_access_level(value, ALLOWED_USER_LEVELS_EDIT)
+
+    def validate_delete_access_level(self, value):
+        return self.validate_access_level(value, ALLOWED_USER_LEVELS_DELETE)
+
+    def validate(self, attrs):
+        """
+        Only team members can change read and edit access levels.
+        Only team admins can change delete access levels.
+        Ensure access levels follow the hierarchy:
+        READ <= EDIT <= DELETE
+        """
+        if self.instance is not None:
+            user_access_level = self.instance.get_user_level(self.context['request'].user)
+            if 'read_access_level' in attrs or 'edit_access_level' in attrs:
+                if user_access_level < UserLevel.TEAM_MEMBER.value:
+                    raise ValidationError("You may only change access levels if you are a team member")
+                for access_level in ['read_access_level', 'edit_access_level']:
+                    if access_level in attrs:
+                        if getattr(self.instance, access_level) > user_access_level:
+                            raise ValidationError(f"You may not change {access_level} because your access level is too low")
+            if 'delete_access_level' in attrs:
+                if user_access_level < UserLevel.TEAM_ADMIN.value:
+                    raise ValidationError("You may only change delete access levels if you are a team admin")
+        if 'read_access_level' in attrs:
+            edit_level = attrs.get(
+                'edit_access_level',
+                self.instance.edit_access_level if self.instance else UserLevel.TEAM_ADMIN.value
+            )
+            if attrs['read_access_level'] > edit_level:
+                raise ValidationError("Read access level must be less than or equal to edit access level")
+        if 'edit_access_level' in attrs:
+            delete_level = attrs.get(
+                'delete_access_level',
+                self.instance.delete_access_level if self.instance else UserLevel.TEAM_ADMIN.value
+            )
+            if attrs['edit_access_level'] > delete_level:
+                raise ValidationError("Edit access level must be less than or equal to delete access level")
+        return attrs
 
 @extend_schema_serializer(examples = [
     OpenApiExample(
@@ -536,7 +571,10 @@ class CellSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, With
 
     class Meta:
         model = Cell
-        fields = ['url', 'uuid', 'identifier', 'family', 'cycler_tests', 'in_use', 'team', 'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level']
+        fields = [
+            'url', 'uuid', 'identifier', 'family', 'cycler_tests', 'in_use', 'team',
+            'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
+        ]
         read_only_fields = ['url', 'uuid', 'cycler_tests', 'in_use', 'permissions']
 
 
@@ -610,7 +648,10 @@ class CellFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsMixin
             'cells',
             'in_use',
             'team',
-            'permissions'
+            'permissions',
+            'read_access_level',
+            'edit_access_level',
+            'delete_access_level'
         ]
         read_only_fields = ['url', 'uuid', 'cells', 'in_use', 'permissions']
 
@@ -666,7 +707,10 @@ class EquipmentFamilySerializer(AdditionalPropertiesModelSerializer, Permissions
             'in_use',
             'team',
             'equipment',
-            'permissions'
+            'permissions',
+            'read_access_level',
+            'edit_access_level',
+            'delete_access_level'
         ]
         read_only_fields = ['url', 'uuid', 'in_use', 'equipment', 'permissions']
 
@@ -716,7 +760,10 @@ class EquipmentSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin,
 
     class Meta:
         model = Equipment
-        fields = ['url', 'uuid', 'identifier', 'family', 'calibration_date', 'in_use', 'team', 'cycler_tests', 'permissions']
+        fields = [
+            'url', 'uuid', 'identifier', 'family', 'calibration_date', 'in_use', 'team', 'cycler_tests',
+            'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
+        ]
         read_only_fields = ['url', 'uuid', 'datasets', 'in_use', 'cycler_tests', 'permissions']
 
 
@@ -779,7 +826,8 @@ class ScheduleFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsM
         fields = [
             'url', 'uuid', 'identifier', 'description',
             'ambient_temperature', 'pybamm_template',
-            'in_use', 'team', 'schedules', 'permissions'
+            'in_use', 'team', 'schedules', 'permissions',
+            'read_access_level', 'edit_access_level', 'delete_access_level'
         ]
         read_only_fields = ['url', 'uuid', 'in_use', 'schedules', 'permissions']
 
@@ -861,7 +909,8 @@ class ScheduleSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, 
         fields = [
             'url', 'uuid', 'family',
             'schedule_file', 'pybamm_schedule_variables',
-            'in_use', 'team', 'cycler_tests', 'permissions'
+            'in_use', 'team', 'cycler_tests', 'permissions',
+            'read_access_level', 'edit_access_level', 'delete_access_level'
         ]
         read_only_fields = ['url', 'uuid', 'in_use', 'cycler_tests', 'permissions']
 
@@ -944,7 +993,8 @@ class CyclerTestSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin
     class Meta:
         model = CyclerTest
         fields = [
-            'url', 'uuid', 'cell', 'equipment', 'schedule', 'rendered_schedule', 'team', 'permissions'
+            'url', 'uuid', 'cell', 'equipment', 'schedule', 'rendered_schedule', 'team', 'permissions',
+            'read_access_level', 'edit_access_level', 'delete_access_level'
         ]
         read_only_fields = ['url', 'uuid', 'rendered_schedule', 'permissions']
 
@@ -1151,7 +1201,10 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
 
     class Meta:
         model = MonitoredPath
-        fields = ['url', 'uuid', 'path', 'regex', 'stable_time', 'active', 'files', 'harvester', 'team', 'permissions']
+        fields = [
+            'url', 'uuid', 'path', 'regex', 'stable_time', 'active', 'files', 'harvester', 'team',
+            'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
+        ]
         read_only_fields = ['url', 'uuid', 'files', 'harvester', 'permissions']
         extra_kwargs = augment_extra_kwargs({
             'harvester': {'create_only': True},
@@ -1504,7 +1557,10 @@ class ValidationSchemaSerializer(serializers.HyperlinkedModelSerializer, Permiss
 
     class Meta:
         model = ValidationSchema
-        fields = ['url', 'uuid', 'team', 'name', 'schema', 'permissions']
+        fields = [
+            'url', 'uuid', 'team', 'name', 'schema',
+            'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
+        ]
 
 @extend_schema_serializer(examples = [
     OpenApiExample(

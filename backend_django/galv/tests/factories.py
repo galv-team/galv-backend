@@ -21,7 +21,7 @@ from ..models import EquipmentFamily, Harvester, \
     Equipment, ScheduleFamily, Schedule, CyclerTest, \
     ScheduleIdentifiers, CellFormFactors, CellChemistries, CellManufacturers, \
     CellModels, EquipmentManufacturers, EquipmentModels, EquipmentTypes, Experiment, \
-    ValidationSchema, GroupProxy, UserProxy, Lab, Team, AutoCompleteEntry
+    ValidationSchema, GroupProxy, UserProxy, Lab, Team, AutoCompleteEntry, UserLevel
 
 fake = faker.Faker(django.conf.global_settings.LANGUAGE_CODE)
 
@@ -166,6 +166,8 @@ class MonitoredPathFactory(factory.django.DjangoModelFactory):
     path = factory.LazyAttribute(lambda x: os.path.dirname(fake.file_path(absolute=False, depth=2)))
     regex = ".*"
     harvester = factory.SubFactory(HarvesterFactory)
+    edit_access_level = UserLevel.TEAM_MEMBER.value
+    delete_access_level = UserLevel.TEAM_MEMBER.value
 
 
 class ObservedFileFactory(factory.django.DjangoModelFactory):

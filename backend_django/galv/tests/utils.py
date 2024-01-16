@@ -120,30 +120,15 @@ class GalvTestCase(APITestCaseWrapper):
             raise AssertionError(f"Could not reach {url} for {resource} (HTTP {result.status_code})")
 
 
-@override_settings(MEDIA_ROOT='/tmp')
-class GalvTeamResourceTestCase(GalvTestCase):
+class _GalvTeamResourceTestCase(GalvTestCase):
     """
-    This class provides a set of methods for testing access to resources.
-    It has convenience methods for creating users and resources, and for creating
-    tests for access to those resources.
+    This is a base class for testing access to resources.
+    It has convenience methods for creating users and resources.
 
-    It comes packaged with CRUD tests for the resource,
-    tested against several different user profiles.
-
-    Children should define:
-    - self.factory: the factory for creating resources
-    - self.stub: the stub name of the resource for URL lookups, e.g. 'cell'
-    - self.get_edit_kwargs(): the kwargs to send to update calls
-
-    Access is governed by defining a minimum UserLevel required.
-    Not all UserLevels can be set for all operations,
-    see ALLOWED_USER_LEVELS_[OPERATION] in galv/models.py for details.
-    The default UserLevel requirements are:
-    * Create: REGISTERED_USER
-    * Read: LAB_MEMBER
-    * Edit: TEAM_MEMBER
-    * Delete: TEAM_MEMBER
+    The tests are added by GalvTeamResourceTestCase below,
+    which is what should be used in test files.
     """
+
     def __init__(self, *args, **kwargs):
         abstract = self.__class__.__name__ == 'GalvTeamResourceTestCase'
         super().__init__(*args, **kwargs, abstract=abstract)
@@ -181,7 +166,10 @@ class GalvTeamResourceTestCase(GalvTestCase):
         self.access_test_lab_no_read = self.create_with_perms(read_access_level=UserLevel.TEAM_MEMBER.value)
         self.access_test_lab_write = self.create_with_perms(edit_access_level=UserLevel.LAB_MEMBER.value)
         self.access_test_authorised_read = self.create_with_perms(read_access_level=UserLevel.REGISTERED_USER.value)
-        self.access_test_authorised_write = self.create_with_perms(edit_access_level=UserLevel.REGISTERED_USER.value)
+        self.access_test_authorised_write = self.create_with_perms(
+            read_access_level=UserLevel.REGISTERED_USER.value,
+            edit_access_level=UserLevel.REGISTERED_USER.value
+        )
         self.access_test_open = self.create_with_perms(read_access_level=UserLevel.ANONYMOUS.value)
 
         self.create_test_resources_run = True
@@ -219,6 +207,32 @@ class GalvTeamResourceTestCase(GalvTestCase):
         else:
             return_value = request_method(url, content, **{'format': 'json', **kwargs})
         return return_value
+
+
+@override_settings(MEDIA_ROOT='/tmp')
+class GalvTeamResourceTestCase(_GalvTeamResourceTestCase):
+    """
+    This class provides a set of methods for testing access to resources.
+    It has convenience methods for creating users and resources, and for creating
+    tests for access to those resources.
+
+    It comes packaged with CRUD tests for the resource,
+    tested against several different user profiles.
+
+    Children should define:
+    - self.factory: the factory for creating resources
+    - self.stub: the stub name of the resource for URL lookups, e.g. 'cell'
+    - self.get_edit_kwargs(): the kwargs to send to update calls
+
+    Access is governed by defining a minimum UserLevel required.
+    Not all UserLevels can be set for all operations,
+    see ALLOWED_USER_LEVELS_[OPERATION] in galv/models.py for details.
+    The default UserLevel requirements are:
+    * Create: REGISTERED_USER
+    * Read: LAB_MEMBER
+    * Edit: TEAM_MEMBER
+    * Delete: TEAM_MEMBER
+    """
 
     def test_create_non_team_member(self):
         """
