@@ -1,0 +1,1837 @@
+[
+  {
+    "model": "galv.harvester",
+    "pk": "38d313f6-ba07-43a0-b669-9237953367fa",
+    "fields": {
+      "created": "2024-01-16T13:53:11.127Z",
+      "modified": "2024-01-16T14:11:19.922Z",
+      "name": "harvey",
+      "api_key": "galv_hrv_7dxghRfF+ujtTp3XefQ-L^hKXkDoO*PW£$£iZ+CJEBLeP95wCK+mSuqFleej",
+      "last_check_in": "2024-01-16T14:11:19.922Z",
+      "sleep_time": 120,
+      "active": true,
+      "lab": 1
+    }
+  },
+  {
+    "model": "galv.observedfile",
+    "pk": "0d9f87b4-334d-4676-aca0-057400d7ac15",
+    "fields": {
+      "created": "2024-01-16T13:59:45.989Z",
+      "modified": "2024-01-16T14:04:16.668Z",
+      "path": "/usr/harvester/.test-data/test-suite-small/Ivium_Cell+1.idf",
+      "harvester": "38d313f6-ba07-43a0-b669-9237953367fa",
+      "last_observed_size": 6655242,
+      "last_observed_time": "2024-01-16T13:59:46.029Z",
+      "state": "IMPORTED",
+      "data_generation_date": "2019-01-24T11:45:23Z",
+      "inferred_format": "Ivium",
+      "name": "Ivium_Cell+1",
+      "parser": "IviumInputFile",
+      "num_rows": 165649,
+      "first_sample_no": 1,
+      "last_sample_no": 6,
+      "extra_metadata": {
+        "amps": {
+          "unit": "A",
+          "has_data": true,
+          "is_numeric": true
+        },
+        "volts": {
+          "unit": "V",
+          "has_data": true,
+          "is_numeric": true
+        },
+        "test_time": {
+          "unit": "s",
+          "has_data": true,
+          "is_numeric": true
+        }
+      }
+    }
+  },
+  {
+    "model": "galv.observedfile",
+    "pk": "301bd545-c917-407c-a51c-e4ec347c9daf",
+    "fields": {
+      "created": "2024-01-16T13:59:44.139Z",
+      "modified": "2024-01-16T14:02:38.793Z",
+      "path": "/usr/harvester/.test-data/test-suite-small/adam_3_C05.mpr",
+      "harvester": "38d313f6-ba07-43a0-b669-9237953367fa",
+      "last_observed_size": 3420493,
+      "last_observed_time": "2024-01-16T13:59:44.213Z",
+      "state": "IMPORTED",
+      "data_generation_date": "2021-01-22T00:00:00Z",
+      "inferred_format": "BioLogic",
+      "name": "adam_3_C05",
+      "parser": "BiologicMprInputFile",
+      "num_rows": 55809,
+      "first_sample_no": 0,
+      "last_sample_no": 5,
+      "extra_metadata": {
+        "Ns": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "I/mA": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "Ewe/V": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "flags": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "time/s": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "I Range": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "dQ/mA.h": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "Energy/W.h": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "half cycle": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "(Q-Qo)/mA.h": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "control/V/mA": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "Q charge/discharge/mA.h": {
+          "has_data": true,
+          "is_numeric": true
+        }
+      }
+    }
+  },
+  {
+    "model": "galv.observedfile",
+    "pk": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
+    "fields": {
+      "created": "2024-01-16T14:00:02.307Z",
+      "modified": "2024-01-16T14:11:19.404Z",
+      "path": "/usr/harvester/.test-data/test-suite-small/TPG1+-+Cell+15+-+002.txt",
+      "harvester": "38d313f6-ba07-43a0-b669-9237953367fa",
+      "last_observed_size": 140480746,
+      "last_observed_time": "2024-01-16T14:00:02.365Z",
+      "state": "IMPORTING",
+      "data_generation_date": "2018-02-23T08:42:16Z",
+      "inferred_format": "Maccor",
+      "name": "TPG1+-+Cell+15+-+002",
+      "parser": "MaccorInputFile",
+      "num_rows": 401993,
+      "first_sample_no": 1,
+      "last_sample_no": 6,
+      "extra_metadata": {
+        "ES": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "ACR": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "Amps": {
+          "unit": "Amps",
+          "has_data": true,
+          "is_numeric": true
+        },
+        "Cyc#": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "DCIR": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "Rec#": {
+          "unit": "",
+          "has_data": true,
+          "is_numeric": true
+        },
+        "Step": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "FLGx1": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx2": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx3": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx4": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx5": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx6": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx7": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx8": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx9": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "State": {
+          "has_data": true,
+          "is_numeric": false
+        },
+        "VARx1": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "VARx2": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "VARx3": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "VARx4": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "VARx5": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "VARx6": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "VARx7": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "VARx8": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "VARx9": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "Volts": {
+          "unit": "Volts",
+          "has_data": true,
+          "is_numeric": true
+        },
+        "Amp-hr": {
+          "unit": "Amp-hr",
+          "has_data": true,
+          "is_numeric": true
+        },
+        "EV Hum": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx10": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx11": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx12": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx13": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx14": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx15": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx16": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx17": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx18": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx19": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx20": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx21": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx22": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx23": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx24": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx25": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx26": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx27": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx28": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx29": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx30": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx31": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "FLGx32": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "Temp 1": {
+          "unit": "celsius",
+          "has_data": true,
+          "is_numeric": true
+        },
+        "VARx10": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "VARx11": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "VARx12": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "VARx13": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "VARx14": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "VARx15": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "EV Temp": {
+          "has_data": false,
+          "is_numeric": true
+        },
+        "Watt-hr": {
+          "unit": "Watt-hr",
+          "has_data": true,
+          "is_numeric": true
+        },
+        "DPt Time": {
+          "has_data": true,
+          "is_numeric": false
+        },
+        "StepTime": {
+          "unit": "s",
+          "has_data": true,
+          "is_numeric": true
+        },
+        "TestTime": {
+          "unit": "s",
+          "has_data": true,
+          "is_numeric": true
+        }
+      }
+    }
+  },
+  {
+    "model": "galv.observedfile",
+    "pk": "6c27d223-8619-47be-959f-09323741a7f4",
+    "fields": {
+      "created": "2024-01-16T13:59:44.520Z",
+      "modified": "2024-01-16T14:03:51.480Z",
+      "path": "/usr/harvester/.test-data/test-suite-small/CCCV -exp1_C01.mpr",
+      "harvester": "38d313f6-ba07-43a0-b669-9237953367fa",
+      "last_observed_size": 5804677,
+      "last_observed_time": "2024-01-16T13:59:44.579Z",
+      "state": "IMPORTED",
+      "data_generation_date": "2017-02-08T00:00:00Z",
+      "inferred_format": "BioLogic",
+      "name": "CCCV -exp1_C01",
+      "parser": "BiologicMprInputFile",
+      "num_rows": 95052,
+      "first_sample_no": 0,
+      "last_sample_no": 5,
+      "extra_metadata": {
+        "Ns": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "I/mA": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "Ewe/V": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "flags": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "time/s": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "I Range": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "dQ/mA.h": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "Energy/W.h": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "half cycle": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "(Q-Qo)/mA.h": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "control/V/mA": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "Q charge/discharge/mA.h": {
+          "has_data": true,
+          "is_numeric": true
+        }
+      }
+    }
+  },
+  {
+    "model": "galv.observedfile",
+    "pk": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
+    "fields": {
+      "created": "2024-01-16T13:59:46.346Z",
+      "modified": "2024-01-16T14:04:22.329Z",
+      "path": "/usr/harvester/.test-data/test-suite-small/Jie_OCV1_C01.mpr",
+      "harvester": "38d313f6-ba07-43a0-b669-9237953367fa",
+      "last_observed_size": 561846,
+      "last_observed_time": "2024-01-16T13:59:46.396Z",
+      "state": "IMPORTED",
+      "data_generation_date": "2021-02-08T00:00:00Z",
+      "inferred_format": "BioLogic",
+      "name": "Jie_OCV1_C01",
+      "parser": "BiologicMprInputFile",
+      "num_rows": 8938,
+      "first_sample_no": 0,
+      "last_sample_no": 5,
+      "extra_metadata": {
+        "Ns": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "I/mA": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "Ewe/V": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "flags": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "time/s": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "I Range": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "dQ/mA.h": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "Energy/W.h": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "half cycle": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "(Q-Qo)/mA.h": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "control/V/mA": {
+          "has_data": true,
+          "is_numeric": true
+        },
+        "Q charge/discharge/mA.h": {
+          "has_data": true,
+          "is_numeric": true
+        }
+      }
+    }
+  },
+  {
+    "model": "galv.monitoredpath",
+    "pk": "626424fb-d7c4-445b-a720-ff7903f9094c",
+    "fields": {
+      "created": "2024-01-16T13:58:03.513Z",
+      "modified": "2024-01-16T13:58:03.513Z",
+      "read_access_level": 2,
+      "harvester": "38d313f6-ba07-43a0-b669-9237953367fa",
+      "path": "/usr/harvester/.test-data/test-suite-small",
+      "regex": "[^s].*",
+      "stable_time": 10,
+      "active": true,
+      "team": 1,
+      "delete_access_level": 3,
+      "edit_access_level": 3
+    }
+  },
+  {
+    "model": "galv.monitoredpath",
+    "pk": "d3a1926b-fd57-47fe-8b69-3252ef404b12",
+    "fields": {
+      "created": "2024-01-16T13:55:41.979Z",
+      "modified": "2024-01-16T13:55:41.979Z",
+      "read_access_level": 2,
+      "harvester": "38d313f6-ba07-43a0-b669-9237953367fa",
+      "path": "/usr/harvester/docs",
+      "regex": ".*",
+      "stable_time": 60,
+      "active": false,
+      "team": 1,
+      "delete_access_level": 4,
+      "edit_access_level": 4
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 1,
+    "fields": {
+      "created": "2024-01-16T14:02:04.265Z",
+      "modified": "2024-01-16T14:02:04.265Z",
+      "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "Sample Number"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 2,
+    "fields": {
+      "created": "2024-01-16T14:02:04.432Z",
+      "modified": "2024-01-16T14:02:04.432Z",
+      "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "flags"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 3,
+    "fields": {
+      "created": "2024-01-16T14:02:04.544Z",
+      "modified": "2024-01-16T14:02:04.544Z",
+      "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "Ns"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 4,
+    "fields": {
+      "created": "2024-01-16T14:02:04.644Z",
+      "modified": "2024-01-16T14:02:04.644Z",
+      "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "I Range"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 5,
+    "fields": {
+      "created": "2024-01-16T14:02:04.750Z",
+      "modified": "2024-01-16T14:02:04.750Z",
+      "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
+      "type": 3,
+      "data_type": "float",
+      "name_in_file": "Time"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 6,
+    "fields": {
+      "created": "2024-01-16T14:02:04.894Z",
+      "modified": "2024-01-16T14:02:04.894Z",
+      "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
+      "type": 2,
+      "data_type": "float",
+      "name_in_file": "control/V/mA"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 7,
+    "fields": {
+      "created": "2024-01-16T14:02:05.018Z",
+      "modified": "2024-01-16T14:02:05.018Z",
+      "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
+      "type": 4,
+      "data_type": "float",
+      "name_in_file": "Volts"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 8,
+    "fields": {
+      "created": "2024-01-16T14:02:05.143Z",
+      "modified": "2024-01-16T14:02:05.143Z",
+      "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
+      "type": 5,
+      "data_type": "float",
+      "name_in_file": "Amps"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 9,
+    "fields": {
+      "created": "2024-01-16T14:02:05.277Z",
+      "modified": "2024-01-16T14:02:05.277Z",
+      "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
+      "type": 2,
+      "data_type": "float",
+      "name_in_file": "dQ/mA.h"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 10,
+    "fields": {
+      "created": "2024-01-16T14:02:05.402Z",
+      "modified": "2024-01-16T14:02:05.402Z",
+      "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
+      "type": 2,
+      "data_type": "float",
+      "name_in_file": "(Q-Qo)/mA.h"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 11,
+    "fields": {
+      "created": "2024-01-16T14:02:05.527Z",
+      "modified": "2024-01-16T14:02:05.527Z",
+      "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
+      "type": 6,
+      "data_type": "float",
+      "name_in_file": "Energy Capacity"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 12,
+    "fields": {
+      "created": "2024-01-16T14:02:05.659Z",
+      "modified": "2024-01-16T14:02:05.659Z",
+      "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
+      "type": 7,
+      "data_type": "float",
+      "name_in_file": "Charge Capacity"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 13,
+    "fields": {
+      "created": "2024-01-16T14:02:05.778Z",
+      "modified": "2024-01-16T14:02:05.778Z",
+      "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "half cycle"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 14,
+    "fields": {
+      "created": "2024-01-16T14:02:40.509Z",
+      "modified": "2024-01-16T14:02:40.509Z",
+      "file": "6c27d223-8619-47be-959f-09323741a7f4",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "Sample Number"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 15,
+    "fields": {
+      "created": "2024-01-16T14:02:40.692Z",
+      "modified": "2024-01-16T14:02:40.692Z",
+      "file": "6c27d223-8619-47be-959f-09323741a7f4",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "flags"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 16,
+    "fields": {
+      "created": "2024-01-16T14:02:40.848Z",
+      "modified": "2024-01-16T14:02:40.848Z",
+      "file": "6c27d223-8619-47be-959f-09323741a7f4",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "Ns"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 17,
+    "fields": {
+      "created": "2024-01-16T14:02:40.997Z",
+      "modified": "2024-01-16T14:02:40.997Z",
+      "file": "6c27d223-8619-47be-959f-09323741a7f4",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "I Range"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 18,
+    "fields": {
+      "created": "2024-01-16T14:02:41.138Z",
+      "modified": "2024-01-16T14:02:41.138Z",
+      "file": "6c27d223-8619-47be-959f-09323741a7f4",
+      "type": 3,
+      "data_type": "float",
+      "name_in_file": "Time"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 19,
+    "fields": {
+      "created": "2024-01-16T14:02:41.325Z",
+      "modified": "2024-01-16T14:02:41.325Z",
+      "file": "6c27d223-8619-47be-959f-09323741a7f4",
+      "type": 2,
+      "data_type": "float",
+      "name_in_file": "control/V/mA"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 20,
+    "fields": {
+      "created": "2024-01-16T14:02:41.497Z",
+      "modified": "2024-01-16T14:02:41.497Z",
+      "file": "6c27d223-8619-47be-959f-09323741a7f4",
+      "type": 4,
+      "data_type": "float",
+      "name_in_file": "Volts"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 21,
+    "fields": {
+      "created": "2024-01-16T14:02:41.681Z",
+      "modified": "2024-01-16T14:02:41.681Z",
+      "file": "6c27d223-8619-47be-959f-09323741a7f4",
+      "type": 5,
+      "data_type": "float",
+      "name_in_file": "Amps"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 22,
+    "fields": {
+      "created": "2024-01-16T14:02:41.857Z",
+      "modified": "2024-01-16T14:02:41.857Z",
+      "file": "6c27d223-8619-47be-959f-09323741a7f4",
+      "type": 2,
+      "data_type": "float",
+      "name_in_file": "dQ/mA.h"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 23,
+    "fields": {
+      "created": "2024-01-16T14:02:42.031Z",
+      "modified": "2024-01-16T14:02:42.031Z",
+      "file": "6c27d223-8619-47be-959f-09323741a7f4",
+      "type": 2,
+      "data_type": "float",
+      "name_in_file": "(Q-Qo)/mA.h"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 24,
+    "fields": {
+      "created": "2024-01-16T14:02:42.205Z",
+      "modified": "2024-01-16T14:02:42.205Z",
+      "file": "6c27d223-8619-47be-959f-09323741a7f4",
+      "type": 6,
+      "data_type": "float",
+      "name_in_file": "Energy Capacity"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 25,
+    "fields": {
+      "created": "2024-01-16T14:02:42.372Z",
+      "modified": "2024-01-16T14:02:42.372Z",
+      "file": "6c27d223-8619-47be-959f-09323741a7f4",
+      "type": 7,
+      "data_type": "float",
+      "name_in_file": "Charge Capacity"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 26,
+    "fields": {
+      "created": "2024-01-16T14:02:42.547Z",
+      "modified": "2024-01-16T14:02:42.547Z",
+      "file": "6c27d223-8619-47be-959f-09323741a7f4",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "half cycle"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 27,
+    "fields": {
+      "created": "2024-01-16T14:03:55.021Z",
+      "modified": "2024-01-16T14:03:55.021Z",
+      "file": "0d9f87b4-334d-4676-aca0-057400d7ac15",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "Sample Number"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 28,
+    "fields": {
+      "created": "2024-01-16T14:03:55.221Z",
+      "modified": "2024-01-16T14:03:55.221Z",
+      "file": "0d9f87b4-334d-4676-aca0-057400d7ac15",
+      "type": 3,
+      "data_type": "str",
+      "name_in_file": "Time"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 29,
+    "fields": {
+      "created": "2024-01-16T14:03:55.413Z",
+      "modified": "2024-01-16T14:03:55.413Z",
+      "file": "0d9f87b4-334d-4676-aca0-057400d7ac15",
+      "type": 5,
+      "data_type": "str",
+      "name_in_file": "Amps"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 30,
+    "fields": {
+      "created": "2024-01-16T14:03:55.581Z",
+      "modified": "2024-01-16T14:03:55.581Z",
+      "file": "0d9f87b4-334d-4676-aca0-057400d7ac15",
+      "type": 4,
+      "data_type": "str",
+      "name_in_file": "Volts"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 31,
+    "fields": {
+      "created": "2024-01-16T14:04:18.114Z",
+      "modified": "2024-01-16T14:04:18.114Z",
+      "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "Sample Number"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 32,
+    "fields": {
+      "created": "2024-01-16T14:04:18.277Z",
+      "modified": "2024-01-16T14:04:18.277Z",
+      "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "flags"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 33,
+    "fields": {
+      "created": "2024-01-16T14:04:18.426Z",
+      "modified": "2024-01-16T14:04:18.426Z",
+      "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "Ns"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 34,
+    "fields": {
+      "created": "2024-01-16T14:04:18.568Z",
+      "modified": "2024-01-16T14:04:18.569Z",
+      "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "I Range"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 35,
+    "fields": {
+      "created": "2024-01-16T14:04:18.714Z",
+      "modified": "2024-01-16T14:04:18.714Z",
+      "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
+      "type": 3,
+      "data_type": "float",
+      "name_in_file": "Time"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 36,
+    "fields": {
+      "created": "2024-01-16T14:04:18.883Z",
+      "modified": "2024-01-16T14:04:18.883Z",
+      "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
+      "type": 2,
+      "data_type": "float",
+      "name_in_file": "control/V/mA"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 37,
+    "fields": {
+      "created": "2024-01-16T14:04:19.040Z",
+      "modified": "2024-01-16T14:04:19.040Z",
+      "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
+      "type": 4,
+      "data_type": "float",
+      "name_in_file": "Volts"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 38,
+    "fields": {
+      "created": "2024-01-16T14:04:19.199Z",
+      "modified": "2024-01-16T14:04:19.199Z",
+      "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
+      "type": 5,
+      "data_type": "float",
+      "name_in_file": "Amps"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 39,
+    "fields": {
+      "created": "2024-01-16T14:04:19.374Z",
+      "modified": "2024-01-16T14:04:19.374Z",
+      "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
+      "type": 2,
+      "data_type": "float",
+      "name_in_file": "dQ/mA.h"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 40,
+    "fields": {
+      "created": "2024-01-16T14:04:19.560Z",
+      "modified": "2024-01-16T14:04:19.560Z",
+      "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
+      "type": 2,
+      "data_type": "float",
+      "name_in_file": "(Q-Qo)/mA.h"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 41,
+    "fields": {
+      "created": "2024-01-16T14:04:19.730Z",
+      "modified": "2024-01-16T14:04:19.730Z",
+      "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
+      "type": 6,
+      "data_type": "float",
+      "name_in_file": "Energy Capacity"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 42,
+    "fields": {
+      "created": "2024-01-16T14:04:19.889Z",
+      "modified": "2024-01-16T14:04:19.889Z",
+      "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
+      "type": 7,
+      "data_type": "float",
+      "name_in_file": "Charge Capacity"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 43,
+    "fields": {
+      "created": "2024-01-16T14:04:20.056Z",
+      "modified": "2024-01-16T14:04:20.056Z",
+      "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "half cycle"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 44,
+    "fields": {
+      "created": "2024-01-16T14:04:59.110Z",
+      "modified": "2024-01-16T14:04:59.110Z",
+      "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
+      "type": 2,
+      "data_type": "str",
+      "name_in_file": "Sample Number"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 45,
+    "fields": {
+      "created": "2024-01-16T14:04:59.243Z",
+      "modified": "2024-01-16T14:04:59.243Z",
+      "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
+      "type": 2,
+      "data_type": "str",
+      "name_in_file": "Step"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 46,
+    "fields": {
+      "created": "2024-01-16T14:04:59.367Z",
+      "modified": "2024-01-16T14:04:59.367Z",
+      "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
+      "type": 3,
+      "data_type": "str",
+      "name_in_file": "Time"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 47,
+    "fields": {
+      "created": "2024-01-16T14:04:59.479Z",
+      "modified": "2024-01-16T14:04:59.479Z",
+      "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
+      "type": 9,
+      "data_type": "str",
+      "name_in_file": "Step Time"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 48,
+    "fields": {
+      "created": "2024-01-16T14:04:59.598Z",
+      "modified": "2024-01-16T14:04:59.598Z",
+      "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
+      "type": 7,
+      "data_type": "str",
+      "name_in_file": "Charge Capacity"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 49,
+    "fields": {
+      "created": "2024-01-16T14:04:59.698Z",
+      "modified": "2024-01-16T14:04:59.698Z",
+      "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
+      "type": 6,
+      "data_type": "str",
+      "name_in_file": "Energy Capacity"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 50,
+    "fields": {
+      "created": "2024-01-16T14:04:59.806Z",
+      "modified": "2024-01-16T14:04:59.806Z",
+      "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
+      "type": 5,
+      "data_type": "str",
+      "name_in_file": "Amps"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 51,
+    "fields": {
+      "created": "2024-01-16T14:04:59.922Z",
+      "modified": "2024-01-16T14:04:59.922Z",
+      "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
+      "type": 4,
+      "data_type": "str",
+      "name_in_file": "Volts"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 52,
+    "fields": {
+      "created": "2024-01-16T14:05:00.028Z",
+      "modified": "2024-01-16T14:05:00.028Z",
+      "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
+      "type": 2,
+      "data_type": "str",
+      "name_in_file": "State"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 53,
+    "fields": {
+      "created": "2024-01-16T14:05:00.156Z",
+      "modified": "2024-01-16T14:05:00.156Z",
+      "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
+      "type": 2,
+      "data_type": "str",
+      "name_in_file": "ES"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 54,
+    "fields": {
+      "created": "2024-01-16T14:05:00.272Z",
+      "modified": "2024-01-16T14:05:00.272Z",
+      "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
+      "type": 2,
+      "data_type": "str",
+      "name_in_file": "DPt Time"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 55,
+    "fields": {
+      "created": "2024-01-16T14:05:00.389Z",
+      "modified": "2024-01-16T14:05:00.389Z",
+      "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
+      "type": 8,
+      "data_type": "str",
+      "name_in_file": "Temperature"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 56,
+    "fields": {
+      "created": "2024-01-16T14:05:00.497Z",
+      "modified": "2024-01-16T14:05:00.497Z",
+      "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
+      "type": 2,
+      "data_type": "str",
+      "name_in_file": "VARx1"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 57,
+    "fields": {
+      "created": "2024-01-16T14:05:00.605Z",
+      "modified": "2024-01-16T14:05:00.605Z",
+      "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
+      "type": 2,
+      "data_type": "str",
+      "name_in_file": "VARx2"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 1,
+    "fields": {
+      "created": "2024-01-16T14:02:04.785Z",
+      "modified": "2024-01-16T14:02:35.250Z",
+      "column": 5,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 2,
+    "fields": {
+      "created": "2024-01-16T14:02:04.924Z",
+      "modified": "2024-01-16T14:02:35.622Z",
+      "column": 6,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 3,
+    "fields": {
+      "created": "2024-01-16T14:02:05.047Z",
+      "modified": "2024-01-16T14:02:35.950Z",
+      "column": 7,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 4,
+    "fields": {
+      "created": "2024-01-16T14:02:05.174Z",
+      "modified": "2024-01-16T14:02:36.375Z",
+      "column": 8,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 5,
+    "fields": {
+      "created": "2024-01-16T14:02:05.306Z",
+      "modified": "2024-01-16T14:02:36.763Z",
+      "column": 9,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 6,
+    "fields": {
+      "created": "2024-01-16T14:02:05.432Z",
+      "modified": "2024-01-16T14:02:37.140Z",
+      "column": 10,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 7,
+    "fields": {
+      "created": "2024-01-16T14:02:05.556Z",
+      "modified": "2024-01-16T14:02:37.530Z",
+      "column": 11,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 8,
+    "fields": {
+      "created": "2024-01-16T14:02:05.682Z",
+      "modified": "2024-01-16T14:02:37.955Z",
+      "column": 12,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 9,
+    "fields": {
+      "created": "2024-01-16T14:02:41.189Z",
+      "modified": "2024-01-16T14:03:45.722Z",
+      "column": 18,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 10,
+    "fields": {
+      "created": "2024-01-16T14:02:41.369Z",
+      "modified": "2024-01-16T14:03:46.337Z",
+      "column": 19,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 11,
+    "fields": {
+      "created": "2024-01-16T14:02:41.544Z",
+      "modified": "2024-01-16T14:03:46.883Z",
+      "column": 20,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 12,
+    "fields": {
+      "created": "2024-01-16T14:02:41.729Z",
+      "modified": "2024-01-16T14:03:47.561Z",
+      "column": 21,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 13,
+    "fields": {
+      "created": "2024-01-16T14:02:41.902Z",
+      "modified": "2024-01-16T14:03:48.396Z",
+      "column": 22,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 14,
+    "fields": {
+      "created": "2024-01-16T14:02:42.078Z",
+      "modified": "2024-01-16T14:03:49.058Z",
+      "column": 23,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 15,
+    "fields": {
+      "created": "2024-01-16T14:02:42.243Z",
+      "modified": "2024-01-16T14:03:49.728Z",
+      "column": 24,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 16,
+    "fields": {
+      "created": "2024-01-16T14:02:42.411Z",
+      "modified": "2024-01-16T14:03:50.369Z",
+      "column": 25,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 17,
+    "fields": {
+      "created": "2024-01-16T14:04:18.757Z",
+      "modified": "2024-01-16T14:04:21.224Z",
+      "column": 35,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 18,
+    "fields": {
+      "created": "2024-01-16T14:04:18.919Z",
+      "modified": "2024-01-16T14:04:21.328Z",
+      "column": 36,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 19,
+    "fields": {
+      "created": "2024-01-16T14:04:19.079Z",
+      "modified": "2024-01-16T14:04:21.412Z",
+      "column": 37,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 20,
+    "fields": {
+      "created": "2024-01-16T14:04:19.236Z",
+      "modified": "2024-01-16T14:04:21.512Z",
+      "column": 38,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 21,
+    "fields": {
+      "created": "2024-01-16T14:04:19.411Z",
+      "modified": "2024-01-16T14:04:21.614Z",
+      "column": 39,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 22,
+    "fields": {
+      "created": "2024-01-16T14:04:19.595Z",
+      "modified": "2024-01-16T14:04:21.715Z",
+      "column": 40,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 23,
+    "fields": {
+      "created": "2024-01-16T14:04:19.769Z",
+      "modified": "2024-01-16T14:04:21.820Z",
+      "column": 41,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatafloat",
+    "pk": 24,
+    "fields": {
+      "created": "2024-01-16T14:04:19.927Z",
+      "modified": "2024-01-16T14:04:21.945Z",
+      "column": 42,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 1,
+    "fields": {
+      "created": "2024-01-16T14:02:04.337Z",
+      "modified": "2024-01-16T14:02:34.231Z",
+      "column": 1,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 2,
+    "fields": {
+      "created": "2024-01-16T14:02:04.466Z",
+      "modified": "2024-01-16T14:02:34.438Z",
+      "column": 2,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 3,
+    "fields": {
+      "created": "2024-01-16T14:02:04.566Z",
+      "modified": "2024-01-16T14:02:34.626Z",
+      "column": 3,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 4,
+    "fields": {
+      "created": "2024-01-16T14:02:04.673Z",
+      "modified": "2024-01-16T14:02:34.818Z",
+      "column": 4,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 5,
+    "fields": {
+      "created": "2024-01-16T14:02:05.806Z",
+      "modified": "2024-01-16T14:02:38.308Z",
+      "column": 13,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 6,
+    "fields": {
+      "created": "2024-01-16T14:02:40.572Z",
+      "modified": "2024-01-16T14:03:44.479Z",
+      "column": 14,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 7,
+    "fields": {
+      "created": "2024-01-16T14:02:40.736Z",
+      "modified": "2024-01-16T14:03:44.804Z",
+      "column": 15,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 8,
+    "fields": {
+      "created": "2024-01-16T14:02:40.886Z",
+      "modified": "2024-01-16T14:03:45.087Z",
+      "column": 16,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 9,
+    "fields": {
+      "created": "2024-01-16T14:02:41.036Z",
+      "modified": "2024-01-16T14:03:45.371Z",
+      "column": 17,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 10,
+    "fields": {
+      "created": "2024-01-16T14:02:42.593Z",
+      "modified": "2024-01-16T14:03:50.953Z",
+      "column": 26,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 11,
+    "fields": {
+      "created": "2024-01-16T14:03:55.063Z",
+      "modified": "2024-01-16T14:04:13.757Z",
+      "column": 27,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 12,
+    "fields": {
+      "created": "2024-01-16T14:04:18.165Z",
+      "modified": "2024-01-16T14:04:20.934Z",
+      "column": 31,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 13,
+    "fields": {
+      "created": "2024-01-16T14:04:18.320Z",
+      "modified": "2024-01-16T14:04:21.010Z",
+      "column": 32,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 14,
+    "fields": {
+      "created": "2024-01-16T14:04:18.471Z",
+      "modified": "2024-01-16T14:04:21.075Z",
+      "column": 33,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 15,
+    "fields": {
+      "created": "2024-01-16T14:04:18.611Z",
+      "modified": "2024-01-16T14:04:21.142Z",
+      "column": 34,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdataint",
+    "pk": 16,
+    "fields": {
+      "created": "2024-01-16T14:04:20.094Z",
+      "modified": "2024-01-16T14:04:22.049Z",
+      "column": 43,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 1,
+    "fields": {
+      "created": "2024-01-16T14:03:55.265Z",
+      "modified": "2024-01-16T14:04:14.407Z",
+      "column": 28,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 2,
+    "fields": {
+      "created": "2024-01-16T14:03:55.450Z",
+      "modified": "2024-01-16T14:04:15.256Z",
+      "column": 29,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 3,
+    "fields": {
+      "created": "2024-01-16T14:03:55.609Z",
+      "modified": "2024-01-16T14:04:15.860Z",
+      "column": 30,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 4,
+    "fields": {
+      "created": "2024-01-16T14:04:59.148Z",
+      "modified": "2024-01-16T14:13:44.755Z",
+      "column": 44,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 5,
+    "fields": {
+      "created": "2024-01-16T14:04:59.277Z",
+      "modified": "2024-01-16T14:13:46.013Z",
+      "column": 45,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 6,
+    "fields": {
+      "created": "2024-01-16T14:04:59.394Z",
+      "modified": "2024-01-16T14:13:47.205Z",
+      "column": 46,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 7,
+    "fields": {
+      "created": "2024-01-16T14:04:59.510Z",
+      "modified": "2024-01-16T14:13:48.578Z",
+      "column": 47,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 8,
+    "fields": {
+      "created": "2024-01-16T14:04:59.619Z",
+      "modified": "2024-01-16T14:13:49.930Z",
+      "column": 48,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 9,
+    "fields": {
+      "created": "2024-01-16T14:04:59.727Z",
+      "modified": "2024-01-16T14:13:51.091Z",
+      "column": 49,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 10,
+    "fields": {
+      "created": "2024-01-16T14:04:59.836Z",
+      "modified": "2024-01-16T14:13:52.334Z",
+      "column": 50,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 11,
+    "fields": {
+      "created": "2024-01-16T14:04:59.944Z",
+      "modified": "2024-01-16T14:13:53.480Z",
+      "column": 51,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 12,
+    "fields": {
+      "created": "2024-01-16T14:05:00.052Z",
+      "modified": "2024-01-16T14:13:54.616Z",
+      "column": 52,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 13,
+    "fields": {
+      "created": "2024-01-16T14:05:00.185Z",
+      "modified": "2024-01-16T14:13:55.683Z",
+      "column": 53,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 14,
+    "fields": {
+      "created": "2024-01-16T14:05:00.302Z",
+      "modified": "2024-01-16T14:13:56.852Z",
+      "column": 54,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 15,
+    "fields": {
+      "created": "2024-01-16T14:05:00.412Z",
+      "modified": "2024-01-16T14:13:58.200Z",
+      "column": 55,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 16,
+    "fields": {
+      "created": "2024-01-16T14:05:00.527Z",
+      "modified": "2024-01-16T14:13:59.401Z",
+      "column": 56,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 17,
+    "fields": {
+      "created": "2024-01-16T14:05:00.636Z",
+      "modified": "2024-01-16T14:14:00.561Z",
+      "column": 57,
+      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  }
+]
