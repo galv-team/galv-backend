@@ -13,6 +13,11 @@ on:
         description: 'Issue a release'
         required: false
         default: false
+      skip_compatibility_check:
+        type: boolean
+        description: 'Skip API compatibility check. WARNING: this will allow breaking changes to the API to be released.'
+        required: false
+        default: false
 
 jobs:
   run-tests:
@@ -30,6 +35,9 @@ jobs:
         run: |
             sudo apt-get update
             sudo apt-get install -y docker-compose
+
+      - name: Build container
+        run: docker-compose build app_test
 
       - name: Run tests
         run: docker-compose run --rm app_test
@@ -54,3 +62,4 @@ jobs:
     secrets: inherit
     with:
       debug_enabled: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+      skip_compatibility_check: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_compatibility_check }}
