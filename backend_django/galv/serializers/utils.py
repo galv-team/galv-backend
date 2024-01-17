@@ -31,7 +31,7 @@ def serializer_class_from_string(class_name: str):
     Get a class from a string.
     """
     if class_name not in [
-        'UserSerializer', 'GroupSerializer', 'LabSerializer', 'TeamSerializer', 'HarvesterSerializer',
+        'UserSerializer', 'TransparentGroupSerializer', 'LabSerializer', 'TeamSerializer', 'HarvesterSerializer',
         'HarvestErrorSerializer', 'MonitoredPathSerializer', 'ObservedFileSerializer', 'DataColumnSerializer',
         'DataColumnTypeSerializer', 'DataUnitSerializer', 'CellFamilySerializer', 'CellSerializer',
         'EquipmentFamilySerializer', 'EquipmentSerializer', 'ScheduleFamilySerializer', 'ScheduleSerializer',

@@ -25,7 +25,7 @@ from .serializers import HarvesterSerializer, \
     DataUnitSerializer, \
     TimeseriesRangeLabelSerializer, \
     UserSerializer, \
-    GroupSerializer, \
+    TransparentGroupSerializer, \
     HarvestErrorSerializer, \
     KnoxTokenSerializer, \
     KnoxTokenFullSerializer, CellFamilySerializer, EquipmentFamilySerializer, \
@@ -1656,7 +1656,7 @@ class GroupViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [DRYPermissions]
     filter_backends = [GroupFilterBackend]
-    serializer_class = GroupSerializer
+    serializer_class = TransparentGroupSerializer
     queryset = GroupProxy.objects.all()
     http_method_names = ['patch', 'options', 'get']
 

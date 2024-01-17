@@ -74,14 +74,6 @@ class UserSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         style={'input_type': 'password'},
         help_text="Current password"
     )
-    groups = TruncatedGroupHyperlinkedRelatedIdField(
-        'GroupSerializer',
-        ['url', 'id', 'name'],
-        'groupproxy-detail',
-        read_only=True,
-        many=True,
-        help_text="Groups this user belongs to"
-    )
 
     @staticmethod
     def validate_password(value):
@@ -112,7 +104,7 @@ class UserSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         model = UserProxy
         write_fields = ['username', 'email', 'first_name', 'last_name']
         write_only_fields = ['password', 'current_password']
-        read_only_fields = ['url', 'id', 'is_staff', 'is_superuser', 'groups', 'permissions']
+        read_only_fields = ['url', 'id', 'is_staff', 'is_superuser', 'permissions']
         fields = [*write_fields, *read_only_fields, *write_only_fields]
         extra_kwargs = augment_extra_kwargs({
             'password': {'write_only': True, 'help_text': "Password (8 characters minimum)"},
@@ -124,72 +116,48 @@ class UserSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         'Valid example',
         summary='Group details',
         description='Groups are used to manage permissions for a set of users',
-        value={
-            "id": 1,
-            "url": "http://localhost:8001/groups/1/",
-            "name": "example_lab_admins",
-            "users": [
-                "http://localhost:8001/users/1/"
-            ],
-            "permissions": {
-                "create": False,
-                "destroy": False,
-                "write": True,
-                "read": True
-            }
-        },
+        value=[
+            "http://localhost:8001/users/1/"
+        ],
         response_only=True, # signal that example only applies to responses
     ),
 ])
-class GroupSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+class TransparentGroupSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     users = TruncatedUserHyperlinkedRelatedIdField(
         UserSerializer,
         ['url', 'id', 'username', 'first_name', 'last_name', 'permissions'],
         view_name='userproxy-detail',
-        read_only=True,
+        queryset=UserProxy.objects.filter(is_active=True),
+        read_only=False,
         source='user_set',
         many=True,
         help_text="Users in the group"
     )
-    add_users = TruncatedUserHyperlinkedRelatedIdField(
-        UserSerializer,
-        ['url', 'id', 'username', 'first_name', 'last_name', 'permissions'],
-        view_name='userproxy-detail',
-        queryset=UserProxy.objects.all(),
-        many=True,
-        write_only=True,
-        required=False,
-        help_text="Users to add"
-    )
-    remove_users = TruncatedUserHyperlinkedRelatedIdField(
-        UserSerializer,
-        ['url', 'id', 'username', 'first_name', 'last_name', 'permissions'],
-        view_name='userproxy-detail',
-        queryset=UserProxy.objects.all(),
-        many=True,
-        write_only=True,
-        required=False,
-        help_text="Users to remove"
-    )
 
-    def validate_remove_users(self, value):
-        # Only Lab admin groups have to have at least one user
-        if hasattr(self.instance, 'editable_lab'):
-            if len(self.instance.user_set.all()) <= len(value):
-                raise ValidationError(f"Labs must always have at least one administrator")
-        return value
+    @staticmethod
+    def validate_users(value):
+        # Only active users can be added to groups
+        return [u for u in value if u.is_active]
 
     def update(self, instance, validated_data):
-        if 'add_users' in validated_data:
-            [instance.user_set.add(u) for u in validated_data.pop('add_users')]
-        if 'remove_users' in validated_data:
-            [instance.user_set.remove(u) for u in validated_data.pop('remove_users')]
+        if 'user_set' in validated_data:
+            # Check there will be at least one user left for lab admin groups
+            if hasattr(instance, 'editable_lab'):
+                if len(validated_data['user_set']) < 1:
+                    raise ValidationError(f"Labs must always have at least one administrator")
+            instance.user_set.set(validated_data.pop('user_set'))
         return instance
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        return ret['users']
+
+    def to_internal_value(self, data):
+        return super().to_internal_value({'users': data})
 
     class Meta:
         model = GroupProxy
-        read_only_fields = ['id', 'url', 'name', 'users', 'permissions']
-        fields = [*read_only_fields, 'add_users', 'remove_users']
+        fields = ['users']
 
 @extend_schema_serializer(examples = [
     OpenApiExample(
@@ -268,8 +236,8 @@ class GroupSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     ),
 ])
 class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
-    member_group = GroupSerializer(read_only=True, help_text="Members of this Team")
-    admin_group = GroupSerializer(read_only=True, help_text="Administrators of this Team")
+    member_group = TransparentGroupSerializer(read_only=True, help_text="Members of this Team")
+    admin_group = TransparentGroupSerializer(read_only=True, help_text="Administrators of this Team")
     cellfamily_resources = TruncatedHyperlinkedRelatedIdField(
         'CellFamilySerializer',
         ['manufacturer', 'model', 'chemistry', 'form_factor'],
@@ -352,6 +320,18 @@ class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             raise ValidationError("You may only create Teams in your own lab(s)")
         return value
 
+    def update(self, instance, validated_data):
+        """
+        Pass group updates to the group serializer
+        """
+        if 'admin_group' in validated_data:
+            admin_group = validated_data.pop('admin_group')
+            TransparentGroupSerializer().update(instance.admin_group, admin_group)
+        if 'member_group' in validated_data:
+            member_group = validated_data.pop('member_group')
+            TransparentGroupSerializer().update(instance.member_group, member_group)
+        return super().update(instance, validated_data)
+
     class Meta:
         model = Team
         read_only_fields = [
@@ -405,7 +385,7 @@ class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     ),
 ])
 class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
-    admin_group = GroupSerializer(help_text="Group of users who can edit this Lab")
+    admin_group = TransparentGroupSerializer(help_text="Group of users who can edit this Lab")
     teams = TruncatedHyperlinkedRelatedIdField(
         'TeamSerializer',
         ['name', 'admin_group', 'member_group'],
@@ -414,6 +394,15 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         many=True,
         help_text="Teams in this Lab"
     )
+
+    def update(self, instance, validated_data):
+        """
+        Pass group updates to the group serializer
+        """
+        if 'admin_group' in validated_data:
+            admin_group = validated_data.pop('admin_group')
+            TransparentGroupSerializer().update(instance.admin_group, admin_group)
+        return super().update(instance, validated_data)
 
     class Meta:
         model = Lab
@@ -721,7 +710,7 @@ class EquipmentFamilySerializer(AdditionalPropertiesModelSerializer, Permissions
         summary='Equipment details',
         description='Equipment is used to perform cycler tests. It includes cyclers themselves, as well as temperature chambers. It is grouped into families.',
         value={
-             "url": "http://localhost:8001/equipment/a7bd4c43-29c7-40f1-bcf7-a2924ed474c2/",
+            "url": "http://localhost:8001/equipment/a7bd4c43-29c7-40f1-bcf7-a2924ed474c2/",
             "uuid": "a7bd4c43-29c7-40f1-bcf7-a2924ed474c2",
             "identifier": "1234567890",
             "family": "http://localhost:8001/equipment_families/947e1f7c-c5b9-47b8-a121-d1e519a7154c/",
