@@ -148,7 +148,7 @@ class TransparentGroupSerializer(serializers.HyperlinkedModelSerializer, Permiss
             instance.user_set.set(validated_data.pop('user_set'))
         return instance
 
-    def to_representation(self, instance):
+    def to_representation(self, instance) -> list[str]:
         ret = super().to_representation(instance)
         return ret['users']
 
@@ -236,8 +236,8 @@ class TransparentGroupSerializer(serializers.HyperlinkedModelSerializer, Permiss
     ),
 ])
 class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
-    member_group = TransparentGroupSerializer(read_only=True, help_text="Members of this Team")
-    admin_group = TransparentGroupSerializer(read_only=True, help_text="Administrators of this Team")
+    member_group = TransparentGroupSerializer(required=False, help_text="Members of this Team")
+    admin_group = TransparentGroupSerializer(required=False, help_text="Administrators of this Team")
     cellfamily_resources = TruncatedHyperlinkedRelatedIdField(
         'CellFamilySerializer',
         ['manufacturer', 'model', 'chemistry', 'form_factor'],
@@ -336,7 +336,6 @@ class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         model = Team
         read_only_fields = [
             'url', 'id',
-            'member_group', 'admin_group',
             'monitored_paths',
             'cellfamily_resources', 'cell_resources',
             'equipmentfamily_resources', 'equipment_resources',
@@ -344,7 +343,7 @@ class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             'cyclertest_resources', 'experiment_resources',
             'permissions'
         ]
-        fields = [*read_only_fields, 'name', 'description', 'lab']
+        fields = [*read_only_fields, 'name', 'description', 'lab', 'member_group', 'admin_group']
 
 
 @extend_schema_serializer(examples = [

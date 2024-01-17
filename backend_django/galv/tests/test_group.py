@@ -24,8 +24,6 @@ logger.setLevel(logging.INFO)
 * Lab members can view their lab's teams
 """
 
-stub = 'groupproxy'
-
 class GroupTests(APITestCaseWrapper):
     def setUp(self):
         self.lab = LabFactory.create(name='Test Lab')
@@ -53,15 +51,6 @@ class GroupTests(APITestCaseWrapper):
         results = result.json().get('results', [])
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['name'], self.lab.name)
-
-    def test_list_own_lab_groups(self):
-        """
-        * Lab members can view their lab
-        """
-        self.client.force_authenticate(self.user)
-        result = self.client.get(reverse(f'{stub}-list'))
-        assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(result.json().get("results", [])), 3)
 
     def test_list_own_lab_teams(self):
         """
@@ -100,8 +89,8 @@ class GroupTests(APITestCaseWrapper):
         assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_201_CREATED)
         j = result.json()
         self.assertEqual(j['name'], body['name'])
-        self.assertEqual(len(j['member_group']['users']), 0)
-        self.assertEqual(len(j['admin_group']['users']), 0)
+        self.assertEqual(len(j['member_group']), 0)
+        self.assertEqual(len(j['admin_group']), 0)
 
     def test_lab_admins_cannot_create_teams_elsewhere(self):
         """
@@ -117,23 +106,23 @@ class GroupTests(APITestCaseWrapper):
         * Lab admins can add/remove users to/from their lab and its teams
         """
         self.client.force_authenticate(self.admin)
-        body = {'add_users': [self.associate.id]}
-        result = self.client.patch(reverse(f'{stub}-detail', args=(self.lab.admin_group.id,)), body)
+        body = {'admin_group': [self.admin.id, self.associate.id]}
+        result = self.client.patch(reverse(f'lab-detail', args=(self.lab.id,)), body)
         assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_200_OK)
-        self.assertIn(self.associate.id, [u['id'] for u in self.collect_results(result.json()['users'])])
+        self.assertIn(self.associate.id, [u['id'] for u in self.collect_results(result.json()['admin_group'])])
 
-        body = {'remove_users': [self.associate.id]}
-        result = self.client.patch(reverse(f'{stub}-detail', args=(self.lab.admin_group.id,)), body)
+        body = {'admin_group': [self.admin.id]}
+        result = self.client.patch(reverse(f'lab-detail', args=(self.lab.id,)), body)
         assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_200_OK)
-        self.assertNotIn(self.associate.id, [u['id'] for u in self.collect_results(result.json()['users'])])
+        self.assertNotIn(self.associate.id, [u['id'] for u in self.collect_results(result.json()['admin_group'])])
 
     def test_lab_admins_cannot_add_admins_elsewhere(self):
         """
         * Lab admins can add/remove users to/from their lab and its teams
         """
         self.client.force_authenticate(self.admin)
-        body = {'add_users': [self.associate.id]}
-        result = self.client.patch(reverse(f'{stub}-detail', args=(self.strange_lab.admin_group.id,)), body)
+        body = {'admin_group': [self.admin.id, self.associate.id]}
+        result = self.client.patch(reverse(f'lab-detail', args=(self.strange_lab.id,)), body)
         assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_lab_admins_cannot_remove_last_admin(self):
@@ -141,8 +130,8 @@ class GroupTests(APITestCaseWrapper):
         * Labs must have at least one admin
         """
         self.client.force_authenticate(self.admin)
-        body = {'remove_users': [self.admin.id]}
-        result = self.client.patch(reverse(f'{stub}-detail', args=(self.lab.admin_group.id,)), body)
+        body = {'admin_group': []}
+        result = self.client.patch(reverse(f'lab-detail', args=(self.lab.id,)), body)
         assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_admins_can_add_and_remove_team_admins(self):
@@ -150,50 +139,48 @@ class GroupTests(APITestCaseWrapper):
         * Lab admins can add/remove users to/from their lab and its teams
         """
         self.client.force_authenticate(self.admin)
-        body = {'add_users': [self.associate.id]}
-        result = self.client.patch(reverse(f'{stub}-detail', args=(self.lab_team.admin_group.id,)), body)
+        body = {'admin_group': [self.admin.id, self.associate.id]}
+        result = self.client.patch(reverse(f'team-detail', args=(self.lab_team.id,)), body)
         assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_200_OK)
-        self.assertIn(self.associate.id, [u['id'] for u in self.collect_results(result.json()['users'])])
+        self.assertIn(self.associate.id, [u['id'] for u in self.collect_results(result.json()['admin_group'])])
 
         # Now associate is admin, they should be able to add and remove admins
         self.client.force_authenticate(self.associate)
-        body = {'add_users': [self.colleague.id]}
-        result = self.client.patch(reverse(f'{stub}-detail', args=(self.lab_team.admin_group.id,)), body)
+        body = {'admin_group': [self.admin.id, self.associate.id, self.colleague.id]}
+        result = self.client.patch(reverse(f'team-detail', args=(self.lab_team.id,)), body)
         assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_200_OK)
-        self.assertIn(self.colleague.id, [u['id'] for u in self.collect_results(result.json()['users'])])
+        self.assertIn(self.colleague.id, [u['id'] for u in self.collect_results(result.json()['admin_group'])])
 
         # and members
-        body = {'add_users': [self.user.id]}
-        result = self.client.patch(reverse(f'{stub}-detail', args=(self.lab_team.member_group.id,)), body)
+        body = {'member_group': [self.user.id, self.associate.id]}
+        result = self.client.patch(reverse(f'team-detail', args=(self.lab_team.id,)), body)
         assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_200_OK)
-        self.assertIn(self.user.id, [u['id'] for u in self.collect_results(result.json()['users'])])
+        self.assertIn(self.user.id, [u['id'] for u in self.collect_results(result.json()['member_group'])])
 
         # Members can't add or remove anyone
         self.client.force_authenticate(self.user)
-        for approach in ['add_users', 'remove_users']:
-            for group in [self.lab_team.admin_group, self.lab_team.member_group]:
-                body = {approach: [self.colleague.id]}
-                result = self.client.patch(reverse(f'{stub}-detail', args=(group.id,)), body)
-                assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_403_FORBIDDEN)
+        body = {'admin_group': [self.user.id, self.colleague.id]}
+        result = self.client.patch(reverse(f'team-detail', args=(self.lab_team.id,)), body)
+        assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_403_FORBIDDEN)
 
-        # Admins can remove members including themselves
+        # Admins can remove anyone including themselves
         self.client.force_authenticate(self.associate)
-        body = {'remove_users': [self.user.id, self.associate.id]}
-        result = self.client.patch(reverse(f'{stub}-detail', args=(self.lab_team.member_group.id,)), body)
+        body = {'admin_group': [self.admin.id, self.colleague.id]}
+        result = self.client.patch(reverse(f'team-detail', args=(self.lab_team.id,)), body)
         assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_200_OK)
-        self.assertNotIn(self.user.id, [u['id'] for u in self.collect_results(result.json()['users'])])
-        self.assertNotIn(self.associate.id, [u['id'] for u in self.collect_results(result.json()['users'])])
+        self.assertNotIn(self.user.id, [u['id'] for u in self.collect_results(result.json()['admin_group'])])
+        self.assertNotIn(self.associate.id, [u['id'] for u in self.collect_results(result.json()['admin_group'])])
 
-        # No associate is longer admin, should error trying to remove colleague
-        body = {'remove_users': [self.colleague.id]}
-        result = self.client.patch(reverse(f'{stub}-detail', args=(self.lab.admin_group.id,)), body)
+        # Associate is no longer admin, should error trying to remove colleague
+        body = {'admin_group': [self.admin.id]}
+        result = self.client.patch(reverse(f'team-detail', args=(self.lab_team.id,)), body)
         assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_403_FORBIDDEN)
 
         # But the Lab admin can still remove them
         self.client.force_authenticate(self.admin)
-        result = self.client.patch(reverse(f'{stub}-detail', args=(self.lab_team.admin_group.id,)), body)
+        result = self.client.patch(reverse(f'team-detail', args=(self.lab_team.id,)), body)
         assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_200_OK)
-        self.assertNotIn(self.colleague.id, [u['id'] for u in self.collect_results(result.json()['users'])])
+        self.assertNotIn(self.colleague.id, [u['id'] for u in self.collect_results(result.json()['admin_group'])])
 
 if __name__ == '__main__':
     unittest.main()
