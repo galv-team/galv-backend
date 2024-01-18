@@ -25,7 +25,8 @@ from ..models import Harvester, \
     KnoxAuthToken, CellFamily, EquipmentTypes, CellFormFactors, CellChemistries, CellModels, CellManufacturers, \
     EquipmentManufacturers, EquipmentModels, EquipmentFamily, Schedule, ScheduleIdentifiers, CyclerTest, \
     render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, user_labs, \
-    user_teams, SchemaValidation, UserActivation
+    user_teams, SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
+    ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
 from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
@@ -73,14 +74,6 @@ class UserSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         style={'input_type': 'password'},
         help_text="Current password"
     )
-    groups = TruncatedGroupHyperlinkedRelatedIdField(
-        'GroupSerializer',
-        ['url', 'id', 'name'],
-        'groupproxy-detail',
-        read_only=True,
-        many=True,
-        help_text="Groups this user belongs to"
-    )
 
     @staticmethod
     def validate_password(value):
@@ -111,7 +104,7 @@ class UserSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         model = UserProxy
         write_fields = ['username', 'email', 'first_name', 'last_name']
         write_only_fields = ['password', 'current_password']
-        read_only_fields = ['url', 'id', 'is_staff', 'is_superuser', 'groups', 'permissions']
+        read_only_fields = ['url', 'id', 'is_staff', 'is_superuser', 'permissions']
         fields = [*write_fields, *read_only_fields, *write_only_fields]
         extra_kwargs = augment_extra_kwargs({
             'password': {'write_only': True, 'help_text': "Password (8 characters minimum)"},
@@ -123,72 +116,48 @@ class UserSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         'Valid example',
         summary='Group details',
         description='Groups are used to manage permissions for a set of users',
-        value={
-            "id": 1,
-            "url": "http://localhost:8001/groups/1/",
-            "name": "example_lab_admins",
-            "users": [
-                "http://localhost:8001/users/1/"
-            ],
-            "permissions": {
-                "create": False,
-                "destroy": False,
-                "write": True,
-                "read": True
-            }
-        },
+        value=[
+            "http://localhost:8001/users/1/"
+        ],
         response_only=True, # signal that example only applies to responses
     ),
 ])
-class GroupSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+class TransparentGroupSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     users = TruncatedUserHyperlinkedRelatedIdField(
         UserSerializer,
         ['url', 'id', 'username', 'first_name', 'last_name', 'permissions'],
         view_name='userproxy-detail',
-        read_only=True,
+        queryset=UserProxy.objects.filter(is_active=True),
+        read_only=False,
         source='user_set',
         many=True,
         help_text="Users in the group"
     )
-    add_users = TruncatedUserHyperlinkedRelatedIdField(
-        UserSerializer,
-        ['url', 'id', 'username', 'first_name', 'last_name', 'permissions'],
-        view_name='userproxy-detail',
-        queryset=UserProxy.objects.all(),
-        many=True,
-        write_only=True,
-        required=False,
-        help_text="Users to add"
-    )
-    remove_users = TruncatedUserHyperlinkedRelatedIdField(
-        UserSerializer,
-        ['url', 'id', 'username', 'first_name', 'last_name', 'permissions'],
-        view_name='userproxy-detail',
-        queryset=UserProxy.objects.all(),
-        many=True,
-        write_only=True,
-        required=False,
-        help_text="Users to remove"
-    )
 
-    def validate_remove_users(self, value):
-        # Only Lab admin groups have to have at least one user
-        if hasattr(self.instance, 'editable_lab'):
-            if len(self.instance.user_set.all()) <= len(value):
-                raise ValidationError(f"Labs must always have at least one administrator")
-        return value
+    @staticmethod
+    def validate_users(value):
+        # Only active users can be added to groups
+        return [u for u in value if u.is_active]
 
     def update(self, instance, validated_data):
-        if 'add_users' in validated_data:
-            [instance.user_set.add(u) for u in validated_data.pop('add_users')]
-        if 'remove_users' in validated_data:
-            [instance.user_set.remove(u) for u in validated_data.pop('remove_users')]
+        if 'user_set' in validated_data:
+            # Check there will be at least one user left for lab admin groups
+            if hasattr(instance, 'editable_lab'):
+                if len(validated_data['user_set']) < 1:
+                    raise ValidationError(f"Labs must always have at least one administrator")
+            instance.user_set.set(validated_data.pop('user_set'))
         return instance
+
+    def to_representation(self, instance) -> list[str]:
+        ret = super().to_representation(instance)
+        return ret['users']
+
+    def to_internal_value(self, data):
+        return super().to_internal_value({'users': data})
 
     class Meta:
         model = GroupProxy
-        read_only_fields = ['id', 'url', 'name', 'users', 'permissions']
-        fields = [*read_only_fields, 'add_users', 'remove_users']
+        fields = ['users']
 
 @extend_schema_serializer(examples = [
     OpenApiExample(
@@ -267,8 +236,8 @@ class GroupSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     ),
 ])
 class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
-    member_group = GroupSerializer(read_only=True, help_text="Members of this Team")
-    admin_group = GroupSerializer(read_only=True, help_text="Administrators of this Team")
+    member_group = TransparentGroupSerializer(required=False, help_text="Members of this Team")
+    admin_group = TransparentGroupSerializer(required=False, help_text="Administrators of this Team")
     cellfamily_resources = TruncatedHyperlinkedRelatedIdField(
         'CellFamilySerializer',
         ['manufacturer', 'model', 'chemistry', 'form_factor'],
@@ -351,11 +320,22 @@ class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             raise ValidationError("You may only create Teams in your own lab(s)")
         return value
 
+    def update(self, instance, validated_data):
+        """
+        Pass group updates to the group serializer
+        """
+        if 'admin_group' in validated_data:
+            admin_group = validated_data.pop('admin_group')
+            TransparentGroupSerializer().update(instance.admin_group, admin_group)
+        if 'member_group' in validated_data:
+            member_group = validated_data.pop('member_group')
+            TransparentGroupSerializer().update(instance.member_group, member_group)
+        return super().update(instance, validated_data)
+
     class Meta:
         model = Team
         read_only_fields = [
             'url', 'id',
-            'member_group', 'admin_group',
             'monitored_paths',
             'cellfamily_resources', 'cell_resources',
             'equipmentfamily_resources', 'equipment_resources',
@@ -363,7 +343,7 @@ class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             'cyclertest_resources', 'experiment_resources',
             'permissions'
         ]
-        fields = [*read_only_fields, 'name', 'description', 'lab']
+        fields = [*read_only_fields, 'name', 'description', 'lab', 'member_group', 'admin_group']
 
 
 @extend_schema_serializer(examples = [
@@ -404,7 +384,7 @@ class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     ),
 ])
 class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
-    admin_group = GroupSerializer(help_text="Group of users who can edit this Lab")
+    admin_group = TransparentGroupSerializer(help_text="Group of users who can edit this Lab")
     teams = TruncatedHyperlinkedRelatedIdField(
         'TeamSerializer',
         ['name', 'admin_group', 'member_group'],
@@ -413,6 +393,15 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         many=True,
         help_text="Teams in this Lab"
     )
+
+    def update(self, instance, validated_data):
+        """
+        Pass group updates to the group serializer
+        """
+        if 'admin_group' in validated_data:
+            admin_group = validated_data.pop('admin_group')
+            TransparentGroupSerializer().update(instance.admin_group, admin_group)
+        return super().update(instance, validated_data)
 
     class Meta:
         model = Lab
@@ -426,6 +415,24 @@ class WithTeamMixin(serializers.Serializer):
         'team-detail',
         queryset=Team.objects.all(),
         help_text="Team this resource belongs to"
+    )
+    read_access_level = serializers.ChoiceField(
+        choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_READ],
+        help_text="Minimum user level required to read this resource",
+        allow_null=True,
+        required=False
+    )
+    edit_access_level = serializers.ChoiceField(
+        choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_EDIT],
+        help_text="Minimum user level required to edit this resource",
+        allow_null=True,
+        required=False
+    )
+    delete_access_level = serializers.ChoiceField(
+        choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_DELETE],
+        help_text="Minimum user level required to create this resource",
+        allow_null=True,
+        required=False
     )
 
     def validate_team(self, value):
@@ -445,6 +452,67 @@ class WithTeamMixin(serializers.Serializer):
                 raise ValidationError("You may only edit resources in your own team(s)")
         return value
 
+    def validate_access_level(self, value, allowed_values):
+        try:
+            v = UserLevel(value)
+        except ValueError:
+            raise ValidationError((
+                f"Invalid access level '{value}'. "
+                f"Expected one of {[v.value for v in allowed_values]}"
+            ))
+        if self.instance is not None:
+            try:
+                assert v in allowed_values
+            except:
+                raise ValidationError((
+                    f"Invalid read access level '{value}'. "
+                    f"Expected one of {[v.value for v in allowed_values]}"
+                ))
+        return v.value
+
+    def validate_read_access_level(self, value):
+        return self.validate_access_level(value, ALLOWED_USER_LEVELS_READ)
+
+    def validate_edit_access_level(self, value):
+        return self.validate_access_level(value, ALLOWED_USER_LEVELS_EDIT)
+
+    def validate_delete_access_level(self, value):
+        return self.validate_access_level(value, ALLOWED_USER_LEVELS_DELETE)
+
+    def validate(self, attrs):
+        """
+        Only team members can change read and edit access levels.
+        Only team admins can change delete access levels.
+        Ensure access levels follow the hierarchy:
+        READ <= EDIT <= DELETE
+        """
+        if self.instance is not None:
+            user_access_level = self.instance.get_user_level(self.context['request'].user)
+            if 'read_access_level' in attrs or 'edit_access_level' in attrs:
+                if user_access_level < UserLevel.TEAM_MEMBER.value:
+                    raise ValidationError("You may only change access levels if you are a team member")
+                for access_level in ['read_access_level', 'edit_access_level']:
+                    if access_level in attrs:
+                        if getattr(self.instance, access_level) > user_access_level:
+                            raise ValidationError(f"You may not change {access_level} because your access level is too low")
+            if 'delete_access_level' in attrs:
+                if user_access_level < UserLevel.TEAM_ADMIN.value:
+                    raise ValidationError("You may only change delete access levels if you are a team admin")
+        if 'read_access_level' in attrs:
+            edit_level = attrs.get(
+                'edit_access_level',
+                self.instance.edit_access_level if self.instance else UserLevel.TEAM_ADMIN.value
+            )
+            if attrs['read_access_level'] > edit_level:
+                raise ValidationError("Read access level must be less than or equal to edit access level")
+        if 'edit_access_level' in attrs:
+            delete_level = attrs.get(
+                'delete_access_level',
+                self.instance.delete_access_level if self.instance else UserLevel.TEAM_ADMIN.value
+            )
+            if attrs['edit_access_level'] > delete_level:
+                raise ValidationError("Edit access level must be less than or equal to delete access level")
+        return attrs
 
 @extend_schema_serializer(examples = [
     OpenApiExample(
@@ -491,7 +559,10 @@ class CellSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, With
 
     class Meta:
         model = Cell
-        fields = ['url', 'uuid', 'identifier', 'family', 'cycler_tests', 'in_use', 'team', 'permissions']
+        fields = [
+            'url', 'uuid', 'identifier', 'family', 'cycler_tests', 'in_use', 'team',
+            'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
+        ]
         read_only_fields = ['url', 'uuid', 'cycler_tests', 'in_use', 'permissions']
 
 
@@ -565,7 +636,10 @@ class CellFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsMixin
             'cells',
             'in_use',
             'team',
-            'permissions'
+            'permissions',
+            'read_access_level',
+            'edit_access_level',
+            'delete_access_level'
         ]
         read_only_fields = ['url', 'uuid', 'cells', 'in_use', 'permissions']
 
@@ -621,7 +695,10 @@ class EquipmentFamilySerializer(AdditionalPropertiesModelSerializer, Permissions
             'in_use',
             'team',
             'equipment',
-            'permissions'
+            'permissions',
+            'read_access_level',
+            'edit_access_level',
+            'delete_access_level'
         ]
         read_only_fields = ['url', 'uuid', 'in_use', 'equipment', 'permissions']
 
@@ -632,7 +709,7 @@ class EquipmentFamilySerializer(AdditionalPropertiesModelSerializer, Permissions
         summary='Equipment details',
         description='Equipment is used to perform cycler tests. It includes cyclers themselves, as well as temperature chambers. It is grouped into families.',
         value={
-             "url": "http://localhost:8001/equipment/a7bd4c43-29c7-40f1-bcf7-a2924ed474c2/",
+            "url": "http://localhost:8001/equipment/a7bd4c43-29c7-40f1-bcf7-a2924ed474c2/",
             "uuid": "a7bd4c43-29c7-40f1-bcf7-a2924ed474c2",
             "identifier": "1234567890",
             "family": "http://localhost:8001/equipment_families/947e1f7c-c5b9-47b8-a121-d1e519a7154c/",
@@ -671,7 +748,10 @@ class EquipmentSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin,
 
     class Meta:
         model = Equipment
-        fields = ['url', 'uuid', 'identifier', 'family', 'calibration_date', 'in_use', 'team', 'cycler_tests', 'permissions']
+        fields = [
+            'url', 'uuid', 'identifier', 'family', 'calibration_date', 'in_use', 'team', 'cycler_tests',
+            'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
+        ]
         read_only_fields = ['url', 'uuid', 'datasets', 'in_use', 'cycler_tests', 'permissions']
 
 
@@ -734,7 +814,8 @@ class ScheduleFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsM
         fields = [
             'url', 'uuid', 'identifier', 'description',
             'ambient_temperature', 'pybamm_template',
-            'in_use', 'team', 'schedules', 'permissions'
+            'in_use', 'team', 'schedules', 'permissions',
+            'read_access_level', 'edit_access_level', 'delete_access_level'
         ]
         read_only_fields = ['url', 'uuid', 'in_use', 'schedules', 'permissions']
 
@@ -816,7 +897,8 @@ class ScheduleSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, 
         fields = [
             'url', 'uuid', 'family',
             'schedule_file', 'pybamm_schedule_variables',
-            'in_use', 'team', 'cycler_tests', 'permissions'
+            'in_use', 'team', 'cycler_tests', 'permissions',
+            'read_access_level', 'edit_access_level', 'delete_access_level'
         ]
         read_only_fields = ['url', 'uuid', 'in_use', 'cycler_tests', 'permissions']
 
@@ -899,7 +981,8 @@ class CyclerTestSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin
     class Meta:
         model = CyclerTest
         fields = [
-            'url', 'uuid', 'cell', 'equipment', 'schedule', 'rendered_schedule', 'team', 'permissions'
+            'url', 'uuid', 'cell', 'equipment', 'schedule', 'rendered_schedule', 'team', 'permissions',
+            'read_access_level', 'edit_access_level', 'delete_access_level'
         ]
         read_only_fields = ['url', 'uuid', 'rendered_schedule', 'permissions']
 
@@ -1021,6 +1104,12 @@ class HarvesterSerializer(serializers.HyperlinkedModelSerializer, PermissionsMix
 ])
 class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin, WithTeamMixin, CreateOnlyMixin):
     files = serializers.SerializerMethodField(help_text="Files on this MonitoredPath")
+    edit_access_level = serializers.ChoiceField(
+        choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_EDIT_PATH],
+        help_text="Minimum user level required to edit this resource",
+        allow_null=True,
+        required=False
+    )
 
     def get_files(self, instance) -> list[OpenApiTypes.URI]:
         request = self.context['request']
@@ -1100,7 +1189,10 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
 
     class Meta:
         model = MonitoredPath
-        fields = ['url', 'uuid', 'path', 'regex', 'stable_time', 'active', 'files', 'harvester', 'team', 'permissions']
+        fields = [
+            'url', 'uuid', 'path', 'regex', 'stable_time', 'active', 'files', 'harvester', 'team',
+            'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
+        ]
         read_only_fields = ['url', 'uuid', 'files', 'harvester', 'permissions']
         extra_kwargs = augment_extra_kwargs({
             'harvester': {'create_only': True},
@@ -1453,7 +1545,10 @@ class ValidationSchemaSerializer(serializers.HyperlinkedModelSerializer, Permiss
 
     class Meta:
         model = ValidationSchema
-        fields = ['url', 'uuid', 'team', 'name', 'schema', 'permissions']
+        fields = [
+            'url', 'uuid', 'team', 'name', 'schema',
+            'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
+        ]
 
 @extend_schema_serializer(examples = [
     OpenApiExample(

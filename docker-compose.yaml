@@ -74,8 +74,29 @@ services:
       - ./.env
     restart: "on-failure"
 
+  make_spec:
+    image: app-spec
+    build:
+      dockerfile: Dockerfile-test
+      context: .
+    volumes:
+      - ./.dev/spec:/spec
+      - ./backend_django:/code/backend_django
+    environment:
+      FRONTEND_VIRTUAL_HOST: "http://localhost"
+      VIRTUAL_HOST: "localhost"
+      VIRTUAL_HOST_ROOT: "localhost"
+      DJANGO_SETTINGS: "dev"
+    env_file:
+      - ./.env
+    restart: "no"
+    command: "../make_spec.sh"
+
+
   check_spec:
     image: openapitools/openapi-diff
+    depends_on:
+      - make_spec
     volumes:
       - ./.dev/spec:/spec
     entrypoint: /bin/sh -c

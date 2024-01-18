@@ -46,7 +46,6 @@ router.register(r'validation_schemas', views.ValidationSchemaViewSet)
 router.register(r'schema_validations', views.SchemaValidationViewSet)
 router.register(r'users', views.UserViewSet, basename='userproxy')
 router.register(r'tokens', views.TokenViewSet, basename='tokens')
-router.register(r'groups', views.GroupViewSet, basename='groupproxy')
 router.register(r'equipment_types', views.EquipmentTypesViewSet)
 router.register(r'equipment_models', views.EquipmentModelsViewSet)
 router.register(r'equipment_manufacturers', views.EquipmentManufacturersViewSet)
@@ -64,6 +63,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('activate/', views.activate_user, name='activate_user'),
+    path('access_levels/', views.access_levels, name='access_levels'),
     path(r'login/', views.LoginView.as_view(), name='knox_login'),
     path(r'logout/', views.LogoutView.as_view(), name='knox_logout'),
     path(r'logoutall/', views.LogoutAllView.as_view(), name='knox_logoutall'),

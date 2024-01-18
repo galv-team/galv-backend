@@ -6,6 +6,7 @@ import logging
 
 from rest_framework.reverse import reverse
 
+from ..models import UserLevel
 from .utils import GalvTeamResourceTestCase, assert_response_property
 from .factories import MonitoredPathFactory, fake, HarvesterFactory
 
@@ -30,6 +31,16 @@ class MonitoredPathTests(GalvTeamResourceTestCase):
         if not self.harvester:
             self.harvester = HarvesterFactory(lab=self.lab)
         return self.factory(harvester=self.harvester, team=self.lab_team, **perms)
+
+    def create_test_resources(self):
+        """
+        Helper method for creating access test resources.
+        """
+        super().create_test_resources()
+        self.access_test_default.delete()
+        self.access_test_default = self.create_with_perms(
+            edit_access_level=UserLevel.TEAM_MEMBER.value
+        )
 
     def _dict_factory(self, *args, **kwargs):
         """
@@ -58,6 +69,28 @@ class MonitoredPathTests(GalvTeamResourceTestCase):
             self, response, self.assertEqual, response.status_code,
             201, msg=f"Check {self.admin.username} can create resources on {self.lab_team}"
         )
+
+    def test_update_team_member(self):
+        """
+        * Write requests allowed if any of:
+            * User is ADMIN of the team
+            * edit_access_level == 3 and user is a member of the team
+        """
+        self.client.force_authenticate(self.user)
+        for resource, code in [
+            (self.access_test_default, 200),
+            (self.access_test_team_no_write, 403),
+            (self.access_test_lab_no_read, 200),
+            (self.access_test_lab_write, 200),  # these values should never be possible in practice
+            (self.access_test_authorised_read, 200),
+            (self.access_test_authorised_write, 200),  # these values should never be possible in practice
+            (self.access_test_open, 200)
+        ]:
+            with self.subTest(resource=self.get_resource_description(resource)):
+                url = reverse(f'{self.stub}-detail', args=(resource.pk,))
+                response = self.file_safe_request(self.client.patch, url, self.get_edit_kwargs())
+                assert_response_property(self, response, self.assertEqual, response.status_code, code)
+
 
 if __name__ == '__main__':
     unittest.main()
