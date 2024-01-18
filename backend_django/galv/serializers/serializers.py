@@ -450,6 +450,8 @@ class WithTeamMixin(serializers.Serializer):
                 assert self.instance.team in teams
             except:
                 raise ValidationError("You may only edit resources in your own team(s)")
+        else:
+            assert value is not None
         return value
 
     def validate_access_level(self, value, allowed_values):

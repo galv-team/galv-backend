@@ -121,8 +121,10 @@ class _GetOrCreateTextStringViewSet(ListModelMixin, viewsets.GenericViewSet):
     #     text_string = get_object_or_404(self.queryset, pk=pk)
     #     return Response(GetOrCreateTextStringSerializer(text_string).data)
 
-
-@extend_schema(exclude=True)
+@extend_schema(responses={200: inline_serializer(
+    'ActivationResponse',
+    {"details": serializers.CharField()}
+)})
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
 def activate_user(request):
@@ -143,7 +145,12 @@ def activate_user(request):
     return Response({"detail": f"User {activation.user.username} activated"})
 
 
-@extend_schema(exclude=True)
+@extend_schema(responses={200: inline_serializer('PermittedAccessLevels', {
+    "read_access_level": serializers.ListField(child=serializers.CharField()),
+    "edit_access_level": serializers.ListField(child=serializers.CharField()),
+    "delete_access_level": serializers.ListField(child=serializers.CharField()),
+    "path.edit_access_level": serializers.ListField(child=serializers.CharField()),
+})})
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
 def access_levels(request):

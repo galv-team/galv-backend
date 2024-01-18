@@ -454,7 +454,10 @@ class ResourceModelPermissionsMixin(TimestampedModel):
 
     @staticmethod
     def has_create_permission(request):
-        return request.user.is_authenticated and user_is_active(request.user)
+        """
+        Users must be in a team to create a resource
+        """
+        return len(user_teams(request.user)) > 0
 
     @staticmethod
     def has_read_permission(request):
