@@ -29,7 +29,7 @@ jobs:
     outputs:
       version: ${{ steps.scrape.outputs.version }}
       prev-version-tag: ${{ steps.search.outputs.prev-version-tag }}
-      is-major-release: ${{ steps.search.outputs.previous_major_version_tag != steps.search.outputs.prev-version-tag }}
+      is-major-release: ${{ steps.search.outputs.previous-major-version-tag != steps.search.outputs.prev-version-tag }}
       untagged-release: ${{ steps.search.outputs.untagged-release == 'true' }}
     steps:
       - name: Checkout
@@ -86,13 +86,13 @@ jobs:
             os.system(f'echo prev-version-tag={tags[i-1]} >> $GITHUB_OUTPUT')
           # Get the previous major version tag
           if i == 0:
-            os.system('echo previous_major_version_tag= >> $GITHUB_OUTPUT')
+            os.system('echo previous-major-version-tag= >> $GITHUB_OUTPUT')
           else:
             major_version = tags[i].split('.')[0]
             prev_ver_tags = [tag for tag in tags if tag.split('.')[0] < major_version]
             if len(prev_ver_tags) == 0:
-                os.system('echo previous_major_version_tag= >> $GITHUB_OUTPUT')
+                os.system('echo previous-major-version-tag= >> $GITHUB_OUTPUT')
             else:
-                os.system(f'echo previous_major_version_tag={prev_ver_tags[-1]} >> $GITHUB_OUTPUT')
+                os.system(f'echo previous-major-version-tag={prev_ver_tags[-1]} >> $GITHUB_OUTPUT')
           "
           cat $GITHUB_OUTPUT
