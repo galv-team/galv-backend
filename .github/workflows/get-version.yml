@@ -19,9 +19,9 @@ on:
       is_major_release:
         description: "Is this a major release?"
         value: ${{ jobs.get_version.outputs.is_major_release }}
-      untagged_release:
+      untagged-release:
         description: "Is this an unreleased version?"
-        value: ${{ jobs.get_version.outputs.untagged_release }}
+        value: ${{ jobs.get_version.outputs.untagged-release }}
 
 jobs:
   get-version:
@@ -30,7 +30,7 @@ jobs:
       version: ${{ steps.scrape.outputs.version }}
       prev_version_tag: ${{ steps.search.outputs.prev_version_tag }}
       is_major_release: ${{ steps.search.outputs.previous_major_version_tag != steps.search.outputs.prev_version_tag }}
-      untagged_release: ${{ steps.search.outputs.untagged_release == 'true' }}
+      untagged-release: ${{ steps.search.outputs.untagged-release == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -68,7 +68,7 @@ jobs:
             fi          
             git tag ${{ steps.scrape.outputs.version }} || true
           fi
-          echo untagged_release=$UNTAGGED_RELEASE >> $GITHUB_OUTPUT
+          echo untagged-release=$UNTAGGED_RELEASE >> $GITHUB_OUTPUT
           
           # Save tag list to a temporary file
           git tag --list > tags.txt

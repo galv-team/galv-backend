@@ -69,17 +69,15 @@ jobs:
           script: |
             const fs = require('fs');
             
-            await core.group(`GitHub context`, async () => {
+            await core.group(`GitHub needs`, async () => {
               core.info(JSON.stringify(JSON.parse(`${process.env.NEEDS}`), null, 2));
             });
         env:
           NEEDS: ${{ toJson(needs) }}
 
-
-
       - name: Debug needs
         run: |
-          echo "needs.version.outputs.untagged_release=${{ needs.version.outputs.untagged_release }}"
+          echo "needs.version.outputs.untagged-release=${{ needs.version.outputs.untagged-release }}"
       - name: Check if tagged release is required
         id: check-tag
         run: |
@@ -97,7 +95,7 @@ jobs:
               RELEASE=true  # requesting dry-run implies requesting release
           elif [[ ${{ github.event_name }} == 'push' && $(echo "${{ github.ref }}" | grep -qE "^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$") ]]; then
               RELEASE=true
-          elif [[ ${{ github.event_name }} == 'push' && "${{ needs.version.outputs.untagged_release }}" == "true" ]]; then
+          elif [[ ${{ github.event_name }} == 'push' && "${{ needs.version.outputs.untagged-release }}" == "true" ]]; then
               RELEASE=true
               DRY_RUN=true
           fi
