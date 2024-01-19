@@ -55,48 +55,48 @@ jobs:
         run: |
           docker-compose run --rm app_test bash -c "python manage.py spectacular --fail-on-warn --validate"
 
+  check-release-type:
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.check-tag.outputs.release }}
+      dry_run: ${{ steps.check-tag.outputs.dry }}
+    needs:
+      - version
+    steps:
       - name: Check if tagged release is required
         if: ${{ github.event_name != 'workflow_dispatch' }}
         id: check-tag
         run: |
-          if [[ ${{ github.event.ref }} =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              echo "match=true" >> $GITHUB_OUTPUT
+          DRY_RUN=false
+          RELEASE=false
+          # Determine release based on whether:
+          # 1. We're in a workflow_dispatch event and the inputs.issue_release flag is true
+          # 2. We're in a workflow_dispatch event and the inputs.dry_release_run flag is true
+          # 3. We're on a tag and the tag is a semver tag
+          # 4. We're on a branch and we have an unpublished version
+          if [[ ${{ github.event_name }} == 'workflow_dispatch' && ${{ github.event.inputs.issue_release }} == 'true' ]]; then
+              RELEASE=true
+          elif [[ ${{ github.event_name }} == 'workflow_dispatch' && ${{ github.event.inputs.dry_release_run }} == 'true' ]]; then
+              DRY_RUN=true
+              RELEASE=true  # requesting dry_run implies requesting release
+          elif [[ ${{ github.event_name }} == 'push' && ${{ github.ref }} =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              RELEASE=true
+          elif [[ ${{ github.event_name }} == 'push' && ${{ needs.version.outputs.unpublished_version }} == 'true' ]]; then
+              RELEASE=true
+              DRY_RUN=true
           fi
+          echo "release=$RELEASE" >> $GITHUB_OUTPUT
+          echo "dry_run=$DRY_RUN" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
 
   release:
     needs:
       - run-tests
-      - version
-    if: ${{ needs.run-tests.outputs.release == 'true' || needs.version.outputs.unpublished_version == 'true' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.issue_release || github.event.inputs.dry_release_run)) }}
+      - check-release-type
+    if: needs.check-release-type.outputs.release
     uses: ./.github/workflows/issue-release.yml
     secrets: inherit
     with:
       debug_enabled: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       skip_compatibility_check: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_compatibility_check }}
-      dry_run: ${{ needs.run-tests.outputs.unpublished_version == 'true' || (github.event_name == 'workflow_dispatch' && inputs.dry_release_run) }}
-
-  debug-release:
-    runs-on: ubuntu-latest
-    needs:
-      - run-tests
-      - version
-    steps:
-      - name: Debug release
-        env:
-          RELEASE: ${{ needs.run-tests.outputs.release }}
-          UNPUBLISHED_VERSION: ${{ needs.version.outputs.unpublished_version }}
-          ISSUE_RELEASE: ${{ github.event.inputs.issue_release }}
-          ISSUE_RELEASE_NATIVE: ${{ inputs.issue_release }}
-          EVENT_NAME: ${{ github.event_name }}
-        run: |
-          echo "release: ${{ needs.run-tests.outputs.release }}"
-          echo "env release: ${{ env.RELEASE }}"
-          echo "unpublished_version: ${{ needs.version.outputs.unpublished_version }}"
-          echo "env unpublished_version: ${{ env.UNPUBLISHED_VERSION }}"
-          echo "issue_release [event]: ${{ github.event.inputs.issue_release }}"
-          echo "env issue_release [event]: ${{ env.ISSUE_RELEASE }}"
-          echo "issue_release [native]: ${{ inputs.issue_release }}"
-          echo "env issue_release [native]: ${{ env.ISSUE_RELEASE_NATIVE }}"
-          echo "github.event_name: ${{ github.event_name }}"
-          echo "env github.event_name: ${{ env.EVENT_NAME }}"
-          env
+      dry_run: ${{ needs.check-release-type.outputs.dry_run }}
