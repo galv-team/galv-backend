@@ -63,6 +63,9 @@ jobs:
     needs:
       - version
     steps:
+      - name: Dump context
+        uses: crazy-max/ghaction-dump-context@v2
+
       - name: Debug needs
         run: |
           echo "needs.version.outputs.untagged_release=${{ needs.version.outputs.untagged_release }}"
