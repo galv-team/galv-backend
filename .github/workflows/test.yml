@@ -70,20 +70,30 @@ jobs:
       - version
     steps:
       - name: Debug release
+        env:
+          RELEASE: ${{ needs.run-tests.outputs.release }}
+          UNPUBLISHED_VERSION: ${{ needs.version.outputs.unpublished_version }}
+          ISSUE_RELEASE: ${{ github.event.inputs.issue_release }}
+          ISSUE_RELEASE_NATIVE: ${{ inputs.issue_release }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           echo "release: ${{ needs.run-tests.outputs.release }}"
-          echo "unreleased_version: ${{ needs.version.outputs.unreleased_version }}"
-          echo "unpublished_version: ${{ needs.run-tests.outputs.unpublished_version }}"
+          echo "env release: $RELEASE"
+          echo "unpublished_version: ${{ needs.version.outputs.unpublished_version }}"
+          echo "env unpublished_version: $UNPUBLISHED_VERSION"
           echo "issue_release [event]: ${{ github.event.inputs.issue_release }}"
+          echo "env issue_release [event]: $ISSUE_RELEASE"
           echo "issue_release [native]: ${{ inputs.issue_release }}"
+          echo "env issue_release [native]: $ISSUE_RELEASE_NATIVE"
           echo "github.event_name: ${{ github.event_name }}"
+          echo "env github.event_name: $EVENT_NAME"
           env
 
   release:
     needs:
       - run-tests
       - version
-    if: ${{ needs.run-tests.outputs.release == 'true' || needs.version.outputs.unreleased_version == 'true' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.issue_release || github.event.inputs.dry_release_run)) }}
+    if: ${{ needs.run-tests.outputs.release == 'true' || needs.version.outputs.unpublished_version == 'true' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.issue_release || github.event.inputs.dry_release_run)) }}
     uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/issue-release.yml@main
     secrets: inherit
     with:
