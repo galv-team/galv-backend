@@ -72,8 +72,8 @@ jobs:
             await core.group(`GitHub context`, async () => {
               core.info(JSON.stringify(JSON.parse(`${process.env.NEEDS}`), null, 2));
             });
-          env:
-            NEEDS: ${{ toJson(needs) }}
+        env:
+          NEEDS: ${{ toJson(needs) }}
 
 
 
