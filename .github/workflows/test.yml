@@ -67,10 +67,10 @@ jobs:
     needs:
       - run-tests
       - version
-    if: ${{ needs.run-tests.outputs.release == 'true' || needs.version.outputs.unreleased_version || (github.event_name == 'workflow_dispatch' && (github.event.inputs.issue_release || github.event.inputs.dry_release_run)) }}
+    if: ${{ needs.run-tests.outputs.release == 'true' || needs.version.outputs.unreleased_version == 'true' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.issue_release || github.event.inputs.dry_release_run)) }}
     uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/issue-release.yml@main
     secrets: inherit
     with:
       debug_enabled: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       skip_compatibility_check: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_compatibility_check }}
-      dry_run: ${{ needs.run-tests.outputs.unpublished_version || (github.event_name == 'workflow_dispatch' && inputs.dry_release_run) }}
+      dry_run: ${{ needs.run-tests.outputs.unpublished_version == 'true' || (github.event_name == 'workflow_dispatch' && inputs.dry_release_run) }}
