@@ -71,6 +71,8 @@ jobs:
   make-clients:
     needs: check
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
     steps:
       - uses: actions/checkout@v3
 
@@ -100,6 +102,9 @@ jobs:
           -g python \
           -o /local/clients/python
           
+          # Copy LICENSE file to client directory
+          cp LICENSE clients/python/LICENSE
+          
           # zip the client
           zip -r clients/galv-client-python.zip clients/python
 
@@ -111,8 +116,47 @@ jobs:
           -g typescript-axios \
           -o /local/clients/typescript-axios
           
+          # Copy LICENSE file to client directory
+          cp LICENSE clients/typescript-axios/LICENSE
+          
+          # Create a package.json file using EOF notation
+          cat << EOF > clients/typescript-axios/package.json
+          {
+              "name": "galv-client-axios",
+              "version": "${{ needs.version.outputs.version }}",
+              "description": "Galv API client using Typescript-Axios",
+              "main": "index.ts",
+              "scripts": {
+                "test": "echo \"Error: no test specified\" && exit 1"
+              },
+              "keywords": [
+                "galv",
+                "galv-api",
+                "galv-client",
+                "typescript-axios"
+              ],
+              "author": "Battery Intelligence Lab",
+              "license": "See LICENSE File",
+              "dependencies": {
+                "axios": "^0.21.1"
+              }
+          }
+          EOF
+          
           # zip the client
           zip -r clients/galv-client-typescript-axios.zip clients/typescript-axios
+
+      - name: Setup publishing typescript client to packages
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - run: npm ci
+      - uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          registry: "https://npm.pkg.github.com"
+          package: "clients/typescript-axios"
 
       - name: Upload clients
         uses: actions/upload-artifact@v4
