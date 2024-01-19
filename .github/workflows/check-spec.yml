@@ -157,8 +157,8 @@ jobs:
         with:
           node-version: '20'
 
-      - run: npm ci
-      - uses: JS-DevTools/npm-publish@v3
+      - name: Publish typescript client to packages
+        uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           registry: "https://npm.pkg.github.com"
