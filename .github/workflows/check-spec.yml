@@ -108,8 +108,8 @@ jobs:
           -g python \
           -o /local/clients/python
           
-          # Copy LICENSE file to client directory
-          cp ../LICENSE clients/python/LICENSE
+          # Copy LICENCE file to client directory
+          cp LICENCE clients/python/LICENCE
           
           # zip the client
           zip -r clients/galv-client-python.zip clients/python
@@ -122,8 +122,8 @@ jobs:
           -g typescript-axios \
           -o /local/clients/typescript-axios
           
-          # Copy LICENSE file to client directory
-          cp ../LICENSE clients/typescript-axios/LICENSE
+          # Copy LICENCE file to client directory
+          cp LICENCE clients/typescript-axios/LICENCE
           
           # Create a package.json file using EOF notation
           cat << EOF > clients/typescript-axios/package.json
@@ -142,7 +142,7 @@ jobs:
                 "typescript-axios"
               ],
               "author": "Battery Intelligence Lab",
-              "license": "See LICENSE File",
+              "license": "See LICENCE File",
               "dependencies": {
                 "axios": "^0.21.1"
               }
