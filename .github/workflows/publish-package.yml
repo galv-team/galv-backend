@@ -8,7 +8,7 @@ on:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
-      dry_run:
+      dry-run:
         type: boolean
         description: 'Do not actually release the package, just check that it is valid.'
         required: false
@@ -19,7 +19,7 @@ on:
         type: boolean
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
-      dry_run:
+      dry-run:
         type: boolean
         description: 'Do not actually release the package, just check that it is valid.'
         required: false
@@ -58,6 +58,6 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          push: ${{ !inputs.dry_run }}
+          push: ${{ !inputs.dry-run }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

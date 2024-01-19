@@ -7,7 +7,7 @@ on:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
-      dry_run:
+      dry-run:
         type: boolean
         description: 'Do not actually release the package, just check that it is valid.'
         required: false
@@ -24,7 +24,7 @@ on:
         description: 'Skip checking that the release version matches the branch name.'
         required: false
         default: false
-      dry_run:
+      dry-run:
         type: boolean
         description: 'Do not actually release the package, just check that it is valid.'
         required: false
@@ -48,7 +48,7 @@ jobs:
         if: ${{ inputs.debug_enabled }}
 
       - name: Check version matches ref
-        if: ${{ !inputs.dry_run && (github.event_name != 'workflow_dispatch' || !inputs.skip_match_check) }}
+        if: ${{ !inputs.dry-run && (github.event_name != 'workflow_dispatch' || !inputs.skip_match_check) }}
         run: |
           # Assert that the release version matches the branch name
           if [ "${{ needs.version.outputs.version }}" != "${{ github.ref_name }}" ]; then
@@ -175,7 +175,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           registry: "https://npm.pkg.github.com"
           package: "clients/typescript-axios"
-          dry-run: ${{ inputs.dry_run }}
+          dry-run: ${{ inputs.dry-run }}
 
       - name: Upload clients
         uses: actions/upload-artifact@v4

@@ -59,12 +59,11 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release: ${{ steps.check-tag.outputs.release }}
-      dry_run: ${{ steps.check-tag.outputs.dry }}
+      dry-run: ${{ steps.check-tag.outputs.dry }}
     needs:
       - version
     steps:
       - name: Check if tagged release is required
-        if: ${{ github.event_name != 'workflow_dispatch' }}
         id: check-tag
         run: |
           DRY_RUN=false
@@ -78,15 +77,15 @@ jobs:
               RELEASE=true
           elif [[ ${{ github.event_name }} == 'workflow_dispatch' && "${{ github.event.inputs.dry_release_run == 'true' }}" == "true" ]]; then
               DRY_RUN=true
-              RELEASE=true  # requesting dry_run implies requesting release
+              RELEASE=true  # requesting dry-run implies requesting release
           elif [[ ${{ github.event_name }} == 'push' && $(echo "${{ github.ref }}" | grep -qE "^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$") ]]; then
               RELEASE=true
-          elif [[ ${{ github.event_name }} == 'push' && "${{ needs.version.outputs.unpublished_version == 'true' }}" == "true" ]]; then
+          elif [[ ${{ github.event_name }} == 'push' && "${{ needs.version.outputs.untagged_release == 'true' }}" == "true" ]]; then
               RELEASE=true
               DRY_RUN=true
           fi
           echo "release=$RELEASE" >> $GITHUB_OUTPUT
-          echo "dry_run=$DRY_RUN" >> $GITHUB_OUTPUT
+          echo "dry-run=$DRY_RUN" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
       - name: Debug with tmate
         if: ${{ failure() }}
@@ -102,4 +101,4 @@ jobs:
     with:
       debug_enabled: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       skip_compatibility_check: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_compatibility_check }}
-      dry_run: ${{ needs.check-release-type.outputs.dry_run }}
+      dry-run: ${{ needs.check-release-type.outputs.dry-run == 'true' }}
