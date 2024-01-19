@@ -13,12 +13,12 @@ on:
       version:
         description: "API_VERSION defined in settings_base.py"
         value: ${{ jobs.get-version.outputs.version }}
-      prev_version_tag:
+      prev-version-tag:
         description: "Previous version tag"
-        value: ${{ jobs.get_version.outputs.prev_version_tag }}
-      is_major_release:
+        value: ${{ jobs.get_version.outputs.prev-version-tag }}
+      is-major-release:
         description: "Is this a major release?"
-        value: ${{ jobs.get_version.outputs.is_major_release }}
+        value: ${{ jobs.get_version.outputs.is-major-release }}
       untagged-release:
         description: "Is this an unreleased version?"
         value: ${{ jobs.get_version.outputs.untagged-release }}
@@ -28,8 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.scrape.outputs.version }}
-      prev_version_tag: ${{ steps.search.outputs.prev_version_tag }}
-      is_major_release: ${{ steps.search.outputs.previous_major_version_tag != steps.search.outputs.prev_version_tag }}
+      prev-version-tag: ${{ steps.search.outputs.prev-version-tag }}
+      is-major-release: ${{ steps.search.outputs.previous_major_version_tag != steps.search.outputs.prev-version-tag }}
       untagged-release: ${{ steps.search.outputs.untagged-release == 'true' }}
     steps:
       - name: Checkout
@@ -81,9 +81,9 @@ jobs:
           tags.sort(key=lambda s: list(map(int, s[1:].split('.'))))
           i = tags.index('${{ steps.scrape.outputs.version }}')
           if i == 0:
-            os.system('echo prev_version_tag= >> $GITHUB_OUTPUT')
+            os.system('echo prev-version-tag= >> $GITHUB_OUTPUT')
           else:
-            os.system(f'echo prev_version_tag={tags[i-1]} >> $GITHUB_OUTPUT')
+            os.system(f'echo prev-version-tag={tags[i-1]} >> $GITHUB_OUTPUT')
           # Get the previous major version tag
           if i == 0:
             os.system('echo previous_major_version_tag= >> $GITHUB_OUTPUT')
