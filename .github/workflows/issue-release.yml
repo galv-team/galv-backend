@@ -39,13 +39,13 @@ on:
 jobs:
   check-spec:
     if: ${{ !inputs.skip_compatibility_check }}
-    uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/check-spec.yml
+    uses: ./.github/workflows/check-spec.yml
     secrets: inherit
     with:
         debug_enabled: ${{ inputs.debug_enabled }}
         dry_run: ${{ inputs.dry_run }}
   publish-package:
-    uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/publish-package.yml
+    uses: ./.github/workflows/publish-package.yml
     secrets: inherit
     with:
         debug_enabled: ${{ inputs.debug_enabled }}

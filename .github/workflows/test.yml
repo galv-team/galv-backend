@@ -26,7 +26,7 @@ on:
 
 jobs:
   version:
-    uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/get-version.yml
+    uses: ./.github/workflows/get-version.yml
     secrets: inherit
 
   run-tests:
@@ -68,7 +68,7 @@ jobs:
       - run-tests
       - version
     if: ${{ needs.run-tests.outputs.release == 'true' || needs.version.outputs.unpublished_version == 'true' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.issue_release || github.event.inputs.dry_release_run)) }}
-    uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/issue-release.yml
+    uses: ./.github/workflows/issue-release.yml
     secrets: inherit
     with:
       debug_enabled: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}

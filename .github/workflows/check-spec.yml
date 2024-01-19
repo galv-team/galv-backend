@@ -32,7 +32,7 @@ on:
 
 jobs:
   version:
-    uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/get-version.yml
+    uses: ./.github/workflows/get-version.yml
     secrets: inherit
 
   check:
