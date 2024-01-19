@@ -126,7 +126,7 @@ jobs:
           sudo cp LICENCE clients/typescript-axios/LICENCE
           
           # Create a package.json file using EOF notation
-          sudo cat << EOF > clients/typescript-axios/package.json
+          cat << EOF | sudo tee -a clients/typescript-axios/package.json
           {
               "name": "galv-client-axios",
               "version": "${{ needs.version.outputs.version }}",
