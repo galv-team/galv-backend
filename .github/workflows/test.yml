@@ -88,6 +88,9 @@ jobs:
           echo "release=$RELEASE" >> $GITHUB_OUTPUT
           echo "dry_run=$DRY_RUN" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
+      - name: Debug with tmate
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
 
   release:
     needs:
