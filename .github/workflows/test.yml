@@ -80,8 +80,6 @@ jobs:
     needs:
       - run-tests
       - version
-      - release
-    if: ${{ needs.release.result == 'skipped' }}
     steps:
       - name: Debug release
         env:
@@ -92,13 +90,13 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
         run: |
           echo "release: ${{ needs.run-tests.outputs.release }}"
-          echo "env release: $RELEASE"
+          echo "env release: ${{ env.RELEASE }}"
           echo "unpublished_version: ${{ needs.version.outputs.unpublished_version }}"
-          echo "env unpublished_version: $UNPUBLISHED_VERSION"
+          echo "env unpublished_version: ${{ env.UNPUBLISHED_VERSION }}"
           echo "issue_release [event]: ${{ github.event.inputs.issue_release }}"
-          echo "env issue_release [event]: $ISSUE_RELEASE"
+          echo "env issue_release [event]: ${{ env.ISSUE_RELEASE }}"
           echo "issue_release [native]: ${{ inputs.issue_release }}"
-          echo "env issue_release [native]: $ISSUE_RELEASE_NATIVE"
+          echo "env issue_release [native]: ${{ env.ISSUE_RELEASE_NATIVE }}"
           echo "github.event_name: ${{ github.event_name }}"
-          echo "env github.event_name: $EVENT_NAME"
+          echo "env github.event_name: ${{ env.EVENT_NAME }}"
           env
