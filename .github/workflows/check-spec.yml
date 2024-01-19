@@ -115,6 +115,8 @@ jobs:
           zip -r clients/galv-client-python.zip clients/python
 
       - name: Create API client - typescript-axios
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
           JSON_FILE=$(ls .dev/spec/*.json)
           docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v6.6.0 generate \
@@ -129,7 +131,7 @@ jobs:
           cat << EOF | sudo tee -a clients/typescript-axios/package.json
           {
               "name": "galv-client-axios",
-              "version": "${{ needs.version.outputs.version }}",
+              "version": "$VERSION",
               "description": "Galv API client using Typescript-Axios",
               "main": "index.ts",
               "scripts": {
