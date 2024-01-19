@@ -64,7 +64,18 @@ jobs:
       - version
     steps:
       - name: Dump context
-        uses: crazy-max/ghaction-dump-context@v2
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            
+            await core.group(`GitHub context`, async () => {
+              core.info(JSON.stringify(JSON.parse(`${process.env.NEEDS}`), null, 2));
+            });
+          env:
+            NEEDS: ${{ toJson(needs) }}
+
+
 
       - name: Debug needs
         run: |
