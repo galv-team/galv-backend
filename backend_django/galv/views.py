@@ -146,10 +146,10 @@ def activate_user(request):
 
 
 @extend_schema(responses={200: inline_serializer('PermittedAccessLevels', {
-    "read_access_level": serializers.ListField(child=serializers.DictField(child=serializers.IntegerField)),
-    "edit_access_level": serializers.ListField(child=serializers.DictField(child=serializers.IntegerField)),
-    "delete_access_level": serializers.ListField(child=serializers.DictField(child=serializers.IntegerField)),
-    "path.edit_access_level": serializers.ListField(child=serializers.DictField(child=serializers.IntegerField)),
+    "read_access_level": serializers.ListField(child=serializers.DictField(child=serializers.IntegerField())),
+    "edit_access_level": serializers.ListField(child=serializers.DictField(child=serializers.IntegerField())),
+    "delete_access_level": serializers.ListField(child=serializers.DictField(child=serializers.IntegerField())),
+    "path.edit_access_level": serializers.ListField(child=serializers.DictField(child=serializers.IntegerField())),
 })})
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
