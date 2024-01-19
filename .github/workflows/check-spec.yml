@@ -103,13 +103,13 @@ jobs:
       - name: Create API client - python
         run: |
           JSON_FILE=$(ls .dev/spec/*.json)
-          docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
+          docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v6.6.0 generate \
           -i "/local/$JSON_FILE" \
           -g python \
           -o /local/clients/python
           
           # Copy LICENCE file to client directory
-          cp LICENCE clients/python/LICENCE
+          sudo cp LICENCE clients/python/LICENCE
           
           # zip the client
           zip -r clients/galv-client-python.zip clients/python
@@ -117,16 +117,16 @@ jobs:
       - name: Create API client - typescript-axios
         run: |
           JSON_FILE=$(ls .dev/spec/*.json)
-          docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
+          docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v6.6.0 generate \
           -i "/local/$JSON_FILE" \
           -g typescript-axios \
           -o /local/clients/typescript-axios
           
           # Copy LICENCE file to client directory
-          cp LICENCE clients/typescript-axios/LICENCE
+          sudo cp LICENCE clients/typescript-axios/LICENCE
           
           # Create a package.json file using EOF notation
-          cat << EOF > clients/typescript-axios/package.json
+          sudo cat << EOF > clients/typescript-axios/package.json
           {
               "name": "galv-client-axios",
               "version": "${{ needs.version.outputs.version }}",
