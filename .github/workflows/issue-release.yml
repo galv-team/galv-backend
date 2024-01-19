@@ -13,6 +13,11 @@ on:
         description: 'Skip API compatibility check. WARNING: this will allow breaking changes to the API to be released.'
         required: false
         default: false
+      dry_run:
+        type: boolean
+        description: 'Do not actually release the package, just check that it is valid.'
+        required: false
+        default: false
   workflow_dispatch:
     inputs:
       debug_enabled:
@@ -25,6 +30,11 @@ on:
         description: 'Skip API compatibility check. WARNING: this will allow breaking changes to the API to be released.'
         required: false
         default: false
+      dry_run:
+        type: boolean
+        description: 'Do not actually release the package, just check that it is valid.'
+        required: false
+        default: false
 
 jobs:
   check-spec:
@@ -33,11 +43,13 @@ jobs:
     secrets: inherit
     with:
         debug_enabled: ${{ inputs.debug_enabled }}
+        dry_run: ${{ inputs.dry_run }}
   publish-package:
     uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/publish-package.yml@main
     secrets: inherit
     with:
         debug_enabled: ${{ inputs.debug_enabled }}
+        dry_run: ${{ inputs.dry_run }}
 
   issue-release:
     needs:
@@ -48,7 +60,7 @@ jobs:
       contents: write
     steps:
       - name: Check ref is semver
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ !inputs.dry_run }}
         run: |
           # Assert that the release version matches the branch name
           if ! [[ "${{ github.ref_name }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -63,6 +75,7 @@ jobs:
         uses: actions/download-artifact@v4
 
       - name: Release
+        if: ${{ !inputs.dry_run }}
         uses: softprops/action-gh-release@v1
         with:
           files: |

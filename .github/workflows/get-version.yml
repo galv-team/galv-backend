@@ -19,6 +19,9 @@ on:
       is_major_release:
         description: "Is this a major release?"
         value: ${{ jobs.get_version.outputs.is_major_release }}
+      unreleased_version:
+        description: "Is this an unreleased version?"
+        value: ${{ jobs.get_version.outputs.unreleased_version }}
 
 jobs:
   get-version:
@@ -27,6 +30,7 @@ jobs:
       version: ${{ steps.scrape.outputs.version }}
       prev_version_tag: ${{ steps.search.outputs.prev_version_tag }}
       is_major_release: ${{ steps.search.outputs.previous_major_version_tag != steps.search.outputs.prev_version_tag }}
+      unreleased_version: ${{ steps.search.outputs.unreleased_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -55,11 +59,17 @@ jobs:
           # Get a list of all repository tags
           git fetch --tags --force
           # Create our tag if this is a branch rather than a tag
+          UNRELEASED_VERSION=false
           if [ "${{ github.ref_type }}" == "branch" ]; then
             git config --global user.email gg@example.com
             git config --global user.name "GitHub Actions"
+            if [ -z $(git tag --list | grep ${{ steps.scrape.outputs.version }}) ]; then
+              UNRELEASED_VERSION=true
+            fi          
             git tag ${{ steps.scrape.outputs.version }} || true
           fi
+          echo unreleased_version=$UNRELEASED_VERSION >> $GITHUB_OUTPUT
+          
           # Save tag list to a temporary file
           git tag --list > tags.txt
           # Get the previous tag
