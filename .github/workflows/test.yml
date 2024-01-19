@@ -79,7 +79,7 @@ jobs:
           elif [[ ${{ github.event_name }} == 'workflow_dispatch' && ${{ github.event.inputs.dry_release_run }} == 'true' ]]; then
               DRY_RUN=true
               RELEASE=true  # requesting dry_run implies requesting release
-          elif [[ ${{ github.event_name }} == 'push' && ${{ github.ref }} =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          elif [[ ${{ github.event_name }} == 'push' && $(echo "${{ github.ref }}" | grep -qE "^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$") ]]; then
               RELEASE=true
           elif [[ ${{ github.event_name }} == 'push' && ${{ needs.version.outputs.unpublished_version }} == 'true' ]]; then
               RELEASE=true
