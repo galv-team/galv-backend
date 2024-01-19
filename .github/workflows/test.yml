@@ -74,14 +74,14 @@ jobs:
           # 2. We're in a workflow_dispatch event and the inputs.dry_release_run flag is true
           # 3. We're on a tag and the tag is a semver tag
           # 4. We're on a branch and we have an unpublished version
-          if [[ ${{ github.event_name }} == 'workflow_dispatch' && ${{ github.event.inputs.issue_release }} == 'true' ]]; then
+          if [[ ${{ github.event_name }} == 'workflow_dispatch' && "${{ github.event.inputs.issue_release == 'true' }}" == "true" ]]; then
               RELEASE=true
-          elif [[ ${{ github.event_name }} == 'workflow_dispatch' && ${{ github.event.inputs.dry_release_run }} == 'true' ]]; then
+          elif [[ ${{ github.event_name }} == 'workflow_dispatch' && "${{ github.event.inputs.dry_release_run == 'true' }}" == "true" ]]; then
               DRY_RUN=true
               RELEASE=true  # requesting dry_run implies requesting release
           elif [[ ${{ github.event_name }} == 'push' && $(echo "${{ github.ref }}" | grep -qE "^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$") ]]; then
               RELEASE=true
-          elif [[ ${{ github.event_name }} == 'push' && ${{ needs.version.outputs.unpublished_version == 'true' }} == 'true' ]]; then
+          elif [[ ${{ github.event_name }} == 'push' && "${{ needs.version.outputs.unpublished_version == 'true' }}" == "true" ]]; then
               RELEASE=true
               DRY_RUN=true
           fi
