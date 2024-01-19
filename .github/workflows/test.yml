@@ -95,7 +95,7 @@ jobs:
     needs:
       - run-tests
       - check-release-type
-    if: needs.check-release-type.outputs.release
+    if: needs.check-release-type.outputs.release == 'true'
     uses: ./.github/workflows/issue-release.yml
     secrets: inherit
     with:
