@@ -30,7 +30,7 @@ jobs:
       version: ${{ steps.scrape.outputs.version }}
       prev_version_tag: ${{ steps.search.outputs.prev_version_tag }}
       is_major_release: ${{ steps.search.outputs.previous_major_version_tag != steps.search.outputs.prev_version_tag }}
-      untagged_release: ${{ steps.search.outputs.untagged_release }}
+      untagged_release: ${{ steps.search.outputs.untagged_release == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
