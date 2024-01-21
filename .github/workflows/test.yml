@@ -123,4 +123,4 @@ jobs:
     with:
       debug_enabled: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       skip_compatibility_check: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_compatibility_check }}
-      dry-run: ${{ needs.check-release-type.outputs.dry-run }}
+      dry-run: ${{ needs.check-release-type.outputs.dry-run || false }}
