@@ -75,9 +75,6 @@ jobs:
         env:
           NEEDS: ${{ toJson(needs) }}
 
-      - name: Debug needs
-        run: |
-          echo "needs.version.outputs.untagged=${{ needs.version.outputs.untagged }}"
       - name: Check if tagged release is required
         id: check-tag
         run: |
@@ -85,16 +82,16 @@ jobs:
           RELEASE=false
           # Determine release based on whether:
           # 1. We're in a workflow_dispatch event and the inputs.issue_release flag is true
-          # 2. We're in a workflow_dispatch event and the inputs.dry_release_run flag is true
-          # 3. We're on a tag and the tag is a semver tag
-          # 4. We're on a branch and we have an unpublished version
           if [[ ${{ github.event_name }} == 'workflow_dispatch' && "${{ github.event.inputs.issue_release }}" == "true" ]]; then
               RELEASE=true
+          # 2. We're in a workflow_dispatch event and the inputs.dry_release_run flag is true
           elif [[ ${{ github.event_name }} == 'workflow_dispatch' && "${{ github.event.inputs.dry_release_run }}" == "true" ]]; then
               DRY_RUN=true
               RELEASE=true  # requesting dry-run implies requesting release
+          # 3. We're on a tag and the tag is a semver tag
           elif [[ ${{ github.event_name }} == 'push' && $(echo "${{ github.ref }}" | grep -qE "^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$") ]]; then
               RELEASE=true
+          # 4. We're on a branch and we have an unpublished version
           elif [[ ${{ github.event_name }} == 'push' && "${{ needs.version.outputs.untagged }}" == "true" ]]; then
               RELEASE=true
               DRY_RUN=true
@@ -102,6 +99,7 @@ jobs:
           echo "release=$RELEASE" >> $GITHUB_OUTPUT
           echo "dry-run=$DRY_RUN" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
+
       - name: Debug with tmate
         if: ${{ failure() }}
         uses: mxschmitt/action-tmate@v3

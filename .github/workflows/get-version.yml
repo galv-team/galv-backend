@@ -15,16 +15,16 @@ on:
         value: ${{ jobs.get-version.outputs.version }}
       prev-version-tag:
         description: "Previous version tag"
-        value: ${{ jobs.get_version.outputs.prev-version-tag }}
+        value: ${{ jobs.get-version.outputs.prev-version-tag }}
       is-major-release:
         description: "Is this a major release?"
-        value: ${{ jobs.get_version.outputs.is-major-release }}
+        value: ${{ jobs.get-version.outputs.is-major-release }}
       untagged:
         description: "Is this an unreleased version?"
-        value: ${{ jobs.get_version.outputs.untagged }}
+        value: ${{ jobs.get-version.outputs.untagged }}
 
 jobs:
-  get:
+  get-version:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.scrape.outputs.version }}
@@ -104,20 +104,3 @@ jobs:
                 os.system(f'echo previous-major-version-tag={prev_ver_tags[-1]} >> $GITHUB_OUTPUT')
           "
           cat $GITHUB_OUTPUT
-
-  debug:
-    needs:
-      - get
-    runs-on: ubuntu-latest
-    steps:
-      - name: Dump context
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const fs = require('fs');
-
-            await core.group(`GitHub needs`, async () => {
-              core.info(JSON.stringify(JSON.parse(`${process.env.NEEDS}`), null, 2));
-            });
-        env:
-          NEEDS: ${{ toJson(needs) }}
