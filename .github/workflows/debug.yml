@@ -1,0 +1,28 @@
+name: Debug Actions
+on:
+  push:
+
+jobs:
+  version:
+    uses: ./.github/workflows/get-version.yml
+    secrets: inherit
+
+  check-release-type:
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.check-tag.outputs.release }}
+      dry-run: ${{ steps.check-tag.outputs.dry }}
+    needs:
+      - version
+    steps:
+      - name: Dump context
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            
+            await core.group(`GitHub needs`, async () => {
+              core.info(JSON.stringify(JSON.parse(`${process.env.NEEDS}`), null, 2));
+            });
+        env:
+          NEEDS: ${{ toJson(needs) }}
