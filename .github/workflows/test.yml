@@ -82,19 +82,28 @@ jobs:
           RELEASE=false
           # Determine release based on whether:
           # 1. We're in a workflow_dispatch event and the inputs.issue_release flag is true
+          # 2. We're in a workflow_dispatch event and the inputs.dry_release_run flag is true
+          # 3. We're on a tag and the tag is a semver tag
+          # 4. We're on a branch and we have an unpublished version
           if [[ ${{ github.event_name }} == 'workflow_dispatch' && "${{ github.event.inputs.issue_release }}" == "true" ]]; then
               RELEASE=true
-          # 2. We're in a workflow_dispatch event and the inputs.dry_release_run flag is true
+              if [[ "${{ github.event.inputs.dry_release_run }}" == "true" ]]; then
+                  DRY_RUN=true
+                  echo "Issuing dry-run because dry_release_run flag is true"
+              else
+                  echo "Issuing release because issue_release flag is true"
+              fi
           elif [[ ${{ github.event_name }} == 'workflow_dispatch' && "${{ github.event.inputs.dry_release_run }}" == "true" ]]; then
               DRY_RUN=true
               RELEASE=true  # requesting dry-run implies requesting release
-          # 3. We're on a tag and the tag is a semver tag
+              echo "Issuing release because dry_release_run flag is true"
           elif [[ ${{ github.event_name }} == 'push' && $(echo "${{ github.ref }}" | grep -qE "^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$") ]]; then
               RELEASE=true
-          # 4. We're on a branch and we have an unpublished version
+              echo "Issuing release because we're on a tag matching semver"
           elif [[ ${{ github.event_name }} == 'push' && "${{ needs.version.outputs.untagged }}" == "true" ]]; then
               RELEASE=true
               DRY_RUN=true
+              echo "Issuing dry-run because we're on a branch with an unpublished version"
           fi
           echo "release=$RELEASE" >> $GITHUB_OUTPUT
           echo "dry-run=$DRY_RUN" >> $GITHUB_OUTPUT
@@ -108,10 +117,10 @@ jobs:
     needs:
       - run-tests
       - check-release-type
-    if: needs.check-release-type.outputs.release == 'true'
+    if: needs.check-release-type.outputs.release
     uses: ./.github/workflows/issue-release.yml
     secrets: inherit
     with:
       debug_enabled: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       skip_compatibility_check: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_compatibility_check }}
-      dry-run: ${{ needs.check-release-type.outputs.dry-run == 'true' }}
+      dry-run: ${{ needs.check-release-type.outputs.dry-run }}
