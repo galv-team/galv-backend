@@ -85,7 +85,9 @@ jobs:
           retention-days: 1
 
   make-clients:
-    needs: check
+    needs:
+      - check
+      - version
     runs-on: ubuntu-latest
     permissions:
       packages: write
