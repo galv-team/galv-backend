@@ -96,3 +96,20 @@ jobs:
                 os.system(f'echo previous-major-version-tag={prev_ver_tags[-1]} >> $GITHUB_OUTPUT')
           "
           cat $GITHUB_OUTPUT
+
+  release:
+    needs:
+      - get-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump context
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+
+            await core.group(`GitHub needs`, async () => {
+              core.info(JSON.stringify(JSON.parse(`${process.env.NEEDS}`), null, 2));
+            });
+        env:
+          NEEDS: ${{ toJson(needs) }}
