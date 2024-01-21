@@ -26,7 +26,7 @@ on:
 
 jobs:
   version:
-    uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/get-version.yml@main
+    uses: ./.github/workflows/get-version.yml
     secrets: inherit
 
   run-tests:
@@ -55,37 +55,72 @@ jobs:
         run: |
           docker-compose run --rm app_test bash -c "python manage.py spectacular --fail-on-warn --validate"
 
-      - name: Check if tagged release is required
-        if: ${{ github.event_name != 'workflow_dispatch' }}
-        id: check-tag
-        run: |
-          if [[ ${{ github.event.ref }} =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              echo "match=true" >> $GITHUB_OUTPUT
-          fi
-
-  debug-release:
+  check-release-type:
     runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.check-tag.outputs.release }}
+      dry-run: ${{ steps.check-tag.outputs.dry-run }}
     needs:
-      - run-tests
       - version
     steps:
-      - name: Debug release
+      - name: Dump context
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            
+            await core.group(`GitHub needs`, async () => {
+              core.info(JSON.stringify(JSON.parse(`${process.env.NEEDS}`), null, 2));
+            });
+        env:
+          NEEDS: ${{ toJson(needs) }}
+
+      - name: Check if tagged release is required
+        id: check-tag
         run: |
-          echo "release: ${{ needs.run-tests.outputs.release }}"
-          echo "unreleased_version: ${{ needs.version.outputs.unreleased_version }}"
-          echo "unpublished_version: ${{ needs.run-tests.outputs.unpublished_version }}"
-          echo "issue_release [event]: ${{ github.event.inputs.issue_release }}"
-          echo "issue_release [native]: ${{ inputs.issue_release }}"
-          echo "github.event_name: ${{ github.event_name }}"
+          DRY_RUN=false
+          RELEASE=false
+          # Determine release based on whether:
+          # 1. We're in a workflow_dispatch event and the inputs.issue_release flag is true
+          # 2. We're in a workflow_dispatch event and the inputs.dry_release_run flag is true
+          # 3. We're on a tag and the tag is a semver tag
+          # 4. We're on a branch and we have an unpublished version
+          if [[ ${{ github.event_name }} == 'workflow_dispatch' && "${{ github.event.inputs.issue_release }}" == "true" ]]; then
+              RELEASE=true
+              if [[ "${{ github.event.inputs.dry_release_run }}" == "true" ]]; then
+                  DRY_RUN=true
+                  echo "Issuing dry-run because dry_release_run flag is true"
+              else
+                  echo "Issuing release because issue_release flag is true"
+              fi
+          elif [[ ${{ github.event_name }} == 'workflow_dispatch' && "${{ github.event.inputs.dry_release_run }}" == "true" ]]; then
+              DRY_RUN=true
+              RELEASE=true  # requesting dry-run implies requesting release
+              echo "Issuing release because dry_release_run flag is true"
+          elif [[ ${{ github.event_name }} == 'push' && $(echo "${{ github.ref }}" | grep -qE "^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$") ]]; then
+              RELEASE=true
+              echo "Issuing release because we're on a tag matching semver"
+          elif [[ ${{ github.event_name }} == 'push' && "${{ needs.version.outputs.untagged }}" == "true" ]]; then
+              RELEASE=true
+              DRY_RUN=true
+              echo "Issuing dry-run because we're on a branch with an unpublished version"
+          fi
+          echo "release=$RELEASE" >> $GITHUB_OUTPUT
+          echo "dry-run=$DRY_RUN" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
+
+      - name: Debug with tmate
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
 
   release:
     needs:
       - run-tests
-      - version
-    if: ${{ needs.run-tests.outputs.release == 'true' || needs.version.outputs.unreleased_version == 'true' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.issue_release || github.event.inputs.dry_release_run)) }}
-    uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/issue-release.yml@main
+      - check-release-type
+    if: needs.check-release-type.outputs.release
+    uses: ./.github/workflows/issue-release.yml
     secrets: inherit
     with:
       debug_enabled: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       skip_compatibility_check: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_compatibility_check }}
-      dry_run: ${{ needs.run-tests.outputs.unpublished_version == 'true' || (github.event_name == 'workflow_dispatch' && inputs.dry_release_run) }}
+      dry-run: ${{ needs.check-release-type.outputs.dry-run == 'true' }}

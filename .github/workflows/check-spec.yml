@@ -7,7 +7,7 @@ on:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
-      dry_run:
+      dry-run:
         type: boolean
         description: 'Do not actually release the package, just check that it is valid.'
         required: false
@@ -24,7 +24,7 @@ on:
         description: 'Skip checking that the release version matches the branch name.'
         required: false
         default: false
-      dry_run:
+      dry-run:
         type: boolean
         description: 'Do not actually release the package, just check that it is valid.'
         required: false
@@ -32,7 +32,7 @@ on:
 
 jobs:
   version:
-    uses: Battery-Intelligence-Lab/galv-backend/.github/workflows/get-version.yml@main
+    uses: ./.github/workflows/get-version.yml
     secrets: inherit
 
   check:
@@ -48,7 +48,7 @@ jobs:
         if: ${{ inputs.debug_enabled }}
 
       - name: Check version matches ref
-        if: ${{ !inputs.dry_run && (github.event_name != 'workflow_dispatch' || !inputs.skip_match_check) }}
+        if: ${{ !inputs.dry-run && (github.event_name != 'workflow_dispatch' || !inputs.skip_match_check) }}
         run: |
           # Assert that the release version matches the branch name
           if [ "${{ needs.version.outputs.version }}" != "${{ github.ref_name }}" ]; then
@@ -71,7 +71,7 @@ jobs:
           cp .dev/spec/openapi-x.json .dev/spec/openapi-${{ needs.version.outputs.version }}.json
 
       - name: Run spec check vs prev version
-        if: ${{ needs.version.outputs.prev_version != '' && !needs.version.outputs.is_major_release }}
+        if: ${{ needs.version.outputs.prev_version != '' && !needs.version.outputs.is-major-release }}
         run: |
           sudo chmod 777 .dev/spec/*
           wget -O .dev/spec/openapi-${{ needs.version.outputs.prev_version }}.json https://raw.githubusercontent.com/Battery-Intelligence-Lab/galv-backend/release/${{ needs.version.outputs.prev_version }}/schema.json
@@ -85,7 +85,9 @@ jobs:
           retention-days: 1
 
   make-clients:
-    needs: check
+    needs:
+      - check
+      - version
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -175,7 +177,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           registry: "https://npm.pkg.github.com"
           package: "clients/typescript-axios"
-          dry-run: ${{ inputs.dry_run }}
+          dry-run: ${{ inputs.dry-run }}
 
       - name: Upload clients
         uses: actions/upload-artifact@v4

@@ -13,24 +13,24 @@ on:
       version:
         description: "API_VERSION defined in settings_base.py"
         value: ${{ jobs.get-version.outputs.version }}
-      prev_version_tag:
+      prev-version-tag:
         description: "Previous version tag"
-        value: ${{ jobs.get_version.outputs.prev_version_tag }}
-      is_major_release:
+        value: ${{ jobs.get-version.outputs.prev-version-tag }}
+      is-major-release:
         description: "Is this a major release?"
-        value: ${{ jobs.get_version.outputs.is_major_release }}
-      unreleased_version:
+        value: ${{ jobs.get-version.outputs.is-major-release }}
+      untagged:
         description: "Is this an unreleased version?"
-        value: ${{ jobs.get_version.outputs.unreleased_version }}
+        value: ${{ jobs.get-version.outputs.untagged }}
 
 jobs:
   get-version:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.scrape.outputs.version }}
-      prev_version_tag: ${{ steps.search.outputs.prev_version_tag }}
-      is_major_release: ${{ steps.search.outputs.previous_major_version_tag != steps.search.outputs.prev_version_tag }}
-      unreleased_version: ${{ steps.search.outputs.unreleased_version }}
+      prev-version-tag: ${{ steps.search.outputs.prev-version-tag }}
+      is-major-release: ${{ steps.search.outputs.previous-major-version-tag != steps.search.outputs.prev-version-tag }}
+      untagged: ${{ steps.tags.outputs.untagged == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -53,25 +53,33 @@ jobs:
         uses: mxschmitt/action-tmate@v3
         if: ${{ inputs.debug_enabled }}
 
-      - name: Search for previous version tag
-        id: search
+      - name: Set up tags
+        id: tags
         run: |
           # Get a list of all repository tags
           git fetch --tags --force
           # Create our tag if this is a branch rather than a tag
-          UNRELEASED_VERSION=false
+          UNTAGGED=false
           if [ "${{ github.ref_type }}" == "branch" ]; then
             git config --global user.email gg@example.com
             git config --global user.name "GitHub Actions"
             if [ -z $(git tag --list | grep ${{ steps.scrape.outputs.version }}) ]; then
-              UNRELEASED_VERSION=true
+              UNTAGGED=true
             fi          
             git tag ${{ steps.scrape.outputs.version }} || true
           fi
-          echo unreleased_version=$UNRELEASED_VERSION >> $GITHUB_OUTPUT
+          echo untagged=$UNTAGGED >> $GITHUB_OUTPUT
           
           # Save tag list to a temporary file
           git tag --list > tags.txt
+          echo "tags.txt:"
+          cat tags.txt
+          echo "$GITHUB_OUTPUT:"
+          cat $GITHUB_OUTPUT
+
+      - name: Search for previous version tag
+        id: search
+        run: |
           # Get the previous tag
           python -c "
           import os, re
@@ -81,18 +89,18 @@ jobs:
           tags.sort(key=lambda s: list(map(int, s[1:].split('.'))))
           i = tags.index('${{ steps.scrape.outputs.version }}')
           if i == 0:
-            os.system('echo prev_version_tag= >> $GITHUB_OUTPUT')
+            os.system('echo prev-version-tag= >> $GITHUB_OUTPUT')
           else:
-            os.system(f'echo prev_version_tag={tags[i-1]} >> $GITHUB_OUTPUT')
+            os.system(f'echo prev-version-tag={tags[i-1]} >> $GITHUB_OUTPUT')
           # Get the previous major version tag
           if i == 0:
-            os.system('echo previous_major_version_tag= >> $GITHUB_OUTPUT')
+            os.system('echo previous-major-version-tag= >> $GITHUB_OUTPUT')
           else:
             major_version = tags[i].split('.')[0]
             prev_ver_tags = [tag for tag in tags if tag.split('.')[0] < major_version]
             if len(prev_ver_tags) == 0:
-                os.system('echo previous_major_version_tag= >> $GITHUB_OUTPUT')
+                os.system('echo previous-major-version-tag= >> $GITHUB_OUTPUT')
             else:
-                os.system(f'echo previous_major_version_tag={prev_ver_tags[-1]} >> $GITHUB_OUTPUT')
+                os.system(f'echo previous-major-version-tag={prev_ver_tags[-1]} >> $GITHUB_OUTPUT')
           "
           cat $GITHUB_OUTPUT
