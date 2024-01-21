@@ -19,18 +19,18 @@ on:
       is-major-release:
         description: "Is this a major release?"
         value: ${{ jobs.get_version.outputs.is-major-release }}
-      untagged-release:
+      untagged:
         description: "Is this an unreleased version?"
-        value: ${{ jobs.get_version.outputs.untagged-release }}
+        value: ${{ jobs.get_version.outputs.untagged }}
 
 jobs:
-  get-version:
+  get:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.scrape.outputs.version }}
       prev-version-tag: ${{ steps.search.outputs.prev-version-tag }}
       is-major-release: ${{ steps.search.outputs.previous-major-version-tag != steps.search.outputs.prev-version-tag }}
-      untagged-release: ${{ steps.tags.outputs.untagged-release == 'true' }}
+      untagged: ${{ steps.tags.outputs.untagged == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -59,16 +59,16 @@ jobs:
           # Get a list of all repository tags
           git fetch --tags --force
           # Create our tag if this is a branch rather than a tag
-          UNTAGGED_RELEASE=false
+          UNTAGGED=false
           if [ "${{ github.ref_type }}" == "branch" ]; then
             git config --global user.email gg@example.com
             git config --global user.name "GitHub Actions"
             if [ -z $(git tag --list | grep ${{ steps.scrape.outputs.version }}) ]; then
-              UNTAGGED_RELEASE=true
+              UNTAGGED=true
             fi          
             git tag ${{ steps.scrape.outputs.version }} || true
           fi
-          echo untagged-release=$UNTAGGED_RELEASE >> $GITHUB_OUTPUT
+          echo untagged=$UNTAGGED >> $GITHUB_OUTPUT
           
           # Save tag list to a temporary file
           git tag --list > tags.txt
@@ -107,7 +107,7 @@ jobs:
 
   debug:
     needs:
-      - get-version
+      - get
     runs-on: ubuntu-latest
     steps:
       - name: Dump context

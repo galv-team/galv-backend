@@ -77,7 +77,7 @@ jobs:
 
       - name: Debug needs
         run: |
-          echo "needs.version.outputs.untagged-release=${{ needs.version.outputs.untagged-release }}"
+          echo "needs.version.outputs.untagged=${{ needs.version.outputs.untagged }}"
       - name: Check if tagged release is required
         id: check-tag
         run: |
@@ -95,7 +95,7 @@ jobs:
               RELEASE=true  # requesting dry-run implies requesting release
           elif [[ ${{ github.event_name }} == 'push' && $(echo "${{ github.ref }}" | grep -qE "^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$") ]]; then
               RELEASE=true
-          elif [[ ${{ github.event_name }} == 'push' && "${{ needs.version.outputs.untagged-release }}" == "true" ]]; then
+          elif [[ ${{ github.event_name }} == 'push' && "${{ needs.version.outputs.untagged }}" == "true" ]]; then
               RELEASE=true
               DRY_RUN=true
           fi

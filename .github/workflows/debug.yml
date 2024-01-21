@@ -9,9 +9,6 @@ jobs:
 
   check-release-type:
     runs-on: ubuntu-latest
-    outputs:
-      release: ${{ steps.check-tag.outputs.release }}
-      dry-run: ${{ steps.check-tag.outputs.dry }}
     needs:
       - version
     steps:
