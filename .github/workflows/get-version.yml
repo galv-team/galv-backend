@@ -30,7 +30,7 @@ jobs:
       version: ${{ steps.scrape.outputs.version }}
       prev-version-tag: ${{ steps.search.outputs.prev-version-tag }}
       is-major-release: ${{ steps.search.outputs.previous-major-version-tag != steps.search.outputs.prev-version-tag }}
-      untagged-release: ${{ steps.search.outputs.untagged-release == 'true' }}
+      untagged-release: ${{ steps.tags.outputs.untagged-release == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -53,8 +53,8 @@ jobs:
         uses: mxschmitt/action-tmate@v3
         if: ${{ inputs.debug_enabled }}
 
-      - name: Search for previous version tag
-        id: search
+      - name: Set up tags
+        id: tags
         run: |
           # Get a list of all repository tags
           git fetch --tags --force
@@ -72,6 +72,14 @@ jobs:
           
           # Save tag list to a temporary file
           git tag --list > tags.txt
+          echo "tags.txt:"
+          cat tags.txt
+          echo "$GITHUB_OUTPUT:"
+          cat $GITHUB_OUTPUT
+
+      - name: Search for previous version tag
+        id: search
+        run: |
           # Get the previous tag
           python -c "
           import os, re
@@ -97,7 +105,7 @@ jobs:
           "
           cat $GITHUB_OUTPUT
 
-  release:
+  debug:
     needs:
       - get-version
     runs-on: ubuntu-latest
