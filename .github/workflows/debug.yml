@@ -1,4 +1,4 @@
-name: CI Tests
+name: Debug actions
 on:
   push:
     branches:
@@ -12,6 +12,8 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            const fs = require('fs');
+            
             await core.group(`Env vars`, async () => {
               const envs = Object.keys(process.env).sort().reduce(
                 (obj, key) => {
