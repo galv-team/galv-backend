@@ -142,8 +142,8 @@ jobs:
           # Create a package.json file using EOF notation
           cat << EOF | sudo tee -a clients/typescript-axios/package.json
           {
-              "name": "galv-client-axios",
-              "version": "$VERSION",
+              "name": "@Battery-Intelligence-Lab/galv-backend",
+              "version": "$($VERSION | cut -c 2-)",
               "description": "Galv API client using Typescript-Axios",
               "main": "index.ts",
               "scripts": {
