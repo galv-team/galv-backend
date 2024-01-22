@@ -176,6 +176,7 @@ jobs:
         with:
           token: ${{ secrets.NPM_PUBLISH_TOKEN }}
           package: "clients/typescript-axios"
+          access: "public"
           dry-run: ${{ inputs.dry-run }}
 
       - name: Upload clients
