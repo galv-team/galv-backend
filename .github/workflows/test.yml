@@ -85,7 +85,7 @@ jobs:
           # 2. We're in a workflow_dispatch event and the inputs.dry_release_run flag is true
           # 3. We're on a tag and the tag is a semver tag
           # 4. We're on a branch and we have an unpublished version
-          if [[ ${{ github.event_name }} == 'workflow_dispatch' && "${{ github.event.inputs.issue_release }}" == "true" ]]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.issue_release }}" == "true" ]]; then
               RELEASE=true
               if [[ "${{ github.event.inputs.dry_release_run }}" == "true" ]]; then
                   DRY_RUN=true
@@ -93,17 +93,22 @@ jobs:
               else
                   echo "Issuing release because issue_release flag is true"
               fi
-          elif [[ ${{ github.event_name }} == 'workflow_dispatch' && "${{ github.event.inputs.dry_release_run }}" == "true" ]]; then
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.dry_release_run }}" == "true" ]]; then
               DRY_RUN=true
               RELEASE=true  # requesting dry-run implies requesting release
               echo "Issuing release because dry_release_run flag is true"
-          elif [[ ${{ github.event_name }} == 'push' && $(echo "${{ github.ref }}" | grep -qE "^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$") ]]; then
-              RELEASE=true
-              echo "Issuing release because we're on a tag matching semver"
-          elif [[ ${{ github.event_name }} == 'push' && "${{ needs.version.outputs.untagged }}" == "true" ]]; then
-              RELEASE=true
-              DRY_RUN=true
-              echo "Issuing dry-run because we're on a branch with an unpublished version"
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+              IS_SEMVER=$(echo "${{ github.ref }}" | grep -cE "^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$")
+              if [[ $IS_SEMVER -gt 0 ]]; then
+                  RELEASE=true
+                  echo "Issuing release because we're on a tag matching semver"
+              elif [[ "${{ needs.version.outputs.untagged }}" == "true" ]]; then
+                  RELEASE=true
+                  DRY_RUN=true
+                  echo "Issuing dry-run because we're on a branch with an unpublished version"
+              fi
+          else
+              echo "Release/dry-run not requested or required."
           fi
           echo "release=$RELEASE" >> $GITHUB_OUTPUT
           echo "dry-run=$DRY_RUN" >> $GITHUB_OUTPUT
