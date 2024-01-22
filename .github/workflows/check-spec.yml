@@ -174,8 +174,7 @@ jobs:
       - name: Publish typescript client to packages
         uses: JS-DevTools/npm-publish@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          registry: "https://npm.pkg.github.com"
+          token: ${{ secrets.NPM_PUBLISH_TOKEN }}
           package: "clients/typescript-axios"
           dry-run: ${{ inputs.dry-run }}
 
