@@ -1,0 +1,128 @@
+name: CI Tests
+on:
+  push:
+    branches:
+      - "debug/**"
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump context
+        uses: actions/github-script@v6
+        with:
+          script: |
+            await core.group(`Env vars`, async () => {
+              const envs = Object.keys(process.env).sort().reduce(
+                (obj, key) => {
+                  obj[key] = process.env[key];
+                  return obj;
+                }, {}
+              );
+              core.info(JSON.stringify(Object.fromEntries(Object.entries(envs).filter(([key]) => !key.startsWith('GHACTION_DCTX_') && !key.startsWith('INPUT_'))), null, 2));
+            });
+  
+            await core.group(`GitHub context`, async () => {
+              core.info(JSON.stringify(JSON.parse(`${process.env.GHACTION_DCTX_GITHUB_CONTEXT}`), null, 2));
+            });
+            await core.group(`Job context`, async () => {
+              core.info(JSON.stringify(JSON.parse(`${process.env.GHACTION_DCTX_JOB_CONTEXT}`), null, 2));
+            });
+            await core.group(`Steps context`, async () => {
+              core.info(JSON.stringify(JSON.parse(`${process.env.GHACTION_DCTX_STEPS_CONTEXT}`), null, 2));
+            });
+            await core.group(`Runner context`, async () => {
+              core.info(JSON.stringify(JSON.parse(`${process.env.GHACTION_DCTX_RUNNER_CONTEXT}`), null, 2));
+            });
+            await core.group(`Strategy context`, async () => {
+              core.info(JSON.stringify(JSON.parse(`${process.env.GHACTION_DCTX_STRATEGY_CONTEXT}`), null, 2));
+            });
+            await core.group(`Matrix context`, async () => {
+              core.info(JSON.stringify(JSON.parse(`${process.env.GHACTION_DCTX_MATRIX_CONTEXT}`), null, 2));
+            });
+  
+            await core.group(`Docker info`, async () => {
+              await exec.exec('docker', ['info'], {ignoreReturnCode: true}).catch(error => {
+                core.info(error);
+              });
+            });
+            await core.group(`Docker version`, async () => {
+              await exec.exec('docker', ['version'], {ignoreReturnCode: true}).catch(error => {
+                core.info(error);
+              });
+            });
+            await core.group(`Docker images`, async () => {
+              await exec.exec('docker', ['image', 'ls'], {ignoreReturnCode: true}).catch(error => {
+                core.info(error);
+              });
+            });
+  
+            if (`${process.env.RUNNER_OS}` == 'Linux') {
+              await core.group(`Install deps`, async () => {
+                const sudo = await exec.getExecOutput('which sudo', [], {silent: true, ignoreReturnCode: true})
+                if (sudo.stdout != "") {
+                  const aptget = await exec.getExecOutput('which apt-get', [], {silent: true, ignoreReturnCode: true})
+                  if (aptget.stdout != "") {
+                    await exec.exec('sudo apt-get update');
+                    await exec.exec('sudo apt-get install -y cgroup-tools cpuid');
+                  } else {
+                    core.info('apt-get not found; not installing deps')
+                  }
+                } else {
+                  core.info('sudo not found; not installing deps')
+                }
+              });
+              await core.group(`Print cpuinfo`, async () => {
+                await exec.exec('cat /proc/cpuinfo');
+              });
+              await core.group(`Print cpuid`, async () => {
+                const cpuid = await exec.getExecOutput('which cpuid', [], {silent: true, ignoreReturnCode: true})
+                if (cpuid.stdout != "") {
+                  await exec.exec('cpuid');
+                } else {
+                  core.info('cpuid not found')
+                }
+              });
+              await core.group(`File system`, async () => {
+                await exec.exec('df -ah');
+              });
+              await core.group(`Mounts`, async () => {
+                await exec.exec('mount');
+              });
+              await core.group(`Docker daemon conf`, async () => {
+                if ((fs.statSync('/etc/docker', {throwIfNoEntry: false}) != undefined) &&
+                    (fs.statSync('/etc/docker/daemon.json', {throwIfNoEntry: false}) != undefined)) {
+                  core.info(JSON.stringify(JSON.parse(fs.readFileSync('/etc/docker/daemon.json', {encoding: 'utf-8'}).trim()), null, 2));
+                } else {
+                  core.info('/etc/docker/daemon.json not present')
+                }
+              });
+              await core.group(`Cgroups`, async () => {
+                const lscgroup = await exec.getExecOutput('which lscgroup', [], {silent: true, ignoreReturnCode: true})
+                if (lscgroup.stdout != "") {
+                  await exec.exec('lscgroup');
+                } else {
+                  core.info('lscgroup not found')
+                }
+              });
+              await core.group(`containerd version`, async () => {
+                const containerd = await exec.getExecOutput('which containerd', [], {silent: true, ignoreReturnCode: true})
+                if (containerd.stdout != "") {
+                  await exec.exec('containerd --version');
+                } else {
+                  core.info('containerd not found')
+                }
+              });
+            }
+            
+            await core.group(`GitHub needs`, async () => {
+              core.info(JSON.stringify(JSON.parse(`${process.env.NEEDS}`), null, 2));
+            });
+        env:
+          GHACTION_DCTX_GITHUB_CONTEXT: ${{ toJson(github) }}
+          GHACTION_DCTX_JOB_CONTEXT: ${{ toJson(job) }}
+          GHACTION_DCTX_STEPS_CONTEXT: ${{ toJson(steps) }}
+          GHACTION_DCTX_RUNNER_CONTEXT: ${{ toJson(runner) }}
+          GHACTION_DCTX_STRATEGY_CONTEXT: ${{ toJson(strategy) }}
+          GHACTION_DCTX_MATRIX_CONTEXT: ${{ toJson(matrix) }}
+          NEEDS: ${{ toJson(needs) }}
