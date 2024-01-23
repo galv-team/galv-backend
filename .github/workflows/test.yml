@@ -78,6 +78,7 @@ jobs:
       - name: Check if tagged release is required
         id: check-tag
         run: |
+          set -euxo pipefail
           DRY_RUN=false
           RELEASE=false
           # Determine release based on whether:
@@ -115,7 +116,7 @@ jobs:
           cat $GITHUB_OUTPUT
 
       - name: Debug with tmate
-        if: ${{ failure() }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
         uses: mxschmitt/action-tmate@v3
 
   release:
