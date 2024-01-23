@@ -146,19 +146,19 @@ def activate_user(request):
 
 
 @extend_schema(responses={200: inline_serializer('PermittedAccessLevels', {
-    "read_access_level": serializers.ListField(child=serializers.DictField(child=serializers.IntegerField())),
-    "edit_access_level": serializers.ListField(child=serializers.DictField(child=serializers.IntegerField())),
-    "delete_access_level": serializers.ListField(child=serializers.DictField(child=serializers.IntegerField())),
-    "path.edit_access_level": serializers.ListField(child=serializers.DictField(child=serializers.IntegerField())),
+    "read_access_level": serializers.DictField(child=serializers.IntegerField()),
+    "edit_access_level": serializers.DictField(child=serializers.IntegerField()),
+    "delete_access_level": serializers.DictField(child=serializers.IntegerField()),
+    "path.edit_access_level": serializers.DictField(child=serializers.IntegerField()),
 })})
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
 def access_levels(request):
     return Response({
-        'read_access_level': [{v.label: v.value for v in ALLOWED_USER_LEVELS_READ}],
-        'edit_access_level': [{v.label: v.value for v in ALLOWED_USER_LEVELS_EDIT}],
-        'delete_access_level': [{v.label: v.value for v in ALLOWED_USER_LEVELS_DELETE}],
-        'path.edit_access_level': [{v.label: v.value for v in ALLOWED_USER_LEVELS_EDIT_PATH}],
+        'read_access_level': {v.label: v.value for v in ALLOWED_USER_LEVELS_READ},
+        'edit_access_level': {v.label: v.value for v in ALLOWED_USER_LEVELS_EDIT},
+        'delete_access_level': {v.label: v.value for v in ALLOWED_USER_LEVELS_DELETE},
+        'path.edit_access_level': {v.label: v.value for v in ALLOWED_USER_LEVELS_EDIT_PATH},
     })
 
 
