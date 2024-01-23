@@ -489,6 +489,12 @@ class WithTeamMixin(serializers.Serializer):
         READ <= EDIT <= DELETE
         """
         if self.instance is not None:
+            # Remove unchanged access levels.
+            # The frontend will send all access levels, even if they haven't changed,
+            # so this is a convenience to prevent access denial when submitting unchanged data.
+            for level in ['read_access_level', 'edit_access_level', 'delete_access_level']:
+                if level in attrs and getattr(self.instance, level) == attrs[level]:
+                    del attrs[level]
             user_access_level = self.instance.get_user_level(self.context['request'].user)
             if 'read_access_level' in attrs or 'edit_access_level' in attrs:
                 if user_access_level < UserLevel.TEAM_MEMBER.value:
