@@ -5,7 +5,7 @@
 
 app = "galv-backend-dev"
 primary_region = "lhr"
-console_command = "/code/manage.py shell"
+console_command = "/code/backend_django/manage.py shell"
 
 [build]
 
@@ -17,13 +17,20 @@ console_command = "/code/manage.py shell"
   VIRTUAL_HOST = "galv-backend-dev.fly.dev"
   FRONTEND_VIRTUAL_HOST = "http://galv-frontend-dev.fly.dev,https://galv-frontend-dev.fly.dev"
   DJANGO_SETTINGS_MODULE = "config.settings"
+  DJANGO_DEBUG = "True"
+  DJANGO_EMAIL_HOST = 'smtp.gmail.com'
+  DJANGO_EMAIL_USE_TLS = "False"
+  DJANGO_EMAIL_PORT = "465"
+  DJANGO_EMAIL_USE_SSL = "True"
+  DJANGO_EMAIL_HOST_USER = 'oxfordbatterymodelling@gmail.com'
+  DJANGO_DEFAULT_FROM_EMAIL = 'oxfordbatterymodelling@gmail.com'
 
 [http_service]
   internal_port = 8000
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
-  min_machines_running = 1
+  min_machines_running = 0
   processes = ["app"]
 
 [[vm]]
