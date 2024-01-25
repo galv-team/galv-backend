@@ -68,9 +68,11 @@ class UserTests(APITestCaseWrapper):
 
         result = self.client.get(reverse(f'{stub}-list'))
         assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_401_UNAUTHORIZED)
+        # Users see themselves and those they're in a lab with
+        assert_user_list(mystery_guest, [mystery_guest])
         assert_user_list(user, [user, colleague, admin])
+        # Admins see everybody
         assert_user_list(admin, [user, colleague, admin, stranger, strange_admin, mystery_guest, self.user, self.non_user])
-        assert_user_list(mystery_guest, [])
 
     def test_create(self):
         """
@@ -112,7 +114,7 @@ class UserTests(APITestCaseWrapper):
         self.assertEqual(self.client.get(response_user['url']).status_code, status.HTTP_404_NOT_FOUND)
         # Check user can be activated
         activation = UserActivation.objects.get(user__id=response_user['id'])
-        response = self.client.get(f"{reverse('activate_user')}?token={activation.token}")
+        response = self.client.get(f"{reverse('activate_user')}?username={data['username']}&token={activation.token}")
         assert_response_property(self, response, self.assertEqual, response.status_code, status.HTTP_200_OK)
         self.assertTrue(User.objects.get(id=response_user['id']).is_active)
         # Check user can be logged in as

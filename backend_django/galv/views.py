@@ -130,10 +130,27 @@ class _GetOrCreateTextStringViewSet(ListModelMixin, viewsets.GenericViewSet):
 def activate_user(request):
     # Request should have a token in the querystring
     token = request.GET.get('token')
-    if not token:
-        return error_response("No token provided")
+    username = request.GET.get('username')
+    if not username:
+        return error_response("No username provided")
     try:
-        activation = UserActivation.objects.get(token=token)
+        user = UserProxy.objects.get(username=username, is_active=False)
+    except UserProxy.DoesNotExist:
+        return error_response(f"No user with username {username} requires activation")
+    if request.GET.get('resend') == 'true':
+        try:
+            activation = UserActivation.objects.get(user=user)
+            activation.send_email(request)
+            return Response({"detail": f"Activation email sent for {username}"})
+        except UserActivation.DoesNotExist:
+            return error_response(f"Unable to send activation email for {username}")
+    if not token:
+        return error_response((
+            f"No token provided. To send another token to your email address, "
+            f"visit {reverse('activate_user', request=request)}?username={username}&resend=true"
+        ))
+    try:
+        activation = UserActivation.objects.get(user=user, token=token)
         try:
             activation.activate_user()
         except ValueError as e:

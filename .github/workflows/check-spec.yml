@@ -75,13 +75,23 @@ jobs:
         run: |
           sudo chmod 777 .dev/spec/*
           wget -O .dev/spec/openapi-${{ needs.version.outputs.prev_version }}.json https://raw.githubusercontent.com/Battery-Intelligence-Lab/galv-backend/release/${{ needs.version.outputs.prev_version }}/schema.json
+          echo "Check spec against previous version: ${{ needs.version.outputs.prev_version }}"
           docker-compose run --rm -e REMOTE_SPEC_SOURCE=.dev/spec/openapi-${{ needs.version.outputs.prev_version }}.json check_spec
+          echo ".dev/spec/diff.md:"
+          cat .dev/spec/diff.md
 
       - name: Upload spec
         uses: actions/upload-artifact@v4
         with:
           name: spec
           path: .dev/spec/openapi-${{ needs.version.outputs.version }}.json
+          retention-days: 1
+
+      - name: Upload diff
+        uses: actions/upload-artifact@v4
+        with:
+          name: diff
+          path: .dev/spec/diff.md
           retention-days: 1
 
   make-clients:
