@@ -64,11 +64,10 @@ class UserFilterBackend(DRYPermissionFiltersBase):
         labs = user_labs(request.user)
         all_users = queryset.all()
         users_to_return = []
+        # see self and lab colleagues
         for user in all_users:
-            for lab in user_labs(user):
-                if lab in labs:
-                    users_to_return.append(user)
-                    break
+            if user == request.user or any([lab in labs for lab in user_labs(user)]):
+                users_to_return.append(user)
         return queryset.filter(pk__in=[u.pk for u in users_to_return])
 
 

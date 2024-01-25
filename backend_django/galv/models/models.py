@@ -112,12 +112,13 @@ class UserActivation(TimestampedModel):
 
     def send_email(self, request):
         from django.core.mail import send_mail
+        print(f"Sending activation email for {self.user.username}")
         send_mail(
             'Galv account activation',
             (
                 f'Your activation token is {self.token}\n\n'
                 f"Your token is valid for {int(settings.USER_ACTIVATION_TOKEN_EXPIRY_S / 60)} minutes.\n\n"
-                f"Please visit {reverse('activate_user', request=request)}?token={self.token} to activate your account."
+                f"Galv administrative team."
             ),
             settings.DEFAULT_FROM_EMAIL,
             [self.user.email],
