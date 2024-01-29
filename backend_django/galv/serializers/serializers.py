@@ -1577,7 +1577,7 @@ class ValidationSchemaSerializer(serializers.HyperlinkedModelSerializer, Permiss
         response_only=True, # signal that example only applies to responses
     ),
 ])
-class KnoxTokenSerializer(serializers.HyperlinkedModelSerializer):
+class KnoxTokenSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     created = serializers.SerializerMethodField(help_text="Date and time of creation")
     expiry = serializers.SerializerMethodField(help_text="Date and time token expires (blank = never)")
     url = serializers.SerializerMethodField(help_text=url_help_text)
