@@ -123,7 +123,7 @@ class _GetOrCreateTextStringViewSet(ListModelMixin, viewsets.GenericViewSet):
 
 @extend_schema(responses={200: inline_serializer(
     'ActivationResponse',
-    {"details": serializers.CharField()}
+    {"detail": serializers.CharField()}
 )})
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
