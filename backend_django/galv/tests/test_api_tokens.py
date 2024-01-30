@@ -18,8 +18,8 @@ logger.setLevel(logging.INFO)
 
 class TokenTests(APITestCaseWrapper):
     def setUp(self):
-        self.user = UserFactory.create(username='test_user')
-        self.other_user = UserFactory.create(username='test_user_other')
+        self.user = UserFactory.create(username='test_user', is_active=True)
+        self.other_user = UserFactory.create(username='test_user_other', is_active=True)
 
     def test_crud(self):
         self.client.force_login(self.user)
