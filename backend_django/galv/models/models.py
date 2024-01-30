@@ -1199,12 +1199,19 @@ class KnoxAuthToken(TimestampedModel):
     @staticmethod
     def has_write_permission(request):
         return False
+
+    @staticmethod
+    def has_destroy_permission(request):
+        return True
     
     def has_object_read_permission(self, request):
         if not request.user.is_active:
             return False
-        regex = re.search(f"_${request.user.id}$", self.knox_token_key)
+        regex = re.search(f"_{request.user.id}$", self.knox_token_key)
         return not regex is None
+
+    def has_object_destroy_permission(self, request):
+        return self.has_object_read_permission(request)
 
 
 class HarvesterUser(AnonymousUser):

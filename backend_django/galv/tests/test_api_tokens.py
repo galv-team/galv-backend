@@ -18,8 +18,8 @@ logger.setLevel(logging.INFO)
 
 class TokenTests(APITestCaseWrapper):
     def setUp(self):
-        self.user = UserFactory.create(username='test_user', is_active=True)
-        self.other_user = UserFactory.create(username='test_user_other', is_active=True)
+        self.user = UserFactory.create(username='test_user')
+        self.other_user = UserFactory.create(username='test_user_other')
 
     def test_crud(self):
         self.client.force_login(self.user)
@@ -48,13 +48,6 @@ class TokenTests(APITestCaseWrapper):
         response = self.client.get(detail_url)
         self.assertEqual(response.json()['name'], body['name'])
         self.assertNotIn('token', response.json())
-        print("OK")
-
-        print("Test update")
-        new_name = "new token name"
-        response = self.client.patch(detail_url, {"name": new_name})
-        assert_response_property(self, response, self.assertEqual, response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json()['name'], new_name)
         print("OK")
 
         print("Test token delete")

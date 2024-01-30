@@ -72,7 +72,7 @@ services:
       DJANGO_SETTINGS: "dev"
     env_file:
       - ./.env
-    restart: "on-failure"
+    restart: "no"
 
   make_spec:
     image: app-spec
