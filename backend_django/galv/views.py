@@ -270,7 +270,6 @@ class CreateTokenView(KnoxLoginView):
     Create a new Knox Token.
     """
     http_method_names = ['post', 'options']
-    permission_classes = [DRYPermissions]
 
     def get_queryset(self):
         return KnoxAuthToken.objects.none().order_by('-id')
