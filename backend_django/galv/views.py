@@ -123,7 +123,7 @@ class _GetOrCreateTextStringViewSet(ListModelMixin, viewsets.GenericViewSet):
 
 @extend_schema(responses={200: inline_serializer(
     'ActivationResponse',
-    {"details": serializers.CharField()}
+    {"detail": serializers.CharField()}
 )})
 @api_view(('GET',))
 @renderer_classes((JSONRenderer,))
@@ -292,7 +292,7 @@ class CreateTokenView(KnoxLoginView):
             error = ValueError("You already have a token with that name")
         if error:
             instance.delete()
-            raise error
+            return error_response(str(error))
         else:
             token_wrapper = KnoxAuthToken.objects.create(
                 name=name,
@@ -343,6 +343,7 @@ class TokenViewSet(viewsets.ModelViewSet):
     serializer_class = KnoxTokenSerializer
     queryset = KnoxAuthToken.objects.none().order_by('-id')
     http_method_names = ['get', 'patch', 'delete', 'options']
+    permission_classes = [DRYPermissions]
 
     def get_queryset(self):
         token_keys = [f"{t.token_key}_{t.user_id}" for t in AuthToken.objects.filter(user_id=self.request.user.id)]

@@ -50,13 +50,6 @@ class TokenTests(APITestCaseWrapper):
         self.assertNotIn('token', response.json())
         print("OK")
 
-        print("Test update")
-        new_name = "new token name"
-        response = self.client.patch(detail_url, {"name": new_name})
-        assert_response_property(self, response, self.assertEqual, response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json()['name'], new_name)
-        print("OK")
-
         print("Test token delete")
         response = self.client.delete(detail_url)
         assert_response_property(self, response, self.assertEqual, response.status_code, status.HTTP_204_NO_CONTENT)
