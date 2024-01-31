@@ -1599,8 +1599,8 @@ class KnoxTokenSerializer(serializers.HyperlinkedModelSerializer, PermissionsMix
 
     class Meta:
         model = KnoxAuthToken
-        fields = ['url', 'id', 'name', 'created', 'expiry']
-        read_only_fields = ['url', 'id', 'created', 'expiry', 'permissions']
+        fields = ['url', 'id', 'name', 'created', 'expiry', 'permissions']
+        read_only_fields = fields
         extra_kwargs = augment_extra_kwargs()
 
 
@@ -1634,7 +1634,7 @@ class KnoxTokenFullSerializer(KnoxTokenSerializer):
 
     class Meta:
         model = KnoxAuthToken
-        fields = ['url', 'id', 'name', 'created', 'expiry', 'token']
+        fields = ['url', 'id', 'name', 'created', 'expiry', 'token', 'permissions']
         read_only_fields = fields
         extra_kwargs = augment_extra_kwargs()
 
