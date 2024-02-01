@@ -8,9 +8,9 @@
 The Galv backend provides a REST API powered by [Django](https://www.djangoproject.com/) and [Django REST Framework](https://www.django-rest-framework.org/).
 
 ## Galv Project
-- [**Backend**](/Battery-Intelligence-Lab/galv-backend)
-- [Frontend](/Battery-Intelligence-Lab/galv-frontend)
-- [Harvester](/Battery-Intelligence-Lab/galv-harvester)
+- [**Backend**](https://github.com/Battery-Intelligence-Lab/galv-backend)
+- [Frontend](https://github.com/Battery-Intelligence-Lab/galv-frontend)
+- [Harvester](https://github.com/Battery-Intelligence-Lab/galv-harvester)
 
 ## Deploying
 
