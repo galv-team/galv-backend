@@ -25,7 +25,7 @@ from ..models import EquipmentFamily, Harvester, \
 
 fake = faker.Faker(django.conf.global_settings.LANGUAGE_CODE)
 
-def fix_additional_properties(obj):
+def fix_custom_properties(obj):
     return {k: v for k, v in obj.ap.items() if k not in obj._Resolver__declarations.declarations.keys()}
 
 def make_tmp_file():
@@ -191,7 +191,7 @@ class CellFamilyFactory(factory.django.DjangoModelFactory):
         exclude = ('ap',)
 
     ap = factory.Faker('pydict', value_types=['str', 'int', 'float', 'dict', 'list'])
-    additional_properties = factory.LazyAttribute(fix_additional_properties)
+    custom_properties = factory.LazyAttribute(fix_custom_properties)
     team = factory.SubFactory(TeamFactory)
     manufacturer = factory.SubFactory(CellManufacturersFactory)
     model = factory.SubFactory(CellModelsFactory)
@@ -212,7 +212,7 @@ class CellFactory(factory.django.DjangoModelFactory):
         exclude = ('ap',)
 
     ap = factory.Faker('pydict', value_types=['str', 'int', 'float', 'dict', 'list'])
-    additional_properties = factory.LazyAttribute(fix_additional_properties)
+    custom_properties = factory.LazyAttribute(fix_custom_properties)
     team = factory.SubFactory(TeamFactory)
     identifier = factory.Faker('bothify', text='?????-##??#-#?#??-?####-?#???')
     family = factory.SubFactory(CellFamilyFactory)
@@ -224,7 +224,7 @@ class EquipmentFamilyFactory(factory.django.DjangoModelFactory):
         exclude = ('ap',)
 
     ap = factory.Faker('pydict', value_types=['str', 'int', 'float', 'dict', 'list'])
-    additional_properties = factory.LazyAttribute(fix_additional_properties)
+    custom_properties = factory.LazyAttribute(fix_custom_properties)
     team = factory.SubFactory(TeamFactory)
     type = factory.SubFactory(EquipmentTypesFactory)
     manufacturer = factory.SubFactory(EquipmentManufacturersFactory)
@@ -237,7 +237,7 @@ class EquipmentFactory(factory.django.DjangoModelFactory):
         exclude = ('ap',)
 
     ap = factory.Faker('pydict', value_types=['str', 'int', 'float', 'dict', 'list'])
-    additional_properties = factory.LazyAttribute(fix_additional_properties)
+    custom_properties = factory.LazyAttribute(fix_custom_properties)
     team = factory.SubFactory(TeamFactory)
     identifier = factory.Faker('bothify', text='?????-##??#-#?#??-?####-?#???')
     family = factory.SubFactory(EquipmentFamilyFactory)
@@ -250,7 +250,7 @@ class ScheduleFamilyFactory(factory.django.DjangoModelFactory):
         exclude = ('ap',)
 
     ap = factory.Faker('pydict', value_types=['str', 'int', 'float', 'dict', 'list'])
-    additional_properties = factory.LazyAttribute(fix_additional_properties)
+    custom_properties = factory.LazyAttribute(fix_custom_properties)
     team = factory.SubFactory(TeamFactory)
     identifier = factory.SubFactory(ScheduleIdentifiersFactory)
     description = factory.Faker('sentence')
@@ -262,7 +262,7 @@ class ScheduleFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Schedule
 
-    # Don't test Schedule additional_properties because we can't use JSON format to upload files
+    # Don't test Schedule custom_properties because we can't use JSON format to upload files
     team = factory.SubFactory(TeamFactory)
     family = factory.SubFactory(ScheduleFamilyFactory)
     schedule_file = factory.LazyFunction(make_tmp_file)
@@ -273,7 +273,7 @@ class CyclerTestFactory(factory.django.DjangoModelFactory):
         exclude = ('ap',)
 
     ap = factory.Faker('pydict', value_types=['str', 'int', 'float', 'dict', 'list'])
-    additional_properties = factory.LazyAttribute(fix_additional_properties)
+    custom_properties = factory.LazyAttribute(fix_custom_properties)
     team = factory.SubFactory(TeamFactory)
     cell = factory.SubFactory(CellFactory, team=team)
     schedule = factory.SubFactory(ScheduleFactory, team=team)
@@ -299,7 +299,7 @@ class ExperimentFactory(factory.django.DjangoModelFactory):
         exclude = ('ap',)
 
     ap = factory.Faker('pydict', value_types=['str', 'int', 'float', 'dict', 'list'])
-    additional_properties = factory.LazyAttribute(fix_additional_properties)
+    custom_properties = factory.LazyAttribute(fix_custom_properties)
     team = factory.SubFactory(TeamFactory)
     title = factory.Faker('sentence')
     description = factory.Faker('sentence')
@@ -341,7 +341,7 @@ class ValidationSchemaFactory(factory.django.DjangoModelFactory):
         exclude = ('ap', 's',)
 
     ap = factory.Faker('pydict', value_types=['str', 'int', 'float', 'dict', 'list'])
-    additional_properties = factory.LazyAttribute(fix_additional_properties)
+    custom_properties = factory.LazyAttribute(fix_custom_properties)
     team = factory.SubFactory(TeamFactory)
     name = factory.Faker('sentence')
     s = factory.Faker('pydict', value_types=['str', 'int', 'float', 'dict', 'list'])

@@ -53,8 +53,8 @@ class UUIDModel(TimestampedModel):
         abstract = True
 
 
-class AdditionalPropertiesModel(UUIDModel):
-    additional_properties = models.JSONField(null=False, default=dict)
+class CustomPropertiesModel(UUIDModel):
+    custom_properties = models.JSONField(null=False, default=dict)
     class Meta(UUIDModel.Meta):
         abstract = True
 
@@ -85,7 +85,7 @@ def combine_rdf_props(*args) -> dict:
         del rdf_props["@context"]
     return rdf_props
 
-class JSONModel(AdditionalPropertiesModel):
+class JSONModel(CustomPropertiesModel):
     def __json_ld__(self) -> dict:
         # Complain if not implemented by subclass
         if not hasattr(self, '__json_ld__'):
@@ -98,13 +98,13 @@ class JSONModel(AdditionalPropertiesModel):
                 "in the '_context' field as a simple list."
             ))
         # Unpack any RDF properties from the additional properties
-        additional_properties = self.additional_properties.copy()
+        custom_properties = self.custom_properties.copy()
         return combine_rdf_props(
             {'@id': f"{get_namespace()}{str(self.uuid)}"},
-            unpack_rdf(additional_properties)
+            unpack_rdf(custom_properties)
         )
 
-    class Meta(AdditionalPropertiesModel.Meta):
+    class Meta(CustomPropertiesModel.Meta):
         abstract = True
 
 
@@ -137,9 +137,9 @@ def render_pybamm_schedule(schedule, cell, validate = True) -> list[str]|None:
     variables = {
         **(schedule.pybamm_schedule_variables or {}),
         **(cell.family.__dict__ or {}),
-        **(cell.family.additional_properties or {}),
+        **(cell.family.custom_properties or {}),
         **(cell.__dict__ or {}),
-        **(cell.additional_properties or {})
+        **(cell.custom_properties or {})
     }
     rendered_schedule = [t.format(**variables) for t in schedule.family.pybamm_template]
     if validate:
@@ -148,11 +148,11 @@ def render_pybamm_schedule(schedule, cell, validate = True) -> list[str]|None:
         # Check all filled values are numeric
         for v in schedule.family.pybamm_template_variable_names():
             if not isinstance(variables[v], (int, float)):
-                if v in cell.additional_properties:
+                if v in cell.custom_properties:
                     source = f"{str(cell)} (additional properties)"
                 elif v in cell.__dict__:
                     source = cell
-                elif v in cell.family.additional_properties:
+                elif v in cell.family.custom_properties:
                     source = f"{str(cell.family)} (additional properties)"
                 elif v in cell.family.__dict__:
                     source = cell.family

@@ -157,49 +157,22 @@ class GetOrCreateTextFieldList(serializers.ListField):
         return super().to_representation(data.all())
 
 
-class AdditionalPropertiesModelSerializer(serializers.HyperlinkedModelSerializer):
+class CustomPropertiesModelSerializer(serializers.HyperlinkedModelSerializer):
     """
-    A ModelSerializer that maps unrecognised properties in the input to an 'additional_properties' JSONField,
-    and unpacks the 'additional_properties' JSONField into the output.
+    A ModelSerializer that maps unrecognised properties in the input to an 'custom_properties' JSONField,
+    and unpacks the 'custom_properties' JSONField into the output.
 
-    The Meta.model must have an additional_properties JSONField.
+    The Meta.model must have a custom_properties JSONField.
     """
     class Meta:
         model: django.db.models.Model
-        include_additional_properties = True
+        include_custom_properties = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         model_fields = {f.name for f in self.Meta.model._meta.fields}
-        if 'additional_properties' not in model_fields:
-            raise ValueError("AdditionalPropertiesModelSerializer must define additional_properties")
-
-    def to_representation(self, instance):
-        if hasattr(self.Meta, 'include_additional_properties') and not self.Meta.include_additional_properties:
-            return super().to_representation(instance)
-        data = {k: v for k, v in super().to_representation(instance).items() if k != 'additional_properties'}
-        for k, v in instance.additional_properties.items():
-            if k in data:
-                raise ValueError(f"Basic model property '{k}' duplicated in additional_properties")
-        return {**data, **instance.additional_properties}
-
-    def to_internal_value(self, data):
-        new_data = {'additional_properties': {}}
-        for k, v in data.items():
-            if k not in self.fields or k == 'additional_properties':
-                if k in ['csrfmiddlewaretoken']:
-                    continue
-                try:
-                    json.dumps(v)
-                except BaseException:
-                    raise ValidationError(f"Value {v} for key {k} is not JSON serializable")
-                new_data['additional_properties'][k] = v
-
-        leftover_data = {k: v for k, v in data.items() if k not in new_data['additional_properties']}
-
-        # Let the superclass do the rest
-        new_data = {**new_data, **super().to_internal_value(leftover_data)}
-        return new_data
+        if 'custom_properties' not in model_fields:
+            raise ValueError("CustomPropertiesModelSerializer must define custom_properties")
 
 
 @extend_schema_field({
@@ -324,7 +297,7 @@ class TruncatedHyperlinkedRelatedIdField(HyperlinkedRelatedIdField):
                 self.Meta.read_only_fields = include_fields
                 super().__init__(obj, *args, **kwargs)
             class Meta(child.Meta):
-                include_additional_properties = False
+                include_custom_properties = False
                 include_validation = False
 
         serializer = TruncatedSerializer(instance, fields, context=self.context)

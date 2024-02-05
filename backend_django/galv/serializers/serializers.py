@@ -33,7 +33,7 @@ from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
 from rest_framework import serializers
 from knox.models import AuthToken
 
-from .utils import AdditionalPropertiesModelSerializer, GetOrCreateTextField, augment_extra_kwargs, url_help_text, \
+from .utils import CustomPropertiesModelSerializer, GetOrCreateTextField, augment_extra_kwargs, url_help_text, \
     get_model_field, PermissionsMixin, TruncatedUserHyperlinkedRelatedIdField, \
     TruncatedGroupHyperlinkedRelatedIdField, TruncatedHyperlinkedRelatedIdField, \
     CreateOnlyMixin, ValidationPresentationMixin
@@ -541,12 +541,12 @@ class WithTeamMixin(serializers.Serializer):
                 "write": True,
                 "read": True
             },
-            "additional-property": "resources can have arbitrary additional JSON-serializable properties"
+            "custom-property": "resources can have arbitrary additional JSON-serializable properties"
         },
         response_only=True, # signal that example only applies to responses
     ),
 ])
-class CellSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, WithTeamMixin, ValidationPresentationMixin):
+class CellSerializer(CustomPropertiesModelSerializer, PermissionsMixin, WithTeamMixin, ValidationPresentationMixin):
     family = TruncatedHyperlinkedRelatedIdField(
         'CellFamilySerializer',
         ['manufacturer', 'model', 'chemistry', 'form_factor'],
@@ -567,7 +567,7 @@ class CellSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, With
         model = Cell
         fields = [
             'url', 'uuid', 'identifier', 'family', 'cycler_tests', 'in_use', 'team',
-            'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
+            'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level', 'custom_properties'
         ]
         read_only_fields = ['url', 'uuid', 'cycler_tests', 'in_use', 'permissions']
 
@@ -609,7 +609,7 @@ class CellSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, With
         response_only=True, # signal that example only applies to responses
     ),
 ])
-class CellFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, WithTeamMixin):
+class CellFamilySerializer(CustomPropertiesModelSerializer, PermissionsMixin, WithTeamMixin):
     manufacturer = GetOrCreateTextField(foreign_model=CellManufacturers, help_text="Manufacturer name")
     model = GetOrCreateTextField(foreign_model=CellModels, help_text="Model number")
     chemistry = GetOrCreateTextField(foreign_model=CellChemistries, help_text="Chemistry type")
@@ -645,7 +645,8 @@ class CellFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsMixin
             'permissions',
             'read_access_level',
             'edit_access_level',
-            'delete_access_level'
+            'delete_access_level',
+            'custom_properties'
         ]
         read_only_fields = ['url', 'uuid', 'cells', 'in_use', 'permissions']
 
@@ -677,7 +678,7 @@ class CellFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsMixin
         response_only=True, # signal that example only applies to responses
     ),
 ])
-class EquipmentFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, WithTeamMixin):
+class EquipmentFamilySerializer(CustomPropertiesModelSerializer, PermissionsMixin, WithTeamMixin):
     type = GetOrCreateTextField(foreign_model=EquipmentTypes, help_text="Equipment type")
     manufacturer = GetOrCreateTextField(foreign_model=EquipmentManufacturers, help_text="Manufacturer name")
     model = GetOrCreateTextField(foreign_model=EquipmentModels, help_text="Model number")
@@ -704,7 +705,8 @@ class EquipmentFamilySerializer(AdditionalPropertiesModelSerializer, Permissions
             'permissions',
             'read_access_level',
             'edit_access_level',
-            'delete_access_level'
+            'delete_access_level',
+            'custom_properties'
         ]
         read_only_fields = ['url', 'uuid', 'in_use', 'equipment', 'permissions']
 
@@ -735,7 +737,7 @@ class EquipmentFamilySerializer(AdditionalPropertiesModelSerializer, Permissions
         response_only=True, # signal that example only applies to responses
     ),
 ])
-class EquipmentSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, WithTeamMixin, ValidationPresentationMixin):
+class EquipmentSerializer(CustomPropertiesModelSerializer, PermissionsMixin, WithTeamMixin, ValidationPresentationMixin):
     family = TruncatedHyperlinkedRelatedIdField(
         'EquipmentFamilySerializer',
         ['type', 'manufacturer', 'model'],
@@ -756,7 +758,7 @@ class EquipmentSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin,
         model = Equipment
         fields = [
             'url', 'uuid', 'identifier', 'family', 'calibration_date', 'in_use', 'team', 'cycler_tests',
-            'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
+            'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level', 'custom_properties'
         ]
         read_only_fields = ['url', 'uuid', 'datasets', 'in_use', 'cycler_tests', 'permissions']
 
@@ -800,7 +802,7 @@ class EquipmentSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin,
         response_only=True, # signal that example only applies to responses
     ),
 ])
-class ScheduleFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, WithTeamMixin):
+class ScheduleFamilySerializer(CustomPropertiesModelSerializer, PermissionsMixin, WithTeamMixin):
     identifier = GetOrCreateTextField(foreign_model=ScheduleIdentifiers)
     schedules = TruncatedHyperlinkedRelatedIdField(
         'ScheduleSerializer',
@@ -821,7 +823,8 @@ class ScheduleFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsM
             'url', 'uuid', 'identifier', 'description',
             'ambient_temperature', 'pybamm_template',
             'in_use', 'team', 'schedules', 'permissions',
-            'read_access_level', 'edit_access_level', 'delete_access_level'
+            'read_access_level', 'edit_access_level', 'delete_access_level',
+            'custom_properties'
         ]
         read_only_fields = ['url', 'uuid', 'in_use', 'schedules', 'permissions']
 
@@ -856,7 +859,7 @@ class ScheduleFamilySerializer(AdditionalPropertiesModelSerializer, PermissionsM
         response_only=True, # signal that example only applies to responses
     ),
 ])
-class ScheduleSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, WithTeamMixin, ValidationPresentationMixin):
+class ScheduleSerializer(CustomPropertiesModelSerializer, PermissionsMixin, WithTeamMixin, ValidationPresentationMixin):
     family = TruncatedHyperlinkedRelatedIdField(
         'ScheduleFamilySerializer',
         ['identifier'],
@@ -904,7 +907,8 @@ class ScheduleSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, 
             'url', 'uuid', 'family',
             'schedule_file', 'pybamm_schedule_variables',
             'in_use', 'team', 'cycler_tests', 'permissions',
-            'read_access_level', 'edit_access_level', 'delete_access_level'
+            'read_access_level', 'edit_access_level', 'delete_access_level',
+            'custom_properties'
         ]
         read_only_fields = ['url', 'uuid', 'in_use', 'cycler_tests', 'permissions']
 
@@ -946,7 +950,7 @@ class ScheduleSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, 
         response_only=True, # signal that example only applies to responses
     ),
 ])
-class CyclerTestSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin, WithTeamMixin):
+class CyclerTestSerializer(CustomPropertiesModelSerializer, PermissionsMixin, WithTeamMixin):
     rendered_schedule = serializers.SerializerMethodField(help_text="Rendered schedule")
     schedule = TruncatedHyperlinkedRelatedIdField(
         'ScheduleSerializer',
@@ -988,7 +992,8 @@ class CyclerTestSerializer(AdditionalPropertiesModelSerializer, PermissionsMixin
         model = CyclerTest
         fields = [
             'url', 'uuid', 'cell', 'equipment', 'schedule', 'rendered_schedule', 'team', 'permissions',
-            'read_access_level', 'edit_access_level', 'delete_access_level'
+            'read_access_level', 'edit_access_level', 'delete_access_level',
+            'custom_properties'
         ]
         read_only_fields = ['url', 'uuid', 'rendered_schedule', 'permissions']
 

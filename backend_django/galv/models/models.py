@@ -22,7 +22,7 @@ from rest_framework.reverse import reverse
 
 #from dry_rest_permissions.generics import allow_staff_or_superuser
 
-from .utils import AdditionalPropertiesModel, JSONModel, LDSources, render_pybamm_schedule, UUIDModel, \
+from .utils import CustomPropertiesModel, JSONModel, LDSources, render_pybamm_schedule, UUIDModel, \
     combine_rdf_props, TimestampedModel
 from .autocomplete_entries import *
 
@@ -519,7 +519,7 @@ class BibliographicInfo(TimestampedModel):
         return f"{self.user.username} byline"
 
 
-class CellFamily(AdditionalPropertiesModel, ResourceModelPermissionsMixin):
+class CellFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
     manufacturer = models.ForeignKey(to=CellManufacturers, help_text="Name of the manufacturer", null=True, blank=True, on_delete=models.CASCADE)
     model = models.ForeignKey(to=CellModels, help_text="Model number for the cells", null=False, on_delete=models.CASCADE)
     chemistry = models.ForeignKey(to=CellChemistries, help_text="Chemistry of the cells", null=True, blank=True, on_delete=models.CASCADE)
@@ -538,7 +538,7 @@ class CellFamily(AdditionalPropertiesModel, ResourceModelPermissionsMixin):
     def __str__(self):
         return f"{str(self.manufacturer)} {str(self.model)} ({str(self.chemistry)}, {str(self.form_factor)})"
 
-    class Meta(AdditionalPropertiesModel.Meta):
+    class Meta(CustomPropertiesModel.Meta):
         unique_together = [['model', 'manufacturer']]
 
     def save(
@@ -574,7 +574,7 @@ class Cell(JSONModel, ValidatableBySchemaMixin, ResourceModelPermissionsMixin):
         unique_together = [['identifier', 'family']]
 
 
-class EquipmentFamily(AdditionalPropertiesModel, ResourceModelPermissionsMixin):
+class EquipmentFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
     type = models.ForeignKey(to=EquipmentTypes, on_delete=models.CASCADE, null=False, help_text="Type of equipment")
     manufacturer = models.ForeignKey(to=EquipmentManufacturers, on_delete=models.CASCADE, null=False, help_text="Manufacturer of equipment")
     model = models.ForeignKey(to=EquipmentModels, on_delete=models.CASCADE, null=False, help_text="Model of equipment")
@@ -606,7 +606,7 @@ class Equipment(JSONModel, ValidatableBySchemaMixin, ResourceModelPermissionsMix
         }
 
 
-class ScheduleFamily(AdditionalPropertiesModel, ResourceModelPermissionsMixin):
+class ScheduleFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
     identifier = models.OneToOneField(to=ScheduleIdentifiers, unique=True, blank=False, null=False, help_text="Type of experiment, e.g. Constant-Current Discharge", on_delete=models.CASCADE)
     description = models.TextField(help_text="Description of the schedule")
     ambient_temperature = models.FloatField(help_text="Ambient temperature during the experiment (in degrees Celsius)", null=True, blank=True)
@@ -1242,7 +1242,7 @@ class HarvesterUser(AnonymousUser):
         return self.harvester.active
 
 
-class ValidationSchema(AdditionalPropertiesModel, ResourceModelPermissionsMixin):
+class ValidationSchema(CustomPropertiesModel, ResourceModelPermissionsMixin):
     """
     JSON schema that can be used for validating components.
     """
