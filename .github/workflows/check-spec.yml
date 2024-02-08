@@ -80,10 +80,6 @@ jobs:
           # Copy spec for upload
           cp .dev/spec/openapi-x.json .dev/spec/openapi-${{ needs.version.outputs.version }}.json
 
-      - name: Build check_spec container
-        if: ${{ needs.version.outputs.prev-version-tag != '' }}
-        run: sudo docker-compose build check_spec
-
       - name: Download previous spec
         if: ${{ needs.version.outputs.prev-version-tag != '' }}
         run: |
