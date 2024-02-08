@@ -71,12 +71,12 @@ jobs:
           cp .dev/spec/openapi-x.json .dev/spec/openapi-${{ needs.version.outputs.version }}.json
 
       - name: Run spec check vs prev version
-        if: ${{ needs.version.outputs.prev_version != '' && !needs.version.outputs.is-major-release }}
+        if: ${{ needs.version.outputs.prev-version-tag != '' && !needs.version.outputs.is-major-release }}
         run: |
           sudo chmod 777 .dev/spec/*
-          wget -O .dev/spec/openapi-${{ needs.version.outputs.prev_version }}.json https://raw.githubusercontent.com/Battery-Intelligence-Lab/galv-backend/release/${{ needs.version.outputs.prev_version }}/schema.json
-          echo "Check spec against previous version: ${{ needs.version.outputs.prev_version }}"
-          docker-compose run --rm -e REMOTE_SPEC_SOURCE=.dev/spec/openapi-${{ needs.version.outputs.prev_version }}.json check_spec
+          wget -O .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json https://raw.githubusercontent.com/Battery-Intelligence-Lab/galv-backend/release/${{ needs.version.outputs.prev-version-tag }}/schema.json
+          echo "Check spec against previous version: ${{ needs.version.outputs.prev-version-tag }}"
+          docker-compose run --rm -e REMOTE_SPEC_SOURCE=.dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json check_spec
           echo ".dev/spec/diff.md:"
           cat .dev/spec/diff.md
 
@@ -177,7 +177,7 @@ jobs:
           zip -r clients/galv-client-typescript-axios.zip clients/typescript-axios
 
       - name: Setup publishing typescript client to packages
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
