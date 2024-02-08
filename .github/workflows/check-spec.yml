@@ -86,7 +86,7 @@ jobs:
           sudo chmod 777 .dev/spec/*
           wget -O .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json https://github.com/Battery-Intelligence-Lab/galv-backend/releases/download/${{ needs.version.outputs.prev-version-tag }}/openapi-${{ needs.version.outputs.prev-version-tag }}.json
           echo "Check spec against previous version: ${{ needs.version.outputs.prev-version-tag }}"
-          if [ "${{ needs.version.outputs.is-major-release }}" == "true" || "${{ inputs.allow_breaking_changes }}" == "true" ]; then
+          if [[ "${{ needs.version.outputs.is-major-release }}" == "true" || "${{ inputs.allow_breaking_changes }}" == "true" ]]; then
             docker-compose run --rm -e REMOTE_SPEC_SOURCE=.dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json check_spec || true
           else
             docker-compose run --rm -e REMOTE_SPEC_SOURCE=.dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json check_spec
