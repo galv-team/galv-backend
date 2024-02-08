@@ -34,7 +34,7 @@ jobs:
     outputs:
       release: ${{ steps.check-tag.outputs.match }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
@@ -64,7 +64,7 @@ jobs:
       - version
     steps:
       - name: Dump context
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');

@@ -33,7 +33,7 @@ jobs:
       untagged: ${{ steps.tags.outputs.untagged == 'true' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Extract version
         id: scrape
