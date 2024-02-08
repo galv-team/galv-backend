@@ -160,6 +160,10 @@ jobs:
           # zip the client
           zip -r clients/galv-client-python.zip clients/python
 
+      - name: Create ts-axios config
+        run: |
+          echo '{"npmName": "galv", "npmVersion": "${{ needs.version.outputs.version }}"}' >> .dev/spec/ts-config.json
+          cat .dev/spec/ts-config.json
       - name: Create API client - typescript-axios
         env:
           VERSION: ${{ needs.version.outputs.version }}
@@ -168,34 +172,11 @@ jobs:
           docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v6.6.0 generate \
           -i "/local/$JSON_FILE" \
           -g typescript-axios \
+          -c /local/ts-config.json \
           -o /local/clients/typescript-axios
           
           # Copy LICENCE file to client directory
           sudo cp LICENCE clients/typescript-axios/LICENCE
-          
-          # Create a package.json file using EOF notation
-          cat << EOF | sudo tee -a clients/typescript-axios/package.json
-          {
-              "name": "@battery-intelligence-lab/galv-backend",
-              "version": "$(echo $VERSION | cut -c 2-)",
-              "description": "Galv API client using Typescript-Axios",
-              "main": "index.ts",
-              "scripts": {
-                "test": "echo \"Error: no test specified\" && exit 1"
-              },
-              "keywords": [
-                "galv",
-                "galv-api",
-                "galv-client",
-                "typescript-axios"
-              ],
-              "author": "Battery Intelligence Lab",
-              "license": "See LICENCE File",
-              "dependencies": {
-                "axios": "^0.21.1"
-              }
-          }
-          EOF
           
           # zip the client
           zip -r clients/galv-client-typescript-axios.zip clients/typescript-axios
