@@ -142,8 +142,8 @@ jobs:
 
       - name: Create python config
         run: |
-          echo '{"packageName": "galv", "packageVersion": "${{ needs.version.outputs.version }}"}' >> .dev/spec/python-config.json
-          cat .dev/spec/python-config.json
+          echo '{"packageName": "galv", "packageVersion": "${{ needs.version.outputs.version }}"}' >> python-config.json
+          cat python-config.json
 
       - name: Create API client - python
         run: |
@@ -162,8 +162,8 @@ jobs:
 
       - name: Create ts-axios config
         run: |
-          echo '{"npmName": "galv", "npmVersion": "${{ needs.version.outputs.version }}"}' >> .dev/spec/ts-config.json
-          cat .dev/spec/ts-config.json
+          echo '{"npmName": "galv", "npmVersion": "${{ needs.version.outputs.version }}"}' >> ts-config.json
+          cat ts-config.json
       - name: Create API client - typescript-axios
         env:
           VERSION: ${{ needs.version.outputs.version }}
