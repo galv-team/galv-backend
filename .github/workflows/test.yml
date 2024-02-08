@@ -130,3 +130,47 @@ jobs:
       debug_enabled: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       skip_compatibility_check: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_compatibility_check }}
       dry-run: ${{ needs.check-release-type.outputs.dry-run == 'true' }}
+
+  publish-to-pypi:
+    needs:
+      - run-tests
+      - check-release-type
+    if: needs.check-release-type.outputs.release == 'true' && needs.check-release-type.outputs.dry-run == 'false'
+    name: >-
+      Publish Python 🐍 distribution 📦 to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/galv-client
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: clients/python
+      - name: Publish distribution 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-to-testpypi:
+    needs:
+      - run-tests
+      - check-release-type
+    if: needs.check-release-type.outputs.release == 'true' && needs.check-release-type.outputs.dry-run == 'true'
+    name: >-
+      Publish Python 🐍 distribution 📦 to TestPyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/galv-client
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: clients/python
+      - name: Publish distribution 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
