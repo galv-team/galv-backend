@@ -12,6 +12,11 @@ on:
         description: 'Do not actually release the package, just check that it is valid.'
         required: false
         default: false
+      allow_breaking_changes:
+        type: boolean
+        description: 'Breaking changes are allowed. You probably should not be using this.'
+        required: false
+        default: false
   workflow_dispatch:
     inputs:
       debug_enabled:
@@ -29,6 +34,11 @@ on:
         description: 'Do not actually release the package, just check that it is valid.'
         required: false
         default: false
+      allow_breaking_changes:
+        type: boolean
+        description: 'Breaking changes are allowed. You probably should not be using this.'
+        required: false
+        default: false
 
 jobs:
   version:
@@ -40,7 +50,7 @@ jobs:
     needs: version
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
       - name: Setup tmate session
@@ -70,13 +80,21 @@ jobs:
           # Copy spec for upload
           cp .dev/spec/openapi-x.json .dev/spec/openapi-${{ needs.version.outputs.version }}.json
 
-      - name: Run spec check vs prev version
-        if: ${{ needs.version.outputs.prev_version != '' && !needs.version.outputs.is-major-release }}
+      - name: Check vs previous spec
+        if: ${{ needs.version.outputs.prev-version-tag != '' }}
         run: |
           sudo chmod 777 .dev/spec/*
-          wget -O .dev/spec/openapi-${{ needs.version.outputs.prev_version }}.json https://raw.githubusercontent.com/Battery-Intelligence-Lab/galv-backend/release/${{ needs.version.outputs.prev_version }}/schema.json
-          echo "Check spec against previous version: ${{ needs.version.outputs.prev_version }}"
-          docker-compose run --rm -e REMOTE_SPEC_SOURCE=.dev/spec/openapi-${{ needs.version.outputs.prev_version }}.json check_spec
+          wget -O .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json https://github.com/Battery-Intelligence-Lab/galv-backend/releases/download/${{ needs.version.outputs.prev-version-tag }}/openapi-${{ needs.version.outputs.prev-version-tag }}.json
+          echo "Downloaded spec for previous version: ${{ needs.version.outputs.prev-version-tag }}. First 10 lines:"
+          head -n 10 .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json
+          echo "---------"
+          echo "Check spec against previous version: ${{ needs.version.outputs.prev-version-tag }}"
+          if [[ "${{ needs.version.outputs.is-major-release }}" == "true" || "${{ inputs.allow_breaking_changes }}" == "true" ]]; then
+            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json check_spec || true
+          else
+            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json check_spec
+          fi
+          ls -l .dev/spec
           echo ".dev/spec/diff.md:"
           cat .dev/spec/diff.md
 
@@ -102,7 +120,7 @@ jobs:
     permissions:
       packages: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Make clients directory
         run: |
@@ -122,23 +140,31 @@ jobs:
       - name: Specify openapi-generator version
         run: docker pull openapitools/openapi-generator-cli:v6.6.0
 
+      - name: Create python config
+        run: |
+          echo '{"packageName": "galv", "packageVersion": "${{ needs.version.outputs.version-plain }}"}' >> python-config.json
+          cat python-config.json
+
       - name: Create API client - python
         run: |
           JSON_FILE=$(ls .dev/spec/*.json)
           docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v6.6.0 generate \
           -i "/local/$JSON_FILE" \
           -g python \
+          -c /local/python-config.json \
           -o /local/clients/python
           
           # Copy LICENCE file to client directory
           sudo cp LICENCE clients/python/LICENCE
+          
+          tree clients/python
           
           # zip the client
           zip -r clients/galv-client-python.zip clients/python
 
       - name: Create API client - typescript-axios
         env:
-          VERSION: ${{ needs.version.outputs.version }}
+          VERSION: ${{ needs.version.outputs.version-plain }}
         run: |
           JSON_FILE=$(ls .dev/spec/*.json)
           docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v6.6.0 generate \
@@ -152,8 +178,8 @@ jobs:
           # Create a package.json file using EOF notation
           cat << EOF | sudo tee -a clients/typescript-axios/package.json
           {
-              "name": "@battery-intelligence-lab/galv-backend",
-              "version": "$(echo $VERSION | cut -c 2-)",
+              "name": "@battery-intelligence-lab/galv",
+              "version": "$VERSION",
               "description": "Galv API client using Typescript-Axios",
               "main": "index.ts",
               "scripts": {
@@ -177,7 +203,7 @@ jobs:
           zip -r clients/galv-client-typescript-axios.zip clients/typescript-axios
 
       - name: Setup publishing typescript client to packages
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
@@ -194,4 +220,11 @@ jobs:
         with:
           name: clients
           path: clients/*.zip
+          retention-days: 1
+
+      - name: Upload python client code
+        uses: actions/upload-artifact@v4
+        with:
+          name: python
+          path: clients/python
           retention-days: 1

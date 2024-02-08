@@ -11,8 +11,11 @@ on:
         default: false
     outputs:
       version:
-        description: "API_VERSION defined in settings_base.py"
+        description: "API_VERSION defined in settings_base.py (with 'v' prefix)"
         value: ${{ jobs.get-version.outputs.version }}
+      version-plain:
+        description: "API_VERSION defined in settings_base.py"
+        value: ${{ jobs.get-version.outputs.version-plain }}
       prev-version-tag:
         description: "Previous version tag"
         value: ${{ jobs.get-version.outputs.prev-version-tag }}
@@ -28,12 +31,13 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.scrape.outputs.version }}
+      version-plain: ${{ steps.scrape.outputs.version-plain }}
       prev-version-tag: ${{ steps.search.outputs.prev-version-tag }}
       is-major-release: ${{ steps.search.outputs.previous-major-version-tag != steps.search.outputs.prev-version-tag }}
       untagged: ${{ steps.tags.outputs.untagged == 'true' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Extract version
         id: scrape
@@ -47,6 +51,7 @@ jobs:
           fi
           echo "API_VERSION: v$API_VERSION"
           echo "version=v$API_VERSION" >> $GITHUB_OUTPUT
+          echo "version-plain=$API_VERSION" >> $GITHUB_OUTPUT
 
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
       - name: Setup tmate session

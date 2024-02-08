@@ -8,6 +8,11 @@ on:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
+      debug_only_this_job:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled for this job only'
+        required: false
+        default: false
       issue_release:
         type: boolean
         description: 'Issue a release'
@@ -18,7 +23,7 @@ on:
         description: 'Do not actually release the package, just check that it is valid.'
         required: false
         default: false
-      skip_compatibility_check:
+      allow_breaking_changes:
         type: boolean
         description: 'Skip API compatibility check. WARNING: this will allow breaking changes to the API to be released.'
         required: false
@@ -34,11 +39,11 @@ jobs:
     outputs:
       release: ${{ steps.check-tag.outputs.match }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.debug_enabled || inputs.debug_only_this_job) }}
 
       - name: Setup docker-compose
         run: |
@@ -64,7 +69,7 @@ jobs:
       - version
     steps:
       - name: Dump context
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
@@ -116,7 +121,7 @@ jobs:
           cat $GITHUB_OUTPUT
 
       - name: Debug with tmate
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.debug_enabled || inputs.debug_only_this_job) }}
         uses: mxschmitt/action-tmate@v3
 
   release:
@@ -128,5 +133,79 @@ jobs:
     secrets: inherit
     with:
       debug_enabled: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
-      skip_compatibility_check: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_compatibility_check }}
+      allow_breaking_changes: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_breaking_changes }}
       dry-run: ${{ needs.check-release-type.outputs.dry-run == 'true' }}
+
+  build-python:
+    needs:
+      - release
+    name: >-
+      Build 🐍📦
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python
+          path: .
+
+#      - name: Test python package
+#        run: | 
+#          pip install -r requirements.txt
+#          pip install -r test-requirements.txt
+#          pytest test
+
+      - name: Build distribution 📦
+        run: python setup.py sdist bdist_wheel
+
+      - name: Save distribution 📦
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package
+          path: dist/*
+
+  publish-to-pypi:
+    needs:
+      - build-python
+    if: needs.check-release-type.outputs.dry-run == 'false'
+    name: >-
+      Publish Python 🐍 distribution 📦 to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/galv-client
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
+      - name: Download distribution 📦
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package
+          path: dist/
+
+      - name: Publish distribution 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-to-testpypi:
+    needs:
+      - build-python
+    if: needs.check-release-type.outputs.dry-run == 'true'
+    name: >-
+      Publish Python 🐍 distribution 📦 to TestPyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/galv-client
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
+      - name: Download distribution 📦
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package
+          path: dist/
+
+      - name: Publish distribution 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/

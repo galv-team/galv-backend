@@ -95,8 +95,6 @@ services:
 
   check_spec:
     image: openapitools/openapi-diff
-    depends_on:
-      - make_spec
     volumes:
       - ./.dev/spec:/spec
     entrypoint: /bin/sh -c
