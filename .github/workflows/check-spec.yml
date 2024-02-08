@@ -181,6 +181,7 @@ jobs:
           sudo cp LICENCE clients/typescript-axios/LICENCE
           
           tree clients/typescript-axios
+          cat clients/typescript-axios/package.json
           sudo chmod 777 clients/typescript-axios
           
           # zip the client
@@ -190,6 +191,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       - name: Publish typescript client to packages
         uses: JS-DevTools/npm-publish@v3
