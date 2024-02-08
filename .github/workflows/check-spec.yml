@@ -157,6 +157,8 @@ jobs:
           # Copy LICENCE file to client directory
           sudo cp LICENCE clients/python/LICENCE
           
+          tree clients/python
+          
           # zip the client
           zip -r clients/galv-client-python.zip clients/python
 
@@ -177,6 +179,9 @@ jobs:
           
           # Copy LICENCE file to client directory
           sudo cp LICENCE clients/typescript-axios/LICENCE
+          
+          tree clients/typescript-axios
+          sudo chmod 777 clients/typescript-axios
           
           # zip the client
           zip -r clients/galv-client-typescript-axios.zip clients/typescript-axios
