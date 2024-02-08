@@ -8,6 +8,11 @@ on:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
+      debug_only_this_job:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled for this job only'
+        required: false
+        default: false
       issue_release:
         type: boolean
         description: 'Issue a release'
@@ -18,7 +23,7 @@ on:
         description: 'Do not actually release the package, just check that it is valid.'
         required: false
         default: false
-      skip_compatibility_check:
+      allow_breaking_changes:
         type: boolean
         description: 'Skip API compatibility check. WARNING: this will allow breaking changes to the API to be released.'
         required: false
@@ -38,7 +43,7 @@ jobs:
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.debug_enabled || inputs.debug_only_this_job) }}
 
       - name: Setup docker-compose
         run: |
@@ -116,7 +121,7 @@ jobs:
           cat $GITHUB_OUTPUT
 
       - name: Debug with tmate
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.debug_enabled || inputs.debug_only_this_job) }}
         uses: mxschmitt/action-tmate@v3
 
   release:
@@ -128,7 +133,7 @@ jobs:
     secrets: inherit
     with:
       debug_enabled: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
-      skip_compatibility_check: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_compatibility_check }}
+      allow_breaking_changes: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_breaking_changes }}
       dry-run: ${{ needs.check-release-type.outputs.dry-run == 'true' }}
 
   publish-to-pypi:
@@ -172,7 +177,7 @@ jobs:
           path: dist/
 
       - name: Debug with tmate
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.debug_enabled || inputs.debug_only_this_job) }}
         uses: mxschmitt/action-tmate@v3
         
       - name: Publish distribution 📦 to PyPI

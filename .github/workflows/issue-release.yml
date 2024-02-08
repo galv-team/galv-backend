@@ -8,7 +8,7 @@ on:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
-      skip_compatibility_check:
+      allow_breaking_changes:
         type: boolean
         description: 'Skip API compatibility check. WARNING: this will allow breaking changes to the API to be released.'
         required: false
@@ -25,7 +25,7 @@ on:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
-      skip_compatibility_check:
+      allow_breaking_changes:
         type: boolean
         description: 'Skip API compatibility check. WARNING: this will allow breaking changes to the API to be released.'
         required: false
@@ -38,12 +38,12 @@ on:
 
 jobs:
   check-spec:
-    if: ${{ !inputs.skip_compatibility_check }}
     uses: ./.github/workflows/check-spec.yml
     secrets: inherit
     with:
         debug_enabled: ${{ inputs.debug_enabled }}
         dry-run: ${{ inputs.dry-run }}
+        allow_breaking_changes: ${{ inputs.allow_breaking_changes }}
   publish-package:
     uses: ./.github/workflows/publish-package.yml
     secrets: inherit
