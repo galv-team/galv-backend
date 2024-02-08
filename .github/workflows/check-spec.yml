@@ -80,23 +80,21 @@ jobs:
           # Copy spec for upload
           cp .dev/spec/openapi-x.json .dev/spec/openapi-${{ needs.version.outputs.version }}.json
 
-      - name: Download previous spec
+      - name: Check vs previous spec
         if: ${{ needs.version.outputs.prev-version-tag != '' }}
         run: |
           sudo chmod 777 .dev/spec/*
           wget -O .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json https://github.com/Battery-Intelligence-Lab/galv-backend/releases/download/${{ needs.version.outputs.prev-version-tag }}/openapi-${{ needs.version.outputs.prev-version-tag }}.json
           echo "Downloaded spec for previous version: ${{ needs.version.outputs.prev-version-tag }}. First 10 lines:"
           head -n 10 .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json
-
-      - name: Run spec check vs prev version
-        if: ${{ needs.version.outputs.prev-version-tag != '' }}
-        run: |
+          echo "---------"
           echo "Check spec against previous version: ${{ needs.version.outputs.prev-version-tag }}"
           if [[ "${{ needs.version.outputs.is-major-release }}" == "true" || "${{ inputs.allow_breaking_changes }}" == "true" ]]; then
-            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=.dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json check_spec || true
+            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json check_spec || true
           else
-            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=.dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json check_spec
+            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json check_spec
           fi
+          ls -l .dev/spec
           echo ".dev/spec/diff.md:"
           cat .dev/spec/diff.md
 
