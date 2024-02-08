@@ -133,9 +133,8 @@ jobs:
 
   publish-to-pypi:
     needs:
-      - run-tests
-      - check-release-type
-    if: needs.check-release-type.outputs.release == 'true' && needs.check-release-type.outputs.dry-run == 'false'
+      - release
+    if: needs.check-release-type.outputs.dry-run == 'false'
     name: >-
       Publish Python 🐍 distribution 📦 to PyPI
     runs-on: ubuntu-latest
@@ -155,9 +154,8 @@ jobs:
 
   publish-to-testpypi:
     needs:
-      - run-tests
-      - check-release-type
-    if: needs.check-release-type.outputs.release == 'true' && needs.check-release-type.outputs.dry-run == 'true'
+      - release
+    if: needs.check-release-type.outputs.dry-run == 'true'
     name: >-
       Publish Python 🐍 distribution 📦 to TestPyPI
     runs-on: ubuntu-latest
