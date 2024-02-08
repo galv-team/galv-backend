@@ -170,6 +170,11 @@ jobs:
         with:
           name: python
           path: dist/
+
+      - name: Debug with tmate
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+        uses: mxschmitt/action-tmate@v3
+        
       - name: Publish distribution 📦 to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:

@@ -71,12 +71,16 @@ jobs:
           cp .dev/spec/openapi-x.json .dev/spec/openapi-${{ needs.version.outputs.version }}.json
 
       - name: Run spec check vs prev version
-        if: ${{ needs.version.outputs.prev-version-tag != '' && !needs.version.outputs.is-major-release }}
+        if: ${{ needs.version.outputs.prev-version-tag != '' }}
         run: |
           sudo chmod 777 .dev/spec/*
           wget -O .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json https://raw.githubusercontent.com/Battery-Intelligence-Lab/galv-backend/release/${{ needs.version.outputs.prev-version-tag }}/schema.json
           echo "Check spec against previous version: ${{ needs.version.outputs.prev-version-tag }}"
-          docker-compose run --rm -e REMOTE_SPEC_SOURCE=.dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json check_spec
+          if [ "${{ needs.version.outputs.is-major-release }}" == "true" ]; then
+            docker-compose run --rm -e REMOTE_SPEC_SOURCE=.dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json check_spec || true
+          else
+            docker-compose run --rm -e REMOTE_SPEC_SOURCE=.dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json check_spec
+          fi
           echo ".dev/spec/diff.md:"
           cat .dev/spec/diff.md
 
