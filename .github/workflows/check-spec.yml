@@ -195,3 +195,10 @@ jobs:
           name: clients
           path: clients/*.zip
           retention-days: 1
+
+      - name: Upload python client code
+        uses: actions/upload-artifact@v4
+        with:
+          name: python
+          path: clients/python
+          retention-days: 1
