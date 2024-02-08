@@ -140,12 +140,18 @@ jobs:
       - name: Specify openapi-generator version
         run: docker pull openapitools/openapi-generator-cli:v6.6.0
 
+      - name: Create python config
+        run: |
+          echo '{"packageName": "galv", "packageVersion": "${{ needs.version.outputs.version }}"}' >> .dev/spec/python-config.json
+          cat .dev/spec/python-config.json
+
       - name: Create API client - python
         run: |
           JSON_FILE=$(ls .dev/spec/*.json)
           docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v6.6.0 generate \
           -i "/local/$JSON_FILE" \
           -g python \
+          -c /local/python-config.json \
           -o /local/clients/python
           
           # Copy LICENCE file to client directory
