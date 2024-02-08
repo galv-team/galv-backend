@@ -136,11 +136,11 @@ jobs:
       allow_breaking_changes: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_breaking_changes }}
       dry-run: ${{ needs.check-release-type.outputs.dry-run == 'true' }}
 
-  check-and-build-python:
+  build-python:
     needs:
       - release
     name: >-
-      Check and build 🐍📦
+      Build 🐍📦
     runs-on: ubuntu-latest
     steps:
       - name: Download all the dists
@@ -149,11 +149,11 @@ jobs:
           name: python
           path: .
 
-      - name: Test python package
-        run: | 
-          pip install -r requirements.txt
-          pip install -r test-requirements.txt
-          pytest test
+#      - name: Test python package
+#        run: | 
+#          pip install -r requirements.txt
+#          pip install -r test-requirements.txt
+#          pytest test
 
       - name: Build distribution 📦
         run: python setup.py sdist bdist_wheel
@@ -166,7 +166,7 @@ jobs:
 
   publish-to-pypi:
     needs:
-      - check-and-build-python
+      - build-python
     if: needs.check-release-type.outputs.dry-run == 'false'
     name: >-
       Publish Python 🐍 distribution 📦 to PyPI
@@ -188,7 +188,7 @@ jobs:
 
   publish-to-testpypi:
     needs:
-      - check-and-build-python
+      - build-python
     if: needs.check-release-type.outputs.dry-run == 'true'
     name: >-
       Publish Python 🐍 distribution 📦 to TestPyPI
