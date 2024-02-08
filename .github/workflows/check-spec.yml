@@ -207,9 +207,6 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - name: Publish typescript client to packages
         uses: JS-DevTools/npm-publish@v3
         with:
