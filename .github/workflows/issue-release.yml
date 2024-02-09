@@ -76,7 +76,7 @@ jobs:
 
       - name: Release
         if: ${{ !inputs.dry-run }}
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             clients/**
