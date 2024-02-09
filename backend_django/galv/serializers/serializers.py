@@ -1395,7 +1395,6 @@ class DataColumnSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
     is_required_column = serializers.SerializerMethodField(help_text="Whether the column is one of those required by Galv")
     type_name = serializers.SerializerMethodField(help_text=get_model_field(DataColumnType, 'name').help_text)
     description = serializers.SerializerMethodField(help_text=get_model_field(DataColumnType, 'description').help_text)
-    unit = serializers.SerializerMethodField(help_text=get_model_field(DataColumnType, 'unit').help_text)
     values = serializers.SerializerMethodField(help_text="Column values")
     file = TruncatedHyperlinkedRelatedIdField(
         'ObservedFileSerializer',
@@ -1403,6 +1402,14 @@ class DataColumnSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
         view_name='observedfile-detail',
         read_only=True,
         help_text="File this Column belongs to"
+    )
+    unit = TruncatedHyperlinkedRelatedIdField(
+        'DataUnitSerializer',
+        ['name', 'symbol'],
+        source='type.unit',
+        view_name='dataunit-detail',
+        read_only=True,
+        help_text=get_model_field(DataColumnType, 'unit').help_text
     )
 
     def get_name(self, instance) -> str:
@@ -1416,14 +1423,6 @@ class DataColumnSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
 
     def get_description(self, instance) -> str:
         return instance.type.description
-
-    def get_unit(self, instance) -> dict[str, str] | None:
-        return {
-            k: v for k, v in
-            DataUnitSerializer(instance.type.unit, context=self.context).data.items() \
-            if k in ['url', 'id', 'name', 'symbol']
-        }
-
 
     def get_values(self, instance) -> str:
         return reverse('datacolumn-values', args=(instance.id,), request=self.context['request'])
