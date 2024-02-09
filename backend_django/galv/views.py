@@ -1564,7 +1564,7 @@ Data are presented as a stream of values separated by newlines.
 Can be filtered with querystring parameters `min` and `max`, and `mod` (modulo) by specifying a sample number.
         """,
         responses={
-            (200, 'text/html'): OpenApiTypes.STR,
+            (200, 'text/html; charset=utf-8'): OpenApiTypes.STR,
         }
     )
 )
