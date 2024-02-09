@@ -1601,7 +1601,7 @@ class DataColumnViewSet(viewsets.ReadOnlyModelViewSet):
                     for v in values:
                         yield v
                         yield '\n'
-                return StreamingHttpResponse(stream())
+                return StreamingHttpResponse(stream(), content_type='application/json')
         return error_response('No data found for this column.', 404)
 
 
