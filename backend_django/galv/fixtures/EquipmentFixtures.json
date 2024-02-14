@@ -95,7 +95,10 @@
             "family": "947e1f7c-c5b9-47b8-a121-d1e519a7154c",
             "calibration_date": "2019-01-01",
             "custom_properties": {
-                "friendly_name": "Thermal Chamber 1"
+                "friendly_name": {
+                    "_type": "string",
+                    "_value": "Thermal Chamber 1"
+                }
             }
         }
     },
@@ -110,7 +113,10 @@
             "family": "947e1f7c-c5b9-47b8-a121-d1e519a7154c",
             "calibration_date": "2022-06-11",
             "custom_properties": {
-                "friendly_name": "Thermal Chamber 2"
+                "friendly_name": {
+                    "_type": "string",
+                    "_value": "Thermal Chamber 2"
+                }
             }
         }
     },
