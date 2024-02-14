@@ -20,7 +20,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.1.10"
+API_VERSION = "2.1.16"
 
 try:
     USER_ACTIVATION_TOKEN_EXPIRY_S = int(os.environ.get("DJANGO_USER_ACTIVATION_TOKEN_EXPIRY_S"))
@@ -147,6 +147,11 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+        'galv.renderers.BinaryRenderer',
+    ],
 }
 REST_KNOX = {
     'SECURE_HASH_ALGORITHM': 'cryptography.hazmat.primitives.hashes.SHA512',

@@ -1564,7 +1564,7 @@ Data are presented as a stream of values separated by newlines.
 Can be filtered with querystring parameters `min` and `max`, and `mod` (modulo) by specifying a sample number.
         """,
         responses={
-            (200, 'text/html'): OpenApiTypes.STR,
+            (200, 'application/octet-stream'): OpenApiTypes.BINARY,
         }
     )
 )
@@ -1600,8 +1600,8 @@ class DataColumnViewSet(viewsets.ReadOnlyModelViewSet):
                 def stream():
                     for v in values:
                         yield v
-                        yield '\n'.encode('utf-8')
-                return StreamingHttpResponse(stream())
+                        yield '\n'
+                return StreamingHttpResponse(stream(), content_type='application/octet-stream')
         return error_response('No data found for this column.', 404)
 
 
