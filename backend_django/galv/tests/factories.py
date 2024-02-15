@@ -25,8 +25,17 @@ from ..models import EquipmentFamily, Harvester, \
 
 fake = faker.Faker(django.conf.global_settings.LANGUAGE_CODE)
 
+def to_type_value_notation(obj):
+    if isinstance(obj, dict):
+        return {"_type": "object", "_value": {k: to_type_value_notation(v) for k, v in obj.items()}}
+    elif isinstance(obj, list):
+        return {"_type": "array", "_value": [to_type_value_notation(v) for v in obj]}
+    return {'_type': type(obj).__name__, '_value': obj}
+
 def fix_custom_properties(obj):
-    return {k: v for k, v in obj.ap.items() if k not in obj._Resolver__declarations.declarations.keys()}
+    without_dec_keys = {k: v for k, v in obj.ap.items() if k not in obj._Resolver__declarations.declarations.keys()}
+    # Adapt to {_type: 'type', _value: value} format
+    return {k: to_type_value_notation(v) for k, v in without_dec_keys.items()}
 
 def make_tmp_file():
     length = fake.pyint(min_value=1, max_value=1000000)

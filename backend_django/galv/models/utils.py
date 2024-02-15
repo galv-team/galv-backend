@@ -4,8 +4,13 @@
 import os
 import re
 import uuid
+import json
 
+from django_json_field_schema_validator.validators import JSONFieldSchemaValidator
 from django.db import models
+
+with open("galv/schemas/typedObjectStrict.json") as f:
+    TYPED_OBJECT_SCHEMA = json.load(f)
 
 LD_SOURCE_MAP = {
     "schema": "https://schema.org/",
@@ -54,7 +59,11 @@ class UUIDModel(TimestampedModel):
 
 
 class CustomPropertiesModel(UUIDModel):
-    custom_properties = models.JSONField(null=False, default=dict)
+    custom_properties = models.JSONField(
+        null=False,
+        default=dict,
+        validators=[JSONFieldSchemaValidator(TYPED_OBJECT_SCHEMA)]
+    )
     class Meta(UUIDModel.Meta):
         abstract = True
 
@@ -141,6 +150,7 @@ def render_pybamm_schedule(schedule, cell, validate = True) -> list[str]|None:
         **(cell.__dict__ or {}),
         **(cell.custom_properties or {})
     }
+    variables = {k: v["_value"] if isinstance(v, dict) and "_value" in v else v for k, v in variables.items()}
     rendered_schedule = [t.format(**variables) for t in schedule.family.pybamm_template]
     if validate:
         # TODO: validate the schedule properly

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema#",
+  "$defs": {
+    "typedObjectProperty": {
+      "oneOf": [
+        {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "null"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/typedObject"
+          }
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/typedObject"
+          }
+        }
+      ]
+    },
+    "typedObject": {
+      "type": "object",
+      "properties": {
+        "_type": {
+          "type": "string"
+        },
+        "_value": {
+          "$ref": "#/$defs/typedObjectProperty"
+        }
+      },
+      "required": [
+        "_type",
+        "_value"
+      ]
+    }
+  },
+  "additionalProperties": {
+    "$ref": "#/$defs/typedObject"
+  },
+  "title": "Galv typed JSON",
+  "type": "object"
+}
