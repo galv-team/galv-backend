@@ -11,7 +11,7 @@ import os
 project = 'Galv'
 copyright = '2023, Oxford RSE'
 author = 'Oxford RSE'
-release = '2.1.17'
+release = '2.1.18'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

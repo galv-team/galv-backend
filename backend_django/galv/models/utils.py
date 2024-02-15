@@ -150,6 +150,7 @@ def render_pybamm_schedule(schedule, cell, validate = True) -> list[str]|None:
         **(cell.__dict__ or {}),
         **(cell.custom_properties or {})
     }
+    variables = {k: v["_value"] if isinstance(v, dict) and "_value" in v else v for k, v in variables.items()}
     rendered_schedule = [t.format(**variables) for t in schedule.family.pybamm_template]
     if validate:
         # TODO: validate the schedule properly
