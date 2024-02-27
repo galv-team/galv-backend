@@ -26,7 +26,7 @@ from ..models import Harvester, \
     EquipmentManufacturers, EquipmentModels, EquipmentFamily, Schedule, ScheduleIdentifiers, CyclerTest, \
     render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, user_labs, \
     user_teams, SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
-    ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH
+    ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
 from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
@@ -1790,4 +1790,15 @@ class SchemaValidationSerializer(serializers.HyperlinkedModelSerializer, Permiss
         model = SchemaValidation
         fields = ['url', 'id', 'schema', 'validation_target', 'status', 'permissions', 'detail', 'last_update']
         read_only_fields = [*fields]
+        extra_kwargs = augment_extra_kwargs()
+
+
+class ArbitraryFileSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+    class Meta:
+        model = ArbitraryFile
+        fields = [
+            'url', 'uuid', 'name', 'description', 'file', 'team', 'permissions',
+            'read_access_level', 'edit_access_level', 'delete_access_level', 'custom_properties'
+        ]
+        read_only_fields = ['url', 'uuid', 'permissions']
         extra_kwargs = augment_extra_kwargs()

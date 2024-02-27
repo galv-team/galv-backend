@@ -12,8 +12,10 @@ from django.urls import NoReverseMatch
 from drf_spectacular.types import OpenApiTypes
 from dry_rest_permissions.generics import DRYPermissions
 from rest_framework.mixins import ListModelMixin
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.renderers import JSONRenderer
 from rest_framework.reverse import reverse
+from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 
 from .serializers import HarvesterSerializer, \
     HarvesterCreateSerializer, \
@@ -30,7 +32,8 @@ from .serializers import HarvesterSerializer, \
     KnoxTokenSerializer, \
     KnoxTokenFullSerializer, CellFamilySerializer, EquipmentFamilySerializer, \
     ScheduleSerializer, CyclerTestSerializer, ScheduleFamilySerializer, DataColumnTypeSerializer, DataColumnSerializer, \
-    ExperimentSerializer, LabSerializer, TeamSerializer, ValidationSchemaSerializer, SchemaValidationSerializer
+    ExperimentSerializer, LabSerializer, TeamSerializer, ValidationSchemaSerializer, SchemaValidationSerializer, \
+    ArbitraryFileSerializer
 from .models import Harvester, \
     HarvestError, \
     MonitoredPath, \
@@ -51,7 +54,7 @@ from .models import Harvester, \
     CellChemistries, CellFormFactors, ScheduleIdentifiers, EquipmentFamily, Schedule, CyclerTest, ScheduleFamily, \
     ValidationSchema, Experiment, Lab, Team, UserProxy, GroupProxy, ValidatableBySchemaMixin, SchemaValidation, \
     UserActivation, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, ALLOWED_USER_LEVELS_DELETE, \
-    ALLOWED_USER_LEVELS_EDIT_PATH
+    ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile
 from .permissions import HarvesterFilterBackend, TeamFilterBackend, LabFilterBackend, GroupFilterBackend, \
     ResourceFilterBackend, ObservedFileFilterBackend, UserFilterBackend, SchemaValidationFilterBackend
 from .serializers.utils import get_GetOrCreateTextStringSerializer
@@ -1793,3 +1796,34 @@ class SchemaValidationViewSet(viewsets.ReadOnlyModelViewSet):
             sv.validate()
             sv.save()
         return super().list(request, *args, **kwargs)
+
+
+class ArbitraryFileViewSet(viewsets.ModelViewSet):
+    """
+    ArbitraryFiles are files that are not observed by the harvester, and are not
+    associated with any specific experiment or dataset. They are used to store
+    arbitrary files that are not part of the main data collection process.
+    """
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [DRYPermissions]
+    filter_backends = [ResourceFilterBackend]
+    serializer_class = ArbitraryFileSerializer
+    queryset = ArbitraryFile.objects.all().order_by('-uuid')
+    search_fields = ['@name', '@description']
+    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            # you can access the file like this from serializer
+            # uploaded_file = serializer.validated_data["file"]
+            serializer.save()
+            return Response(
+                serializer.data,
+                status=HTTP_201_CREATED
+            )
+
+        return Response(
+            serializer.errors,
+            status=HTTP_400_BAD_REQUEST
+        )

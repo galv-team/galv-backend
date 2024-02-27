@@ -1353,3 +1353,11 @@ class SchemaValidation(TimestampedModel):
             models.Index(fields=["status"]),
             models.Index(fields=["schema"])
         ]
+
+class ArbitraryFile(JSONModel, ResourceModelPermissionsMixin):
+    file = models.FileField(help_text="The file", null=False, blank=False)
+    name = models.TextField(help_text="The name of the file", null=False, blank=False)
+    description = models.TextField(help_text="The description of the file", null=True, blank=True)
+
+    def __str__(self):
+        return self.name

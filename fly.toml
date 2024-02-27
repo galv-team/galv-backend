@@ -24,6 +24,9 @@ console_command = "/code/backend_django/manage.py shell"
   DJANGO_EMAIL_USE_SSL = "True"
   DJANGO_EMAIL_HOST_USER = 'oxfordbatterymodelling@gmail.com'
   DJANGO_DEFAULT_FROM_EMAIL = 'oxfordbatterymodelling@gmail.com'
+  AWS_ACCESS_KEY_ID = "AKIAZQ3DU5GQ7Y5V7TFJ"
+  DJANGO_AWS_STORAGE_BUCKET_NAME = "galv"
+  DJANGO_AWS_S3_REGION_NAME = "eu-west-2"
 
 [http_service]
   internal_port = 8000

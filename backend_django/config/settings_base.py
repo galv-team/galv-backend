@@ -20,7 +20,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.1.18"
+API_VERSION = "2.1.19"
 
 try:
     USER_ACTIVATION_TOKEN_EXPIRY_S = int(os.environ.get("DJANGO_USER_ACTIVATION_TOKEN_EXPIRY_S"))
@@ -123,12 +123,6 @@ USE_TZ = True
 DATA_UPLOAD_MAX_MEMORY_SIZE = 100000000
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.1/howto/static-files/
-
-STATIC_URL = 'django_static/'
-STATIC_ROOT = '/static/'
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
@@ -185,3 +179,32 @@ EMAIL_USE_TLS = os.environ.get("DJANGO_EMAIL_USE_TLS") == "True"
 EMAIL_USE_SSL = os.environ.get("DJANGO_EMAIL_USE_SSL") == "True"
 
 DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_DEFAULT_FROM_EMAIL", "admin@galv")
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/4.1/howto/static-files/
+
+# Amazon Web Services S3 storage settings
+AWS_S3_REGION_NAME = os.environ.get("DJANGO_AWS_S3_REGION_NAME")
+AWS_STORAGE_BUCKET_NAME = os.environ.get("DJANGO_AWS_STORAGE_BUCKET_NAME")
+AWS_DEFAULT_ACL = os.environ.get("DJANGO_AWS_DEFAULT_ACL")
+AWS_S3_OBJECT_PARAMETERS = {
+    "CacheControl": "max-age=2592000",
+}
+AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+
+STATICFILES_DIRS = [
+    "/static/",
+]
+
+# static files
+STATICFILES_LOCATION = "static"
+STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/"
+
+# media files
+MEDIAFILES_LOCATION = "media"
+MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIAFILES_LOCATION}/"
+
+STORAGES = {
+    "default": {"BACKEND": "galv.storages.MediaStorage"},  # for media
+    "staticfiles": {"BACKEND": "galv.storages.StaticStorage"},
+}
