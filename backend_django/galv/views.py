@@ -1812,18 +1812,18 @@ class ArbitraryFileViewSet(viewsets.ModelViewSet):
     search_fields = ['@name', '@description']
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
-    def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            # you can access the file like this from serializer
-            # uploaded_file = serializer.validated_data["file"]
-            serializer.save()
-            return Response(
-                serializer.data,
-                status=HTTP_201_CREATED
-            )
-
-        return Response(
-            serializer.errors,
-            status=HTTP_400_BAD_REQUEST
-        )
+    # def post(self, request, *args, **kwargs):
+    #     serializer = self.serializer_class(data=request.data, context={'request': request})
+    #     if serializer.is_valid():
+    #         # you can access the file like this from serializer
+    #         # uploaded_file = serializer.validated_data["file"]
+    #         serializer.save()
+    #         return Response(
+    #             serializer.data,
+    #             status=HTTP_201_CREATED
+    #         )
+    #
+    #     return Response(
+    #         serializer.errors,
+    #         status=HTTP_400_BAD_REQUEST
+    #     )

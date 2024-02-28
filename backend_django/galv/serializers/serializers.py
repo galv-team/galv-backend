@@ -438,9 +438,11 @@ class WithTeamMixin(serializers.Serializer):
         Only team members can create resources in their team.
         If a resource is being moved from one team to another, the user must be a member of both teams.
         """
-        teams = user_teams(self.context['request'].user)
         try:
+            teams = user_teams(self.context['request'].user)
             assert value in teams
+        except KeyError:
+            raise ValidationError("No request context available to determine user's teams")
         except:
             raise ValidationError("You may only create resources in your own team(s)", code=HTTP_403_FORBIDDEN)
         if self.instance is not None:
@@ -1793,12 +1795,13 @@ class SchemaValidationSerializer(serializers.HyperlinkedModelSerializer, Permiss
         extra_kwargs = augment_extra_kwargs()
 
 
-class ArbitraryFileSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+class ArbitraryFileSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin, WithTeamMixin):
+
     class Meta:
         model = ArbitraryFile
         fields = [
-            'url', 'uuid', 'name', 'description', 'file', 'team', 'permissions',
-            'read_access_level', 'edit_access_level', 'delete_access_level', 'custom_properties'
+            'url', 'uuid', 'name', 'description', 'file', 'team', 'is_public', 'custom_properties',
+            'read_access_level', 'edit_access_level', 'delete_access_level', 'permissions'
         ]
         read_only_fields = ['url', 'uuid', 'permissions']
         extra_kwargs = augment_extra_kwargs()
