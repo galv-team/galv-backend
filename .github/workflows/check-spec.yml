@@ -75,6 +75,8 @@ jobs:
           touch .env.secret
 
       - name: Generate spec
+        env:
+          AWS_SECRET_ACCESS_KEY: "not_set"
         run: |
           # using x rather than a number means it appears later and gets picked up by `tail -n 1` in check_spec
           docker-compose run --rm app bash -c "python manage.py spectacular --format openapi-json >> /spec/openapi-x.json"

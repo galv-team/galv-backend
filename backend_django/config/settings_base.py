@@ -13,7 +13,6 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
-import logging
 
 import corsheaders.defaults
 from pathlib import Path
@@ -212,7 +211,7 @@ if os.environ.get("AWS_SECRET_ACCESS_KEY") is not None:
     }
 else:
     if AWS_S3_REGION_NAME or AWS_STORAGE_BUCKET_NAME or AWS_DEFAULT_ACL:
-        logging.warning("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")
+        raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")
     STORAGES = {
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": "/media"},
         "staticfiles": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": "/static"},
