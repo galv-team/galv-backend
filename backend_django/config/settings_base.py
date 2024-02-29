@@ -204,7 +204,15 @@ STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/"
 MEDIAFILES_LOCATION = "media"
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIAFILES_LOCATION}/"
 
-STORAGES = {
-    "default": {"BACKEND": "galv.storages.MediaStorage"},  # for media
-    "staticfiles": {"BACKEND": "galv.storages.StaticStorage"},
-}
+if os.environ.get("AWS_SECRET_ACCESS_KEY") is not None:
+    STORAGES = {
+        "default": {"BACKEND": "galv.storages.MediaStorage"},  # for media
+        "staticfiles": {"BACKEND": "galv.storages.StaticStorage"},
+    }
+else:
+    if AWS_S3_REGION_NAME or AWS_STORAGE_BUCKET_NAME or AWS_DEFAULT_ACL:
+        raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": "/media"},
+        "staticfiles": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": "/static"},
+    }
