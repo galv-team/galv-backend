@@ -18,42 +18,15 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 from jsonschema.exceptions import _WrappedReferencingError
 from rest_framework import serializers
-from rest_framework.reverse import reverse
+
+from .choices import FileState, UserLevel, ValidationStatus
 
 #from dry_rest_permissions.generics import allow_staff_or_superuser
 
 from .utils import CustomPropertiesModel, JSONModel, LDSources, render_pybamm_schedule, UUIDModel, \
     combine_rdf_props, TimestampedModel
 from .autocomplete_entries import *
-
-class FileState(models.TextChoices):
-    RETRY_IMPORT = "RETRY IMPORT"
-    IMPORT_FAILED = "IMPORT FAILED"
-    UNSTABLE = "UNSTABLE"
-    GROWING = "GROWING"
-    STABLE = "STABLE"
-    IMPORTING = "IMPORTING"
-    IMPORTED = "IMPORTED"
-
-
-class UserLevel(models.Choices):
-    """
-    User levels for access control.
-    Team/Lab levels only make sense in the context of a Resource.
-    """
-    ANONYMOUS = 0
-    REGISTERED_USER = 1
-    LAB_MEMBER = 2
-    TEAM_MEMBER = 3
-    TEAM_ADMIN = 4
-
-
-class ValidationStatus(models.TextChoices):
-    VALID = "VALID"
-    INVALID = "INVALID"
-    SKIPPED = "SKIPPED"
-    UNCHECKED = "UNCHECKED"
-    ERROR = "ERROR"
+from ..fields import DynamicStorageFileField
 
 
 ALLOWED_USER_LEVELS_DELETE = [UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]]
@@ -1353,3 +1326,17 @@ class SchemaValidation(TimestampedModel):
             models.Index(fields=["status"]),
             models.Index(fields=["schema"])
         ]
+
+
+class ArbitraryFile(JSONModel, ResourceModelPermissionsMixin):
+    file = DynamicStorageFileField(unique=True)
+    is_public = models.BooleanField(default=False, help_text="Whether the file is public")
+    name = models.TextField(help_text="The name of the file", null=False, blank=False, unique=True)
+    description = models.TextField(help_text="The description of the file", null=True, blank=True)
+
+    def delete(self, using=None, keep_parents=False):
+        self.file.delete()
+        super(ArbitraryFile, self).delete(using, keep_parents)
+
+    def __str__(self):
+        return self.name

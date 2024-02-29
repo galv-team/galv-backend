@@ -21,7 +21,8 @@ from ..models import EquipmentFamily, Harvester, \
     Equipment, ScheduleFamily, Schedule, CyclerTest, \
     ScheduleIdentifiers, CellFormFactors, CellChemistries, CellManufacturers, \
     CellModels, EquipmentManufacturers, EquipmentModels, EquipmentTypes, Experiment, \
-    ValidationSchema, GroupProxy, UserProxy, Lab, Team, AutoCompleteEntry, UserLevel
+    ValidationSchema, GroupProxy, UserProxy, Lab, Team, AutoCompleteEntry
+from ..models.choices import UserLevel
 
 fake = faker.Faker(django.conf.global_settings.LANGUAGE_CODE)
 

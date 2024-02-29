@@ -26,7 +26,7 @@ from ..models import Harvester, \
     EquipmentManufacturers, EquipmentModels, EquipmentFamily, Schedule, ScheduleIdentifiers, CyclerTest, \
     render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, user_labs, \
     user_teams, SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
-    ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH
+    ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
 from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
@@ -438,9 +438,11 @@ class WithTeamMixin(serializers.Serializer):
         Only team members can create resources in their team.
         If a resource is being moved from one team to another, the user must be a member of both teams.
         """
-        teams = user_teams(self.context['request'].user)
         try:
+            teams = user_teams(self.context['request'].user)
             assert value in teams
+        except KeyError:
+            raise ValidationError("No request context available to determine user's teams")
         except:
             raise ValidationError("You may only create resources in your own team(s)", code=HTTP_403_FORBIDDEN)
         if self.instance is not None:
@@ -1791,3 +1793,20 @@ class SchemaValidationSerializer(serializers.HyperlinkedModelSerializer, Permiss
         fields = ['url', 'id', 'schema', 'validation_target', 'status', 'permissions', 'detail', 'last_update']
         read_only_fields = [*fields]
         extra_kwargs = augment_extra_kwargs()
+
+
+class ArbitraryFileSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin, WithTeamMixin):
+
+    class Meta:
+        model = ArbitraryFile
+        fields = [
+            'url', 'uuid', 'name', 'description', 'file', 'team', 'is_public', 'custom_properties',
+            'read_access_level', 'edit_access_level', 'delete_access_level', 'permissions'
+        ]
+        read_only_fields = ['url', 'uuid', 'file', 'permissions']
+        extra_kwargs = augment_extra_kwargs()
+
+
+class ArbitraryFileCreateSerializer(ArbitraryFileSerializer):
+    class Meta(ArbitraryFileSerializer.Meta):
+        read_only_fields = ['url', 'uuid', 'permissions']

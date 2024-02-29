@@ -25,8 +25,12 @@ services:
       FRONTEND_VIRTUAL_HOST: "http://${VIRTUAL_HOST_ROOT},https://${VIRTUAL_HOST_ROOT}"
       DJANGO_SETTINGS: "dev"
       DJANGO_SUPERUSER_PASSWORD: "admin"
+      AWS_ACCESS_KEY_ID: "AKIAZQ3DU5GQ7Y5V7TFJ"
+      DJANGO_AWS_STORAGE_BUCKET_NAME: "galv"
+      DJANGO_AWS_S3_REGION_NAME: "eu-west-2"
     env_file:
       - ./.env
+      - ./.env.secret
     restart: unless-stopped
     ports:
       - "8001:8000"
