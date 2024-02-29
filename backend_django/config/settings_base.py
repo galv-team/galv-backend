@@ -211,6 +211,7 @@ if os.environ.get("AWS_SECRET_ACCESS_KEY") is not None:
     }
 else:
     if AWS_S3_REGION_NAME or AWS_STORAGE_BUCKET_NAME or AWS_DEFAULT_ACL:
+        print(os.system('env'))
         raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")
     STORAGES = {
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": "/media"},
