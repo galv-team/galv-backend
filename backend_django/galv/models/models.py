@@ -1334,5 +1334,9 @@ class ArbitraryFile(JSONModel, ResourceModelPermissionsMixin):
     name = models.TextField(help_text="The name of the file", null=False, blank=False, unique=True)
     description = models.TextField(help_text="The description of the file", null=True, blank=True)
 
+    def delete(self, using=None, keep_parents=False):
+        self.file.delete()
+        super(ArbitraryFile, self).delete(using, keep_parents)
+
     def __str__(self):
         return self.name

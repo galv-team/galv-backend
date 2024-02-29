@@ -12,28 +12,19 @@ class StaticStorage(S3Boto3Storage):
     default_acl = "public-read"
     querystring_auth = False
 
-
 class MediaStorage(S3Boto3Storage):
     location = settings.MEDIAFILES_LOCATION
     file_overwrite = False
-    querystring_auth = False
-
-# adapted from https://medium.com/@hiteshgarg14/how-to-dynamically-select-storage-in-django-filefield-bc2e8f5883fd
-class UpdateACLMixin(S3Boto3Storage):
-    default_acl = "private"
-
-    def update_acl(self, name):
-        name = self._normalize_name(clean_name(name))
-        self.bucket.Object(name).Acl().put(ACL=self.default_acl)
-
-
-class PublicImageStorage(UpdateACLMixin, MediaStorage):
-    default_acl = "public-read"
-    file_overwrite = True
-
-
-class PrivateImageStorage(PublicImageStorage):
-    default_acl = 'private'
-    file_overwrite = True
     custom_domain = False
+    default_acl = "private"
     querystring_auth = True
+
+    # adapted from https://medium.com/@hiteshgarg14/how-to-dynamically-select-storage-in-django-filefield-bc2e8f5883fd
+    def update_acl(self, name, acl=None, set_default=True, set_querystring_auth=True):
+        name = self._normalize_name(clean_name(name))
+        self.bucket.Object(name).Acl().put(ACL=acl or self.default_acl)
+        if acl is not None:
+            if set_default:
+                self.default_acl = acl
+            if set_querystring_auth:
+                self.querystring_auth = acl != "public-read"

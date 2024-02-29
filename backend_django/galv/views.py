@@ -33,7 +33,7 @@ from .serializers import HarvesterSerializer, \
     KnoxTokenFullSerializer, CellFamilySerializer, EquipmentFamilySerializer, \
     ScheduleSerializer, CyclerTestSerializer, ScheduleFamilySerializer, DataColumnTypeSerializer, DataColumnSerializer, \
     ExperimentSerializer, LabSerializer, TeamSerializer, ValidationSchemaSerializer, SchemaValidationSerializer, \
-    ArbitraryFileSerializer
+    ArbitraryFileSerializer, ArbitraryFileCreateSerializer
 from .models import Harvester, \
     HarvestError, \
     MonitoredPath, \
@@ -1797,33 +1797,61 @@ class SchemaValidationViewSet(viewsets.ReadOnlyModelViewSet):
             sv.save()
         return super().list(request, *args, **kwargs)
 
+@extend_schema_view(
+    create=extend_schema(
+        summary="Upload a file",
+        description="""
+Upload a file along with its metadata. The file will be stored in an AWS S3 bucket.
 
+Files with `is_public` set to `True` will be available to the public.
+Files with `is_public` set to `False` will only be displayed as links which will provide access for 1 hour,
+after which the link must be retrieved again.
+        """,
+        request={
+            'multipart/form-data': ArbitraryFileCreateSerializer,
+            'application/x-www-form-urlencoded': ArbitraryFileCreateSerializer
+        },
+        responses={
+            201: ArbitraryFileSerializer
+        }
+    ),
+    partial_update=extend_schema(
+        summary="Update a file's metadata",
+        description="""
+You can change the visibility of a file and its metadata. Files themselves cannot be updated, only deleted.
+        """,
+        request=ArbitraryFileSerializer,
+        responses={
+            200: ArbitraryFileSerializer
+        }
+    ),
+    destroy=extend_schema(
+        summary="Delete a file",
+        description="""Delete a file from the database and from the S3 bucket."""
+    )
+)
 class ArbitraryFileViewSet(viewsets.ModelViewSet):
     """
     ArbitraryFiles are files that are not observed by the harvester, and are not
     associated with any specific experiment or dataset. They are used to store
     arbitrary files that are not part of the main data collection process.
+
+    These files might include datasheets, images, or other documentation.
+
+    Files are stored in an AWS S3 bucket.
     """
-    parser_classes = [MultiPartParser, FormParser]
     permission_classes = [DRYPermissions]
     filter_backends = [ResourceFilterBackend]
-    serializer_class = ArbitraryFileSerializer
     queryset = ArbitraryFile.objects.all().order_by('-uuid')
     search_fields = ['@name', '@description']
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
-    # def post(self, request, *args, **kwargs):
-    #     serializer = self.serializer_class(data=request.data, context={'request': request})
-    #     if serializer.is_valid():
-    #         # you can access the file like this from serializer
-    #         # uploaded_file = serializer.validated_data["file"]
-    #         serializer.save()
-    #         return Response(
-    #             serializer.data,
-    #             status=HTTP_201_CREATED
-    #         )
-    #
-    #     return Response(
-    #         serializer.errors,
-    #         status=HTTP_400_BAD_REQUEST
-    #     )
+    def get_parsers(self):
+        if self.request is not None and self.action_map[self.request.method.lower()] == 'create':
+            return [MultiPartParser(), FormParser()]
+        return super().get_parsers()
+
+    def get_serializer_class(self):
+        if self.action is not None and self.action == 'create':
+            return ArbitraryFileCreateSerializer
+        return ArbitraryFileSerializer

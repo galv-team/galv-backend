@@ -1,15 +1,13 @@
 from django.db import models
 from django.db.models.fields.files import FieldFile
 
-from .storages import PrivateImageStorage, PublicImageStorage
+from .storages import MediaStorage
+
 
 class DynamicStorageFieldFile(FieldFile):
     def __init__(self, instance, field, name):
         super(DynamicStorageFieldFile, self).__init__(instance, field, name)
-        if instance.is_public:
-            self.storage = PublicImageStorage()
-        else:
-            self.storage = PrivateImageStorage()
+        self.storage = field.storage
 
     def update_acl(self):
         if not self:
@@ -25,11 +23,13 @@ class DynamicStorageFileField(models.FileField):
     attr_class = DynamicStorageFieldFile
 
     def pre_save(self, model_instance, add):
+        self.storage = MediaStorage()
         if model_instance.is_public:
-            storage = PublicImageStorage()
+            self.storage.default_acl = "public-read"
+            self.storage.querystring_auth = False
         else:
-            storage = PrivateImageStorage()
-        self.storage = storage
+            self.storage.default_acl = "private"
+            self.storage.querystring_auth = True
 
         file = super(DynamicStorageFileField, self).pre_save(model_instance, add)
 

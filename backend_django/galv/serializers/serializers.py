@@ -1803,5 +1803,10 @@ class ArbitraryFileSerializer(serializers.HyperlinkedModelSerializer, Permission
             'url', 'uuid', 'name', 'description', 'file', 'team', 'is_public', 'custom_properties',
             'read_access_level', 'edit_access_level', 'delete_access_level', 'permissions'
         ]
-        read_only_fields = ['url', 'uuid', 'permissions']
+        read_only_fields = ['url', 'uuid', 'file', 'permissions']
         extra_kwargs = augment_extra_kwargs()
+
+
+class ArbitraryFileCreateSerializer(ArbitraryFileSerializer):
+    class Meta(ArbitraryFileSerializer.Meta):
+        read_only_fields = ['url', 'uuid', 'permissions']
