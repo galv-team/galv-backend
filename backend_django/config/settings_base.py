@@ -20,7 +20,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.1.19"
+API_VERSION = "2.1.20"
 
 try:
     USER_ACTIVATION_TOKEN_EXPIRY_S = int(os.environ.get("DJANGO_USER_ACTIVATION_TOKEN_EXPIRY_S"))
@@ -192,23 +192,22 @@ AWS_S3_OBJECT_PARAMETERS = {
 }
 AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
 
-STATICFILES_DIRS = [
-    "/static/",
-]
 
-# static files
+# Static and media files are served from S3 if S3 is configured
+# Otherwise, they are served from the local filesystem
 STATICFILES_LOCATION = "static"
-STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/"
-
-# media files
 MEDIAFILES_LOCATION = "media"
-MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIAFILES_LOCATION}/"
 
 if os.environ.get("AWS_SECRET_ACCESS_KEY") is not None:
     STORAGES = {
         "default": {"BACKEND": "galv.storages.MediaStorage"},  # for media
         "staticfiles": {"BACKEND": "galv.storages.StaticStorage"},
     }
+    STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/"
+    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIAFILES_LOCATION}/"
+    STATICFILES_DIRS = [
+        f"/{STATICFILES_LOCATION}",
+    ]
 else:
     if AWS_S3_REGION_NAME or AWS_STORAGE_BUCKET_NAME or AWS_DEFAULT_ACL:
         print(os.system('env'))
@@ -217,3 +216,7 @@ else:
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": "/media"},
         "staticfiles": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": "/static"},
     }
+    STATIC_ROOT = f"/{STATICFILES_LOCATION}"
+    STATIC_URL = f"/{STATICFILES_LOCATION}/"
+    MEDIA_ROOT = f"/{MEDIAFILES_LOCATION}"
+    MEDIA_URL = f"/{MEDIAFILES_LOCATION}/"

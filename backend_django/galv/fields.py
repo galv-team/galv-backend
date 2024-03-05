@@ -16,14 +16,14 @@ class DynamicStorageFieldFile(FieldFile):
         # the presence of self._file
         if hasattr(self, '_file'):
             self.close()  # This update_acl method we have already defined in UpdateACLMixin class
-        self.storage.update_acl(self.name)
+        if isinstance(self.storage, MediaStorage):
+            self.storage.update_acl(self.name)
 
-
+#
 class DynamicStorageFileField(models.FileField):
     attr_class = DynamicStorageFieldFile
 
     def pre_save(self, model_instance, add):
-        self.storage = MediaStorage()
         if model_instance.is_public:
             self.storage.default_acl = "public-read"
             self.storage.querystring_auth = False
