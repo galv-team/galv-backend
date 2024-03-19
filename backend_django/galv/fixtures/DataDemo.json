@@ -1307,7 +1307,7 @@
     "fields": {
       "created": "2024-01-16T14:05:00.605Z",
       "modified": "2024-01-16T14:05:00.605Z",
-      "file": "73b89ee4-fc9a-4be3-beb3-16d333a14896",
+      "file": "e67cd964-951b-48eb-9b7c-f7166655923c",
       "type": 2,
       "data_type": "int",
       "name_in_file": "Sample Number"
@@ -1319,7 +1319,7 @@
     "fields": {
       "created": "2024-01-16T14:05:00.605Z",
       "modified": "2024-01-16T14:05:00.605Z",
-      "file": "73b89ee4-fc9a-4be3-beb3-16d333a14896",
+      "file": "e67cd964-951b-48eb-9b7c-f7166655923c",
       "type": 2,
       "data_type": "str",
       "name_in_file": "Make"
@@ -1331,7 +1331,7 @@
     "fields": {
       "created": "2024-01-16T14:05:00.605Z",
       "modified": "2024-01-16T14:05:00.605Z",
-      "file": "73b89ee4-fc9a-4be3-beb3-16d333a14896",
+      "file": "e67cd964-951b-48eb-9b7c-f7166655923c",
       "type": 2,
       "data_type": "str",
       "name_in_file": "Year"
@@ -1343,7 +1343,7 @@
     "fields": {
       "created": "2024-01-16T14:05:00.605Z",
       "modified": "2024-01-16T14:05:00.605Z",
-      "file": "73b89ee4-fc9a-4be3-beb3-16d333a14896",
+      "file": "e67cd964-951b-48eb-9b7c-f7166655923c",
       "type": 2,
       "data_type": "str",
       "name_in_file": "Model"
@@ -1355,7 +1355,7 @@
     "fields": {
       "created": "2024-01-16T14:05:00.605Z",
       "modified": "2024-01-16T14:05:00.605Z",
-      "file": "73b89ee4-fc9a-4be3-beb3-16d333a14896",
+      "file": "e67cd964-951b-48eb-9b7c-f7166655923c",
       "type": 2,
       "data_type": "str",
       "name_in_file": "Price"
@@ -1367,7 +1367,7 @@
     "fields": {
       "created": "2024-01-16T14:05:00.605Z",
       "modified": "2024-01-16T14:05:00.605Z",
-      "file": "73b89ee4-fc9a-4be3-beb3-16d333a14896",
+      "file": "e67cd964-951b-48eb-9b7c-f7166655923c",
       "type": 2,
       "data_type": "str",
       "name_in_file": "Description"
@@ -1980,7 +1980,7 @@
       "created": "2024-01-16T14:05:00.636Z",
       "modified": "2024-01-16T14:14:00.561Z",
       "column": 61,
-      "values": "[\"E350\", \"Venture \"Extended Edition\"\", \"Venture \"Extended Edition, Very Large\"\", \"Grand Cherokee\"]"
+      "values": "[\"E350\", \"Venture \\\"Extended Edition\\\"\", \"Venture \\\"Extended Edition, Very Large\\\"\", \"Grand Cherokee\"]"
     }
   },
   {
@@ -2000,7 +2000,7 @@
       "created": "2024-01-16T14:05:00.636Z",
       "modified": "2024-01-16T14:14:00.561Z",
       "column": 63,
-      "values": "[\"ac, abs, moon\", \"\", \"\", \"MUST SELL!\nair, moon roof, loaded\"]"
+      "values": "[\"ac, abs, moon\", \"\", \"\", \"MUST SELL!\\nair, moon roof, loaded\"]"
     }
   }
 ]
