@@ -374,9 +374,9 @@ def user_is_lab_admin(user):
 class ResourceModelPermissionsMixin(TimestampedModel):
     team = models.ForeignKey(
         to=Team,
-        on_delete=models.CASCADE,
-        null=False,
-        blank=False,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="%(class)s_resources"
     )
     delete_access_level = models.IntegerField(
@@ -393,12 +393,13 @@ class ResourceModelPermissionsMixin(TimestampedModel):
     )
 
     def get_user_level(self, user):
-        if self.team in user_teams(user, True):
-            return UserLevel.TEAM_ADMIN.value
-        if self.team in user_teams(user):
-            return UserLevel.TEAM_MEMBER.value
-        if self.team.lab in user_labs(user):
-            return UserLevel.LAB_MEMBER.value
+        if self.team:
+            if self.team in user_teams(user, True):
+                return UserLevel.TEAM_ADMIN.value
+            if self.team in user_teams(user):
+                return UserLevel.TEAM_MEMBER.value
+            if self.team.lab in user_labs(user):
+                return UserLevel.LAB_MEMBER.value
         if user.is_authenticated:
             return UserLevel.REGISTERED_USER.value
         return UserLevel.ANONYMOUS.value
@@ -895,7 +896,7 @@ class MonitoredPath(UUIDModel, ResourceModelPermissionsMixin):
         if not path.startswith(self.path):
             return False
         if self.regex is not None:
-            return re.match(self.regex, os.path.relpath(path, self.path)) is not None
+            return re.search(self.regex, os.path.relpath(path, self.path)) is not None
         return True
 
     class Meta(UUIDModel.Meta):
@@ -946,7 +947,7 @@ class HarvestError(TimestampedModel):
         return f"{self.error} [Harvester_{self.harvester_id}]"
 
 
-class DataUnit(TimestampedModel):
+class DataUnit(ResourceModelPermissionsMixin):
     name = models.TextField(
         null=False,
         help_text="Common name"
@@ -963,10 +964,7 @@ class DataUnit(TimestampedModel):
 
     @staticmethod
     def has_write_permission(request):
-        for harvester in Harvester.objects.all():
-            if harvester.is_valid_harvester(request):
-                return True
-        return request.user.is_staff or request.user.is_superuser
+        return True
 
     @staticmethod
     def has_read_permission(request):
@@ -978,7 +976,7 @@ class DataUnit(TimestampedModel):
         return f"{self.name} - {self.description}"
 
 
-class DataColumnType(ValidatableBySchemaMixin):
+class DataColumnType(ValidatableBySchemaMixin, ResourceModelPermissionsMixin):
     unit = models.ForeignKey(
         to=DataUnit,
         on_delete=models.SET_NULL,
@@ -1003,10 +1001,7 @@ class DataColumnType(ValidatableBySchemaMixin):
 
     @staticmethod
     def has_write_permission(request):
-        for harvester in Harvester.objects.all():
-            if harvester.is_valid_harvester(request):
-                return True
-        return request.user.is_staff or request.user.is_superuser
+        return True
 
     @staticmethod
     def has_read_permission(request):
@@ -1047,6 +1042,10 @@ class DataColumn(TimestampedModel):
 
     @staticmethod
     def has_read_permission(request):
+        return True
+
+    @staticmethod
+    def has_write_permission(request):
         return True
 
     def has_object_read_permission(self, request):

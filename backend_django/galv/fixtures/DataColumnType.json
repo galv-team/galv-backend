@@ -7,7 +7,8 @@
             "modified": "2023-12-06T15:10:05+00:00",
             "name": "Unknown",
             "description": "unknown column type",
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -20,7 +21,8 @@
             "description": "The sample or record number. Is increased by one each time a test machine records a reading. Usually counts from 1 at the start of a test",
             "unit": 1,
             "is_default": true,
-            "override_child_name": "Sample_number"
+            "override_child_name": "Sample_number",
+            "read_access_level": 0
         }
     },
     {
@@ -34,7 +36,8 @@
             "unit": 2,
             "is_default": true,
             "is_required": true,
-            "override_child_name": "Elapsed_time_s"
+            "override_child_name": "Elapsed_time_s",
+            "read_access_level": 0
         }
     },
     {
@@ -48,7 +51,8 @@
             "unit": 3,
             "is_default": true,
             "is_required": true,
-            "override_child_name": "Voltage_V"
+            "override_child_name": "Voltage_V",
+            "read_access_level": 0
         }
     },
     {
@@ -62,7 +66,8 @@
             "unit": 4,
             "is_default": true,
             "is_required": true,
-            "override_child_name": "Current_A"
+            "override_child_name": "Current_A",
+            "read_access_level": 0
         }
     },
     {
@@ -74,7 +79,8 @@
             "name": "Energy Capacity",
             "description": "The Energy Capacity.",
             "unit": 5,
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -86,7 +92,8 @@
             "name": "Charge Capacity",
             "description": "The Charge Capacity.",
             "unit": 6,
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -98,7 +105,8 @@
             "name": "Temperature",
             "description": "The temperature.",
             "unit": 7,
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -110,7 +118,8 @@
             "name": "Step Time",
             "description": "The time in seconds since the current step began.",
             "unit": 8,
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -122,7 +131,8 @@
             "name": "Impedence Magnitude",
             "description": "The magnitude of the impedence (EIS).",
             "unit": 9,
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -134,7 +144,8 @@
             "name": "Impedence Phase",
             "description": "The phase of the impedence (EIS).",
             "unit": 10,
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -146,7 +157,8 @@
             "name": "Frequency",
             "description": "The frequency of the input EIS voltage signal.",
             "unit": 11,
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     }
 ]

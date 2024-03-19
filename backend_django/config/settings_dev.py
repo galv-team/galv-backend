@@ -24,6 +24,8 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-dev-key')
 
 from .settings_base import *
 
+ALLOWED_HOSTS = [*ALLOWED_HOSTS, "localhost", "host.docker.internal"]
+
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 
 # Database

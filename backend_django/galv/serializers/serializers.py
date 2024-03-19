@@ -412,7 +412,9 @@ class WithTeamMixin(serializers.Serializer):
         ['name'],
         'team-detail',
         queryset=Team.objects.all(),
-        help_text="Team this resource belongs to"
+        help_text="Team this resource belongs to",
+        allow_empty=True,
+        allow_null=True
     )
     read_access_level = serializers.ChoiceField(
         choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_READ],
@@ -440,7 +442,13 @@ class WithTeamMixin(serializers.Serializer):
         """
         try:
             teams = user_teams(self.context['request'].user)
-            assert value in teams
+            if value is None:
+                if len(teams) == 1:
+                    value = teams[0]
+                else:
+                    raise ValidationError("You must specify a team because you are a member of multiple teams")
+            else:
+                assert value in teams
         except KeyError:
             raise ValidationError("No request context available to determine user's teams")
         except:
@@ -1268,7 +1276,7 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
     )
     columns = TruncatedHyperlinkedRelatedIdField(
         'DataColumnSerializer',
-        ['name', 'data_type', 'unit', 'values'],
+        ['name', 'name_in_file', 'type', 'values'],
         view_name='datacolumn-detail',
         read_only=True,
         many=True,
@@ -1366,10 +1374,12 @@ class HarvestErrorSerializer(serializers.HyperlinkedModelSerializer, Permissions
         extra_kwargs = augment_extra_kwargs()
 
 
-class DataUnitSerializer(serializers.ModelSerializer, PermissionsMixin):
+class DataUnitSerializer(serializers.ModelSerializer, WithTeamMixin, PermissionsMixin):
     class Meta:
         model = DataUnit
-        fields = ['url', 'id', 'name', 'symbol', 'description', 'permissions']
+        fields = ['url', 'id', 'name', 'symbol', 'description', 'is_default', 'team',
+                  'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level']
+        read_only_fields = ['url', 'id', 'is_default', 'permissions']
         extra_kwargs = augment_extra_kwargs()
 
 
@@ -1382,10 +1392,19 @@ class TimeseriesRangeLabelSerializer(serializers.HyperlinkedModelSerializer, Per
         extra_kwargs = augment_extra_kwargs()
 
 
-class DataColumnTypeSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+class DataColumnTypeSerializer(serializers.HyperlinkedModelSerializer, WithTeamMixin, PermissionsMixin):
+    unit = TruncatedHyperlinkedRelatedIdField(
+        'DataUnitSerializer',
+        ['name', 'symbol'],
+        view_name='dataunit-detail',
+        queryset=DataUnit.objects.all(),
+    )
+
     class Meta:
         model = DataColumnType
-        fields = ['url', 'id', 'name', 'description', 'is_default', 'unit', 'permissions']
+        fields = ['url', 'id', 'name', 'description', 'is_default', 'unit', 'team',
+                  'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level']
+        read_only_fields = ['url', 'id', 'is_default', 'permissions']
         extra_kwargs = augment_extra_kwargs()
 
 
@@ -1394,9 +1413,6 @@ class DataColumnSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
     A column contains metadata and data. Data are an ordered list of values.
     """
     name = serializers.SerializerMethodField(help_text="Column name (assigned by harvester but overridden by Galv for core fields)")
-    is_required_column = serializers.SerializerMethodField(help_text="Whether the column is one of those required by Galv")
-    type_name = serializers.SerializerMethodField(help_text=get_model_field(DataColumnType, 'name').help_text)
-    description = serializers.SerializerMethodField(help_text=get_model_field(DataColumnType, 'description').help_text)
     values = serializers.SerializerMethodField(help_text="Column values")
     file = TruncatedHyperlinkedRelatedIdField(
         'ObservedFileSerializer',
@@ -1405,47 +1421,33 @@ class DataColumnSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
         read_only=True,
         help_text="File this Column belongs to"
     )
-    unit = TruncatedHyperlinkedRelatedIdField(
-        'DataUnitSerializer',
-        ['name', 'symbol'],
-        source='type.unit',
-        view_name='dataunit-detail',
-        read_only=True,
-        help_text=get_model_field(DataColumnType, 'unit').help_text
+    type = TruncatedHyperlinkedRelatedIdField(
+        'DataColumnTypeSerializer',
+        ['name', 'description', 'is_default', 'is_required', 'unit'],
+        view_name='datacolumntype-detail',
+        queryset=DataColumnType.objects.all(),
+        help_text="Type of data in this Column"
     )
 
     def get_name(self, instance) -> str:
         return instance.get_name()
-
-    def get_is_required_column(self, instance) -> bool:
-        return instance.type.is_required
-
-    def get_type_name(self, instance) -> str:
-        return instance.type.name
-
-    def get_description(self, instance) -> str:
-        return instance.type.description
 
     def get_values(self, instance) -> str:
         return reverse('datacolumn-values', args=(instance.id,), request=self.context['request'])
 
     class Meta:
         model = DataColumn
-        fields = [
+        read_only_fields = [
             'id',
             'url',
             'name',
             'name_in_file',
-            'is_required_column',
             'file',
-            'data_type',
-            'type_name',
-            'description',
-            'unit',
+            'type',
             'values',
             'permissions'
         ]
-        read_only_fields = fields
+        fields = [*read_only_fields, 'type']
         extra_kwargs = augment_extra_kwargs()
 
 @extend_schema_serializer(examples = [
