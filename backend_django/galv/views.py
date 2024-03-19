@@ -94,7 +94,9 @@ def error_response(error: str, status: int = 400) -> Response:
     return Response({'error': error}, status=status)
 
 
-def deserialize_datetime(serialized_value: str | float) -> timezone.datetime:
+def deserialize_datetime(serialized_value: str | float) -> timezone.datetime|None:
+    if serialized_value is None:
+        return None
     if isinstance(serialized_value, str):
         return timezone.make_aware(timezone.datetime.fromisoformat(serialized_value))
     if isinstance(serialized_value, float):
@@ -764,7 +766,10 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                                     if 'unit_id' in column_data:
                                         unit = DataUnit.objects.get(id=column_data['unit_id'])
                                     else:
-                                        unit, _ = DataUnit.objects.get_or_create(symbol=column_data['unit_symbol'])
+                                        unit, _ = DataUnit.objects.get_or_create(
+                                            symbol=column_data['unit_symbol'],
+                                            defaults={'team': monitored_path.team}
+                                        )
                                     try:
                                         column_type = DataColumnType.objects.get(unit=unit, is_default=True)
                                         # # Don't create multiple special columns for the same unit
@@ -773,7 +778,8 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                                     except DataColumnType.DoesNotExist:
                                         column_type = DataColumnType.objects.create(
                                             name=column_data['column_name'],
-                                            unit=unit
+                                            unit=unit,
+                                            team=monitored_path.team
                                         )
                                     column, _ = DataColumn.objects.get_or_create(
                                         name_in_file=column_data['column_name'],
@@ -1484,14 +1490,17 @@ while others can be defined in experimental data.
         """
     )
 )
-class DataUnitViewSet(viewsets.ReadOnlyModelViewSet):
+class DataUnitViewSet(viewsets.ModelViewSet):
     """
     DataUnits are units used to characterise data in a DataColumn.
     """
     serializer_class = DataUnitSerializer
+    permission_classes = [DRYPermissions]
+    filter_backends = [ResourceFilterBackend]
     filterset_fields = ['name', 'symbol', 'is_default']
     search_fields = ['@name', '@symbol', '@description']
     queryset = DataUnit.objects.all().order_by('id')
+    http_method_names = ['get', 'post', 'patch', 'options']
 
 
 @extend_schema_view(
@@ -1524,15 +1533,18 @@ Searchable fields:
         """
     )
 )
-class DataColumnTypeViewSet(viewsets.ReadOnlyModelViewSet):
+class DataColumnTypeViewSet(viewsets.ModelViewSet):
     """
     DataColumnTypes support reuse of DataColumns over multiple DataSets
     by abstracting their information.
     """
     serializer_class = DataColumnTypeSerializer
+    permission_classes = [DRYPermissions]
+    filter_backends = [ResourceFilterBackend]
     filterset_fields = ['name', 'unit__symbol', 'unit__name', 'is_default']
     search_fields = ['@name', '@description']
     queryset = DataColumnType.objects.all().order_by('id')
+    http_method_names = ['get', 'post', 'patch', 'options']
 
 
 @extend_schema_view(
@@ -1571,15 +1583,17 @@ Can be filtered with querystring parameters `min` and `max`, and `mod` (modulo) 
         }
     )
 )
-class DataColumnViewSet(viewsets.ReadOnlyModelViewSet):
+class DataColumnViewSet(viewsets.ModelViewSet):
     """
     DataColumns describe which columns are in a Dataset's data.
     """
     permission_classes = [DRYPermissions]
+    filter_backends = [ResourceFilterBackend]
     serializer_class = DataColumnSerializer
     filterset_fields = ['file__uuid', 'type__is_required', 'file__name', 'type__unit__symbol', 'type__id', 'type__name']
     search_fields = ['@file__name', '@type__name']
     queryset = DataColumn.objects.all().order_by('-file__uuid', '-id')
+    http_method_names = ['get', 'patch', 'options']
 
     @action(methods=['GET'], detail=True)
     def values(self, request, pk: int = None):

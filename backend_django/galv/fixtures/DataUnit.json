@@ -8,7 +8,8 @@
             "name": "Unitless",
             "symbol": "",
             "description": "A value with no units",
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -20,7 +21,8 @@
             "name": "Time",
             "symbol": "s",
             "description": "Time in seconds",
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -32,7 +34,8 @@
             "name": "Volts",
             "symbol": "V",
             "description": "Voltage",
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -44,7 +47,8 @@
             "name": "Amps",
             "symbol": "A",
             "description": "Current",
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -56,7 +60,8 @@
             "name": "Energy",
             "symbol": "Wh",
             "description": "Energy in Watt-Hours",
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -68,7 +73,8 @@
             "name": "Charge",
             "symbol": "Ah",
             "description": "Charge in Amp-Hours",
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -80,7 +86,8 @@
             "name": "Temperature",
             "symbol": "°c",
             "description": "Temperature in Centigrade",
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -92,7 +99,8 @@
             "name": "Power",
             "symbol": "W",
             "description": "Power in Watts",
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -104,7 +112,8 @@
             "name": "Ohm",
             "symbol": "Ω",
             "description": "Resistance or impediance in Ohms",
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -116,7 +125,8 @@
             "name": "Degrees",
             "symbol": "°",
             "description": "Angle in degrees",
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     },
     {
@@ -128,7 +138,8 @@
             "name": "Frequency",
             "symbol": "Hz",
             "description": "Frequency in Hz",
-            "is_default": true
+            "is_default": true,
+            "read_access_level": 0
         }
     }
 ]

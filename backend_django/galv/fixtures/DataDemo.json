@@ -547,6 +547,43 @@
     }
   },
   {
+    "model": "galv.observedfile",
+    "pk": "e67cd964-951b-48eb-9b7c-f7166655923c",
+    "fields": {
+      "created": "2024-01-16T13:59:46.346Z",
+      "modified": "2024-01-16T14:04:22.329Z",
+      "path": "/usr/harvester/.test-data/test-suite-small/headered.csv",
+      "harvester": "38d313f6-ba07-43a0-b669-9237953367fa",
+      "last_observed_time": "2024-03-19T09:39:42.030595Z",
+      "last_observed_size": 718,
+      "state": "IMPORTED",
+      "data_generation_date": null,
+      "inferred_format": null,
+      "name": null,
+      "parser": "DelimitedInputFile",
+      "num_rows": null,
+      "first_sample_no": null,
+      "last_sample_no": null,
+      "extra_metadata": {
+        "Make": {
+          "has_data": true
+        },
+        "Year": {
+          "has_data": true
+        },
+        "Model": {
+          "has_data": true
+        },
+        "Price": {
+          "has_data": true
+        },
+        "Description": {
+          "has_data": true
+        }
+      }
+    }
+  },
+  {
     "model": "galv.monitoredpath",
     "pk": "626424fb-d7c4-445b-a720-ff7903f9094c",
     "fields": {
@@ -1265,6 +1302,78 @@
     }
   },
   {
+    "model": "galv.datacolumn",
+    "pk": 58,
+    "fields": {
+      "created": "2024-01-16T14:05:00.605Z",
+      "modified": "2024-01-16T14:05:00.605Z",
+      "file": "73b89ee4-fc9a-4be3-beb3-16d333a14896",
+      "type": 2,
+      "data_type": "int",
+      "name_in_file": "Sample Number"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 59,
+    "fields": {
+      "created": "2024-01-16T14:05:00.605Z",
+      "modified": "2024-01-16T14:05:00.605Z",
+      "file": "73b89ee4-fc9a-4be3-beb3-16d333a14896",
+      "type": 2,
+      "data_type": "str",
+      "name_in_file": "Make"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 60,
+    "fields": {
+      "created": "2024-01-16T14:05:00.605Z",
+      "modified": "2024-01-16T14:05:00.605Z",
+      "file": "73b89ee4-fc9a-4be3-beb3-16d333a14896",
+      "type": 2,
+      "data_type": "str",
+      "name_in_file": "Year"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 61,
+    "fields": {
+      "created": "2024-01-16T14:05:00.605Z",
+      "modified": "2024-01-16T14:05:00.605Z",
+      "file": "73b89ee4-fc9a-4be3-beb3-16d333a14896",
+      "type": 2,
+      "data_type": "str",
+      "name_in_file": "Model"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 62,
+    "fields": {
+      "created": "2024-01-16T14:05:00.605Z",
+      "modified": "2024-01-16T14:05:00.605Z",
+      "file": "73b89ee4-fc9a-4be3-beb3-16d333a14896",
+      "type": 2,
+      "data_type": "str",
+      "name_in_file": "Price"
+    }
+  },
+  {
+    "model": "galv.datacolumn",
+    "pk": 63,
+    "fields": {
+      "created": "2024-01-16T14:05:00.605Z",
+      "modified": "2024-01-16T14:05:00.605Z",
+      "file": "73b89ee4-fc9a-4be3-beb3-16d333a14896",
+      "type": 2,
+      "data_type": "str",
+      "name_in_file": "Description"
+    }
+  },
+  {
     "model": "galv.timeseriesdatafloat",
     "pk": 1,
     "fields": {
@@ -1832,6 +1941,66 @@
       "modified": "2024-01-16T14:14:00.561Z",
       "column": 57,
       "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 18,
+    "fields": {
+      "created": "2024-01-16T14:05:00.636Z",
+      "modified": "2024-01-16T14:14:00.561Z",
+      "column": 58,
+      "values": "[0, 1, 2, 3]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 19,
+    "fields": {
+      "created": "2024-01-16T14:05:00.636Z",
+      "modified": "2024-01-16T14:14:00.561Z",
+      "column": 59,
+      "values": "[\"Ford\", \"Chevy\", \"Chevy\", \"Jeep\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 20,
+    "fields": {
+      "created": "2024-01-16T14:05:00.636Z",
+      "modified": "2024-01-16T14:14:00.561Z",
+      "column": 60,
+      "values": "[\"1997\", \"1999\", \"1999\", \"1996\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 21,
+    "fields": {
+      "created": "2024-01-16T14:05:00.636Z",
+      "modified": "2024-01-16T14:14:00.561Z",
+      "column": 61,
+      "values": "[\"E350\", \"Venture \"Extended Edition\"\", \"Venture \"Extended Edition, Very Large\"\", \"Grand Cherokee\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 22,
+    "fields": {
+      "created": "2024-01-16T14:05:00.636Z",
+      "modified": "2024-01-16T14:14:00.561Z",
+      "column": 62,
+      "values": "[\"3000.00\", \"4900.00\", \"5000.00\", \"4799.00\"]"
+    }
+  },
+  {
+    "model": "galv.timeseriesdatastr",
+    "pk": 23,
+    "fields": {
+      "created": "2024-01-16T14:05:00.636Z",
+      "modified": "2024-01-16T14:14:00.561Z",
+      "column": 63,
+      "values": "[\"ac, abs, moon\", \"\", \"\", \"MUST SELL!\nair, moon roof, loaded\"]"
     }
   }
 ]

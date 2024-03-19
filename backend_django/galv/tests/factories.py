@@ -21,7 +21,7 @@ from ..models import EquipmentFamily, Harvester, \
     Equipment, ScheduleFamily, Schedule, CyclerTest, \
     ScheduleIdentifiers, CellFormFactors, CellChemistries, CellManufacturers, \
     CellModels, EquipmentManufacturers, EquipmentModels, EquipmentTypes, Experiment, \
-    ValidationSchema, GroupProxy, UserProxy, Lab, Team, AutoCompleteEntry
+    ValidationSchema, GroupProxy, UserProxy, Lab, Team, AutoCompleteEntry, DataUnit, DataColumnType
 from ..models.choices import UserLevel
 
 fake = faker.Faker(django.conf.global_settings.LANGUAGE_CODE)
@@ -339,6 +339,28 @@ class ExperimentFactory(factory.django.DjangoModelFactory):
             extracted = [UserFactory() for _ in range(3)]
         # Add the iterable of cycler tests using bulk addition
         self.authors.add(*extracted)
+
+class DataUnitFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = DataUnit
+
+    team = factory.SubFactory(TeamFactory)
+    name = factory.Faker('word')
+    description = factory.Faker('sentence')
+    symbol = factory.Faker('pystr', max_chars = 3)
+    is_default = False
+
+class DataColumnTypeFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = DataColumnType
+
+    team = factory.SubFactory(TeamFactory)
+    unit = factory.SubFactory(DataUnitFactory)
+    name = factory.Faker('word')
+    description = factory.Faker('sentence')
+    is_default = False
+    is_required = False
+    override_child_name = False
 
 def to_validation_schema(obj):
     # Suppress errors when 'not' is a key
