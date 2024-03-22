@@ -893,12 +893,16 @@ class MonitoredPath(UUIDModel, ResourceModelPermissionsMixin):
     def __str__(self):
         return self.path
 
-    def matches(self, path):
-        if not path.startswith(self.path):
+    @staticmethod
+    def paths_match(parent: str, child: str, regex: str):
+        if not child.startswith(parent):
             return False
-        if self.regex is not None:
-            return re.search(self.regex, os.path.relpath(path, self.path)) is not None
+        if regex is not None:
+            return re.search(regex, os.path.relpath(child, parent)) is not None
         return True
+
+    def matches(self, path):
+        return self.paths_match(self.path, path, self.regex)
 
     class Meta(UUIDModel.Meta):
         unique_together = [['harvester', 'path', 'regex', 'team']]

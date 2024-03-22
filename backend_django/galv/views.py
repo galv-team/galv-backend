@@ -897,11 +897,6 @@ class MonitoredPathViewSet(viewsets.ModelViewSet):
     queryset = MonitoredPath.objects.all().order_by('-uuid')
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
-    # def get_serializer_class(self):
-    #     if self.request.method.lower() == "post":
-    #         return MonitoredPathCreateSerializer
-    #     return MonitoredPathSerializer
-
 
 @extend_schema_view(
     list=extend_schema(

@@ -1133,18 +1133,13 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
     )
 
     def get_files(self, instance) -> list[OpenApiTypes.URI]:
-        request = self.context['request']
-        files = ObservedFile.objects.filter(harvester__lab=instance.team.lab)
-        file_ids = []
+        """Return only URLs because otherwise it takes _forever_."""
+        files = ObservedFile.objects.filter(harvester__lab=instance.team.lab).values("path", "uuid")
+        file_urls = []
         for file in files:
-            if instance.matches(file.path):
-                file_ids.append(file.uuid)
-        data = ObservedFileSerializer(
-            ObservedFile.objects.filter(uuid__in=file_ids),
-            many=True,
-            context={'request': request}
-        ).data
-        return [f['url'] for f in data]
+            if instance.matches(file.get('path')):
+                file_urls.append(reverse('observedfile-detail', (file.get('uuid'),)))
+        return file_urls
 
     harvester = TruncatedHyperlinkedRelatedIdField(
         'HarvesterSerializer',
