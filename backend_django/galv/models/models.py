@@ -865,7 +865,8 @@ class MonitoredPath(UUIDModel, ResourceModelPermissionsMixin):
         blank=True,
         help_text="""
     Python.re regular expression to filter files by, 
-    applied to full file name starting from this Path's directory"""
+    applied to full file name starting from this Path's directory""",
+        default=".*"
     )
     stable_time = models.PositiveSmallIntegerField(
         default=60,
@@ -1028,7 +1029,8 @@ class DataColumn(TimestampedModel):
     type = models.ForeignKey(
         to=DataColumnType,
         on_delete=models.CASCADE,
-        help_text="Column Type which this Column instantiates"
+        help_text="Column Type which this Column instantiates",
+        related_name='columns'
     )
     data_type = models.TextField(null=False, help_text="Type of the data in this column")
     name_in_file = models.TextField(null=False, help_text="Column title e.g. in .tsv file headers")
