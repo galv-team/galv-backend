@@ -620,6 +620,10 @@ class Harvester(UUIDModel):
         null=True,
         help_text="Date and time of last Harvester contact"
     )
+    last_check_in_job = models.TextField(
+        null=True,
+        help_text="Job description of last Harvester contact"
+    )
     sleep_time = models.IntegerField(
         default=120,
         help_text="Seconds to sleep between Harvester cycles"

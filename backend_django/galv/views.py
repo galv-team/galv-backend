@@ -631,6 +631,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
         harvester = get_object_or_404(Harvester, uuid=pk)
         self.check_object_permissions(self.request, harvester)
         harvester.last_check_in = timezone.now()
+        harvester.last_check_in_job = request.data.get('content', {}).get('task', 'error_report')
         harvester.save()
         if request.data.get('status') is None:
             return error_response('Badly formatted request')

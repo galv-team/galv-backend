@@ -1094,7 +1094,7 @@ class HarvesterSerializer(serializers.HyperlinkedModelSerializer, PermissionsMix
 
     class Meta:
         model = Harvester
-        read_only_fields = ['url', 'uuid', 'last_check_in', 'lab', 'permissions']
+        read_only_fields = ['url', 'uuid', 'last_check_in', 'last_check_in_job', 'lab', 'permissions']
         fields = [*read_only_fields, 'name', 'sleep_time', 'environment_variables', 'active']
         extra_kwargs = augment_extra_kwargs()
 
