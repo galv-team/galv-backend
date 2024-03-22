@@ -14,7 +14,7 @@ def get_monitored_paths(path: os.PathLike|str, harvester: Harvester) -> list[Mon
     MonitoredPaths are matched by path and regex.
     """
     monitored_paths = MonitoredPath.objects.filter(harvester=harvester)
-    monitored_paths = [p for p in monitored_paths if os.path.abspath(path).startswith(os.path.abspath(p.path))]
+    monitored_paths = [p for p in monitored_paths if os.path.normpath(path).startswith(os.path.normpath(p.path))]
     return [p for p in monitored_paths if re.search(p.regex, os.path.relpath(path, p.path))]
 
 

@@ -639,7 +639,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
             if request.data.get('status') != 'error':
                 assert path is not None
             if path is not None:
-                path = os.path.abspath(path)
+                path = os.path.normpath(path)
         except AssertionError:
             return error_response('Harvester report must specify a path')
         try:

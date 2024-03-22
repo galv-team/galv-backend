@@ -1190,7 +1190,7 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
             value = str(value).lower().lstrip().rstrip()
         except BaseException as e:
             raise ValidationError(f"Invalid path: {e.__context__}")
-        abs_path = os.path.abspath(value)
+        abs_path = os.path.normpath(value)
         return abs_path
 
     def validate_stable_time(self, value):
