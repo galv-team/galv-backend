@@ -191,17 +191,27 @@ AWS_S3_OBJECT_PARAMETERS = {
     "CacheControl": "max-age=2592000",
 }
 AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+LOCAL_DATA_STORAGE = os.environ.get("DJANGO_LOCAL_DATA_STORAGE")
+DATA_STORAGE_UPLOAD_URL_EXPIRY_S = int(os.environ.get("DJANGO_DATA_STORAGE_UPLOAD_URL_EXPIRY_S", 60 * 60))  # 1 hour
 
 
-# Static and media files are served from S3 if S3 is configured
+# Static, media, and data files are served from S3 if S3 is configured
 # Otherwise, they are served from the local filesystem
 STATICFILES_LOCATION = "static"
 MEDIAFILES_LOCATION = "media"
+DATAFILES_LOCATION = "data"
 
 if os.environ.get("AWS_SECRET_ACCESS_KEY") is not None:
+    data_storage = {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "LOCATION": "/data",
+    } if LOCAL_DATA_STORAGE else {
+        "BACKEND": "galv.storages.DataStorage"
+    }
     STORAGES = {
         "default": {"BACKEND": "galv.storages.MediaStorage"},  # for media
-        "staticfiles": {"BACKEND": "galv.storages.StaticStorage"},
+        "data": data_storage,  # for data
+        "staticfiles": {"BACKEND": "galv.storages.StaticStorage"}
     }
     STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/"
     MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIAFILES_LOCATION}/"
@@ -214,9 +224,22 @@ else:
         raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")
     STORAGES = {
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": "/media"},
+        "data": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": "/data"},
         "staticfiles": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": "/static"},
     }
     STATIC_ROOT = f"/{STATICFILES_LOCATION}"
     STATIC_URL = f"/{STATICFILES_LOCATION}/"
     MEDIA_ROOT = f"/{MEDIAFILES_LOCATION}"
     MEDIA_URL = f"/{MEDIAFILES_LOCATION}/"
+
+# These definitions should be kept in sync with the definitions in the harvester program
+HARVESTER_TASK_FILE_SIZE = 'file_size'
+HARVESTER_TASK_IMPORT = 'import'
+HARVESTER_STATUS_SUCCESS = 'success'
+HARVESTER_STATUS_ERROR = 'error'
+HARVEST_STAGE_FILE_METADATA = 'file metadata'
+HARVEST_STAGE_COLUMN_METADATA = 'column metadata'
+HARVEST_STAGE_GET_UPLOAD_URLS = 'get upload urls'
+HARVEST_STAGE_UPLOAD_COMPLETE = 'upload complete'
+HARVEST_STAGE_COMPLETE = 'harvest complete'
+HARVEST_STAGE_FAILED = 'harvest failed'

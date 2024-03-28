@@ -28,3 +28,10 @@ class MediaStorage(S3Boto3Storage):
                 self.default_acl = acl
             if set_querystring_auth:
                 self.querystring_auth = acl != "public-read"
+
+class DataStorage(S3Boto3Storage):
+    location = settings.DATAFILES_LOCATION
+    default_acl = "private"
+    querystring_auth = True
+    custom_domain = False
+    file_overwrite = False

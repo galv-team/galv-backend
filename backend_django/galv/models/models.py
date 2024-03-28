@@ -5,6 +5,7 @@ import os
 import re
 from typing import Type
 
+import boto3
 import jsonschema
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -18,6 +19,7 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 from jsonschema.exceptions import _WrappedReferencingError
 from rest_framework import serializers
+from rest_framework.reverse import reverse
 
 from .choices import FileState, UserLevel, ValidationStatus
 
@@ -105,7 +107,7 @@ class UserActivation(TimestampedModel):
 
     def get_is_expired(self) -> bool:
         return self.token_update_date is None or \
-                  (timezone.now() - self.token_update_date).total_seconds() > settings.USER_ACTIVATION_TOKEN_EXPIRY_S
+            (timezone.now() - self.token_update_date).total_seconds() > settings.USER_ACTIVATION_TOKEN_EXPIRY_S
 
     def activate_user(self):
         if self.get_is_expired():
@@ -405,7 +407,7 @@ class ResourceModelPermissionsMixin(TimestampedModel):
         return UserLevel.ANONYMOUS.value
 
     def save(
-        self, force_insert=False, force_update=False, using=None, update_fields=None
+            self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
         """
         Ensure that access levels are valid.
@@ -726,6 +728,15 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
         null=True,
         help_text="Number of rows in the file"
     )
+    num_partitions = models.PositiveIntegerField(
+        null=True,
+        help_text="Number of partitions in the file's parquet format"
+    )
+    storage_urls = models.JSONField(
+        null=False,
+        default=list,
+        help_text="URLs for the file's storage"
+    )
     first_sample_no = models.PositiveIntegerField(
         null=True,
         help_text="Number of the first sample in the file"
@@ -781,6 +792,33 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
                 errors.append(f"Duplicate column name: {c.get_name()}")
             names.append(c.get_name())
         return [*self.missing_required_columns(), *errors]
+
+    def create_upload_urls(self):
+        if self.num_partitions is None or self.num_partitions == 0:
+            raise ValueError("Number of partitions must be set before creating upload URLs")
+        storage_urls = self.storage_urls
+        if settings.LOCAL_DATA_STORAGE:
+            for i in range(self.num_partitions):
+                presigned = PresignedDataFile.objects.create(observed_file=self)
+                presigned.save()
+                storage_urls.append({
+                    "url": reverse("upload_data"),
+                    "fields": {'auth_key': presigned.auth_key}
+                })
+            self.storage_urls = storage_urls
+            return
+        # We have AWS S3 env vars all set up and okay to go
+        s3_client = boto3.client('s3')
+        for i in range(self.num_partitions):
+            response = s3_client.generate_presigned_post(
+                settings.AWS_STORAGE_BUCKET_NAME,
+                f"{self.uuid}_{i}.parquet",
+                Conditions=[],
+                Fields={"Content-Type": "application/octet-stream"},
+                ExpiresIn=300
+            )
+            storage_urls.append(response)
+        self.storage_urls = storage_urls
 
     def __str__(self):
         return self.path
@@ -1038,7 +1076,9 @@ class DataColumn(TimestampedModel):
         to=DataColumnType,
         on_delete=models.CASCADE,
         help_text="Column Type which this Column instantiates",
-        related_name='columns'
+        related_name='columns',
+        null=True,
+        blank=True
     )
     data_type = models.TextField(null=False, help_text="Type of the data in this column")
     name_in_file = models.TextField(null=False, help_text="Column title e.g. in .tsv file headers")
@@ -1065,70 +1105,13 @@ class DataColumn(TimestampedModel):
         return self.file.has_object_write_permission(request)
 
     def get_name(self):
-        return self.type.override_child_name or self.name_in_file
+        return (self.type is not None and self.type.override_child_name) or self.name_in_file
 
     def __str__(self):
         return f"{self.get_name()} ({self.type.unit.symbol})"
 
     class Meta:
         unique_together = [['file', 'name_in_file']]
-
-# Timeseries data comes in different types, so we need to store them separately.
-# These helper functions reduce redundancy in the code that creates the models.
-# TODO: could use Django's GenericColumn (GenericForeignKey?) here
-class TimeseriesBase(TimestampedModel):
-    column = models.OneToOneField(
-        to=DataColumn,
-        on_delete=models.CASCADE,
-        help_text="Column whose data are listed"
-    )
-    values = ArrayField(models.Field())
-    def __str__(self):
-        if not self.values:
-            return f"{self.column_id}: []"
-        if len(self.values) > 5:
-            return f"{self.column_id}: [{','.join(self.values[:5])}...]"
-        return f"{self.column_id}: [{','.join(self.values)}]"
-
-    def __repr__(self):
-        return str(self)
-
-    def has_object_read_permission(self, request):
-        return self.column.file.has_object_read_permission(request)
-
-    def has_object_write_permission(self, request):
-        return self.column.file.has_object_write_permission(request)
-
-    class Meta:
-        abstract = True
-
-class TimeseriesDataFloat(TimeseriesBase):
-    values = ArrayField(models.FloatField(null=True), null=True, help_text="Row values (floats) for Column")
-
-
-class TimeseriesDataInt(TimeseriesBase):
-    values = ArrayField(models.IntegerField(null=True), null=True, help_text="Row values (integers) for Column")
-
-
-class TimeseriesDataStr(TimeseriesBase):
-    values = ArrayField(models.TextField(null=True), null=True, help_text="Row values (str) for Column")
-
-
-class UnsupportedTimeseriesDataTypeError(TypeError):
-    pass
-
-
-def get_timeseries_handler_by_type(data_type: str) -> Type[TimeseriesDataFloat | TimeseriesDataStr | TimeseriesDataInt]:
-    """
-    Returns the appropriate TimeseriesData model for the given data type.
-    """
-    if data_type == "float":
-        return TimeseriesDataFloat
-    if data_type == "str":
-        return TimeseriesDataStr
-    if data_type == "int":
-        return TimeseriesDataInt
-    raise UnsupportedTimeseriesDataTypeError
 
 
 class TimeseriesRangeLabel(TimestampedModel):
@@ -1169,15 +1152,15 @@ class KnoxAuthToken(TimestampedModel):
 
     def __str__(self):
         return f"{self.knox_token_key}:{self.name}"
-    
+
     @staticmethod
     def has_create_permission(request):
         return request.user.is_active
-    
+
     @staticmethod
     def has_read_permission(request):
         return True
-    
+
     @staticmethod
     def has_write_permission(request):
         return False
@@ -1185,7 +1168,7 @@ class KnoxAuthToken(TimestampedModel):
     @staticmethod
     def has_destroy_permission(request):
         return True
-    
+
     def has_object_read_permission(self, request):
         if not request.user.is_active:
             return False
@@ -1349,3 +1332,53 @@ class ArbitraryFile(JSONModel, ResourceModelPermissionsMixin):
 
     def __str__(self):
         return self.name
+
+
+class PresignedDataFile(TimestampedModel):
+    """
+    A file that has been uploaded to the server while running with LOCAL_DATA_STORAGE=True.
+    """
+    file = models.FileField(upload_to=settings.DATAFILES_LOCATION, null=True, blank=True)
+    auth_key = models.TextField(unique=True, null=True, blank=True)
+    observed_file = models.ForeignKey(to=ObservedFile, on_delete=models.CASCADE, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        """
+        Generate a key if we don't have one
+        """
+        if self.auth_key is None:
+            text = 'abcdefghijklmnopqrstuvwxyz' + \
+                   'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + \
+                   '0123456789' + \
+                   '!£$%^&*-=+'
+            while True:
+                key = f"galv_{''.join(random.choices(text, k=60))}"
+                if not PresignedDataFile.objects.filter(auth_key=f"galv_{''.join(random.choices(text, k=60))}").exists():
+                    break
+            self.auth_key = key
+        super(PresignedDataFile, self).save(*args, **kwargs)
+
+    def delete(self, using=None, keep_parents=False):
+        self.file.delete()
+        super(PresignedDataFile, self).delete(using, keep_parents)
+
+    @staticmethod
+    def has_read_permission(request):
+        return True
+
+    @staticmethod
+    def has_write_permission(request):
+        return True
+
+    @staticmethod
+    def has_create_permission(request):
+        return False
+
+    def has_object_read_permission(self, request):
+        return self.observed_file.has_read_permission(request)
+
+    def has_object_write_permission(self, request):
+        return self.observed_file.has_object_write_permission(request)
+
+    def __str__(self):
+        return self.file

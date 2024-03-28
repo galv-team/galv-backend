@@ -1243,6 +1243,7 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
                 "http://localhost:8001/columns/2/",
                 "http://localhost:8001/columns/3/"
             ],
+            "storage_urls": [],
             "column_errors": [],
             "team": "http://localhost:8001/teams/1/",
             "permissions": {
@@ -1256,6 +1257,7 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
     ),
 ])
 class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+    storage_urls = serializers.SerializerMethodField(help_text="Storage URLs for this file")
     harvester = TruncatedHyperlinkedRelatedIdField(
         'HarvesterSerializer',
         ['name'],
@@ -1305,6 +1307,9 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
     def get_column_errors(self, instance) -> list:
         return instance.column_errors()
 
+    def get_storage_urls(self, instance) -> list:
+        return [s['url'] for s in instance.storage_urls]
+
     class Meta:
         model = ObservedFile
         read_only_fields = [
@@ -1318,6 +1323,7 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
             'has_required_columns',
             'last_observed_time', 'last_observed_size', 'upload_errors',
             'column_errors',
+            'storage_urls',
             'upload_info', 'columns', 'permissions'
         ]
         fields = [*read_only_fields, 'name']
@@ -1378,15 +1384,6 @@ class DataUnitSerializer(serializers.ModelSerializer, WithTeamMixin, Permissions
         extra_kwargs = augment_extra_kwargs()
 
 
-class TimeseriesRangeLabelSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
-    data = serializers.SerializerMethodField()
-
-    class Meta:
-        model = TimeseriesRangeLabel
-        fields = '__all__'
-        extra_kwargs = augment_extra_kwargs()
-
-
 class DataColumnTypeSerializer(serializers.HyperlinkedModelSerializer, WithTeamMixin, PermissionsMixin):
     unit = TruncatedHyperlinkedRelatedIdField(
         'DataUnitSerializer',
@@ -1408,7 +1405,6 @@ class DataColumnSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
     A column contains metadata and data. Data are an ordered list of values.
     """
     name = serializers.SerializerMethodField(help_text="Column name (assigned by harvester but overridden by Galv for core fields)")
-    values = serializers.SerializerMethodField(help_text="Column values")
     file = TruncatedHyperlinkedRelatedIdField(
         'ObservedFileSerializer',
         ['harvester', 'path'],
@@ -1427,9 +1423,6 @@ class DataColumnSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
     def get_name(self, instance) -> str:
         return instance.get_name()
 
-    def get_values(self, instance) -> str:
-        return reverse('datacolumn-values', args=(instance.id,), request=self.context['request'])
-
     class Meta:
         model = DataColumn
         read_only_fields = [
@@ -1439,7 +1432,6 @@ class DataColumnSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
             'name_in_file',
             'file',
             'type',
-            'values',
             'permissions'
         ]
         fields = [*read_only_fields, 'type']

@@ -29,6 +29,10 @@
       "name": "Ivium_Cell+1",
       "parser": "IviumInputFile",
       "num_rows": 165649,
+      "num_partitions": 1,
+      "storage_urls": [
+        "https://example.com/storage/0d9f87b4-334d-4676-aca0-057400d7ac15/1"
+      ],
       "first_sample_no": 1,
       "last_sample_no": 6,
       "extra_metadata": {
@@ -66,6 +70,10 @@
       "name": "adam_3_C05",
       "parser": "BiologicMprInputFile",
       "num_rows": 55809,
+      "num_partitions": 1,
+      "storage_urls": [
+        "https://example.com/storage/301bd545-c917-407c-a51c-e4ec347c9daf/1"
+      ],
       "first_sample_no": 0,
       "last_sample_no": 5,
       "extra_metadata": {
@@ -136,6 +144,10 @@
       "name": "TPG1+-+Cell+15+-+002",
       "parser": "MaccorInputFile",
       "num_rows": 401993,
+      "num_partitions": 1,
+      "storage_urls": [
+        "https://example.com/storage/60bad6ef-2a11-4159-bba8-6fc37ab55e65/1"
+      ],
       "first_sample_no": 1,
       "last_sample_no": 6,
       "extra_metadata": {
@@ -422,6 +434,10 @@
       "name": "CCCV -exp1_C01",
       "parser": "BiologicMprInputFile",
       "num_rows": 95052,
+      "num_partitions": 1,
+      "storage_urls": [
+        "https://example.com/storage/6c27d223-8619-47be-959f-09323741a7f4/1"
+      ],
       "first_sample_no": 0,
       "last_sample_no": 5,
       "extra_metadata": {
@@ -492,6 +508,10 @@
       "name": "Jie_OCV1_C01",
       "parser": "BiologicMprInputFile",
       "num_rows": 8938,
+      "num_partitions": 1,
+      "storage_urls": [
+        "https://example.com/storage/fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1/1"
+      ],
       "first_sample_no": 0,
       "last_sample_no": 5,
       "extra_metadata": {
@@ -562,6 +582,10 @@
       "name": null,
       "parser": "DelimitedInputFile",
       "num_rows": null,
+      "num_partitions": 1,
+      "storage_urls": [
+        "https://example.com/storage/e67cd964-951b-48eb-9b7c-f7166655923c/1"
+      ],
       "first_sample_no": null,
       "last_sample_no": null,
       "extra_metadata": {
@@ -648,7 +672,6 @@
       "created": "2024-01-16T14:02:04.544Z",
       "modified": "2024-01-16T14:02:04.544Z",
       "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
-      "type": 2,
       "data_type": "int",
       "name_in_file": "Ns"
     }
@@ -660,7 +683,6 @@
       "created": "2024-01-16T14:02:04.644Z",
       "modified": "2024-01-16T14:02:04.644Z",
       "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
-      "type": 2,
       "data_type": "int",
       "name_in_file": "I Range"
     }
@@ -768,7 +790,6 @@
       "created": "2024-01-16T14:02:05.778Z",
       "modified": "2024-01-16T14:02:05.778Z",
       "file": "301bd545-c917-407c-a51c-e4ec347c9daf",
-      "type": 2,
       "data_type": "int",
       "name_in_file": "half cycle"
     }
@@ -792,7 +813,6 @@
       "created": "2024-01-16T14:02:40.692Z",
       "modified": "2024-01-16T14:02:40.692Z",
       "file": "6c27d223-8619-47be-959f-09323741a7f4",
-      "type": 2,
       "data_type": "int",
       "name_in_file": "flags"
     }
@@ -804,7 +824,6 @@
       "created": "2024-01-16T14:02:40.848Z",
       "modified": "2024-01-16T14:02:40.848Z",
       "file": "6c27d223-8619-47be-959f-09323741a7f4",
-      "type": 2,
       "data_type": "int",
       "name_in_file": "Ns"
     }
@@ -816,7 +835,6 @@
       "created": "2024-01-16T14:02:40.997Z",
       "modified": "2024-01-16T14:02:40.997Z",
       "file": "6c27d223-8619-47be-959f-09323741a7f4",
-      "type": 2,
       "data_type": "int",
       "name_in_file": "I Range"
     }
@@ -924,7 +942,6 @@
       "created": "2024-01-16T14:02:42.547Z",
       "modified": "2024-01-16T14:02:42.547Z",
       "file": "6c27d223-8619-47be-959f-09323741a7f4",
-      "type": 2,
       "data_type": "int",
       "name_in_file": "half cycle"
     }
@@ -996,7 +1013,6 @@
       "created": "2024-01-16T14:04:18.277Z",
       "modified": "2024-01-16T14:04:18.277Z",
       "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
-      "type": 2,
       "data_type": "int",
       "name_in_file": "flags"
     }
@@ -1008,7 +1024,6 @@
       "created": "2024-01-16T14:04:18.426Z",
       "modified": "2024-01-16T14:04:18.426Z",
       "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
-      "type": 2,
       "data_type": "int",
       "name_in_file": "Ns"
     }
@@ -1020,7 +1035,6 @@
       "created": "2024-01-16T14:04:18.568Z",
       "modified": "2024-01-16T14:04:18.569Z",
       "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
-      "type": 2,
       "data_type": "int",
       "name_in_file": "I Range"
     }
@@ -1128,7 +1142,6 @@
       "created": "2024-01-16T14:04:20.056Z",
       "modified": "2024-01-16T14:04:20.056Z",
       "file": "fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1",
-      "type": 2,
       "data_type": "int",
       "name_in_file": "half cycle"
     }
@@ -1152,7 +1165,6 @@
       "created": "2024-01-16T14:04:59.243Z",
       "modified": "2024-01-16T14:04:59.243Z",
       "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
-      "type": 2,
       "data_type": "str",
       "name_in_file": "Step"
     }
@@ -1284,7 +1296,6 @@
       "created": "2024-01-16T14:05:00.497Z",
       "modified": "2024-01-16T14:05:00.497Z",
       "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
-      "type": 2,
       "data_type": "str",
       "name_in_file": "VARx1"
     }
@@ -1296,7 +1307,6 @@
       "created": "2024-01-16T14:05:00.605Z",
       "modified": "2024-01-16T14:05:00.605Z",
       "file": "60bad6ef-2a11-4159-bba8-6fc37ab55e65",
-      "type": 2,
       "data_type": "str",
       "name_in_file": "VARx2"
     }
@@ -1308,7 +1318,6 @@
       "created": "2024-01-16T14:05:00.605Z",
       "modified": "2024-01-16T14:05:00.605Z",
       "file": "e67cd964-951b-48eb-9b7c-f7166655923c",
-      "type": 2,
       "data_type": "int",
       "name_in_file": "Sample Number"
     }
@@ -1320,7 +1329,6 @@
       "created": "2024-01-16T14:05:00.605Z",
       "modified": "2024-01-16T14:05:00.605Z",
       "file": "e67cd964-951b-48eb-9b7c-f7166655923c",
-      "type": 2,
       "data_type": "str",
       "name_in_file": "Make"
     }
@@ -1332,7 +1340,6 @@
       "created": "2024-01-16T14:05:00.605Z",
       "modified": "2024-01-16T14:05:00.605Z",
       "file": "e67cd964-951b-48eb-9b7c-f7166655923c",
-      "type": 2,
       "data_type": "str",
       "name_in_file": "Year"
     }
@@ -1344,7 +1351,6 @@
       "created": "2024-01-16T14:05:00.605Z",
       "modified": "2024-01-16T14:05:00.605Z",
       "file": "e67cd964-951b-48eb-9b7c-f7166655923c",
-      "type": 2,
       "data_type": "str",
       "name_in_file": "Model"
     }
@@ -1356,7 +1362,6 @@
       "created": "2024-01-16T14:05:00.605Z",
       "modified": "2024-01-16T14:05:00.605Z",
       "file": "e67cd964-951b-48eb-9b7c-f7166655923c",
-      "type": 2,
       "data_type": "str",
       "name_in_file": "Price"
     }
@@ -1368,639 +1373,8 @@
       "created": "2024-01-16T14:05:00.605Z",
       "modified": "2024-01-16T14:05:00.605Z",
       "file": "e67cd964-951b-48eb-9b7c-f7166655923c",
-      "type": 2,
       "data_type": "str",
       "name_in_file": "Description"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 1,
-    "fields": {
-      "created": "2024-01-16T14:02:04.785Z",
-      "modified": "2024-01-16T14:02:35.250Z",
-      "column": 5,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 2,
-    "fields": {
-      "created": "2024-01-16T14:02:04.924Z",
-      "modified": "2024-01-16T14:02:35.622Z",
-      "column": 6,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 3,
-    "fields": {
-      "created": "2024-01-16T14:02:05.047Z",
-      "modified": "2024-01-16T14:02:35.950Z",
-      "column": 7,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 4,
-    "fields": {
-      "created": "2024-01-16T14:02:05.174Z",
-      "modified": "2024-01-16T14:02:36.375Z",
-      "column": 8,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 5,
-    "fields": {
-      "created": "2024-01-16T14:02:05.306Z",
-      "modified": "2024-01-16T14:02:36.763Z",
-      "column": 9,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 6,
-    "fields": {
-      "created": "2024-01-16T14:02:05.432Z",
-      "modified": "2024-01-16T14:02:37.140Z",
-      "column": 10,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 7,
-    "fields": {
-      "created": "2024-01-16T14:02:05.556Z",
-      "modified": "2024-01-16T14:02:37.530Z",
-      "column": 11,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 8,
-    "fields": {
-      "created": "2024-01-16T14:02:05.682Z",
-      "modified": "2024-01-16T14:02:37.955Z",
-      "column": 12,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 9,
-    "fields": {
-      "created": "2024-01-16T14:02:41.189Z",
-      "modified": "2024-01-16T14:03:45.722Z",
-      "column": 18,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 10,
-    "fields": {
-      "created": "2024-01-16T14:02:41.369Z",
-      "modified": "2024-01-16T14:03:46.337Z",
-      "column": 19,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 11,
-    "fields": {
-      "created": "2024-01-16T14:02:41.544Z",
-      "modified": "2024-01-16T14:03:46.883Z",
-      "column": 20,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 12,
-    "fields": {
-      "created": "2024-01-16T14:02:41.729Z",
-      "modified": "2024-01-16T14:03:47.561Z",
-      "column": 21,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 13,
-    "fields": {
-      "created": "2024-01-16T14:02:41.902Z",
-      "modified": "2024-01-16T14:03:48.396Z",
-      "column": 22,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 14,
-    "fields": {
-      "created": "2024-01-16T14:02:42.078Z",
-      "modified": "2024-01-16T14:03:49.058Z",
-      "column": 23,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 15,
-    "fields": {
-      "created": "2024-01-16T14:02:42.243Z",
-      "modified": "2024-01-16T14:03:49.728Z",
-      "column": 24,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 16,
-    "fields": {
-      "created": "2024-01-16T14:02:42.411Z",
-      "modified": "2024-01-16T14:03:50.369Z",
-      "column": 25,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 17,
-    "fields": {
-      "created": "2024-01-16T14:04:18.757Z",
-      "modified": "2024-01-16T14:04:21.224Z",
-      "column": 35,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 18,
-    "fields": {
-      "created": "2024-01-16T14:04:18.919Z",
-      "modified": "2024-01-16T14:04:21.328Z",
-      "column": 36,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 19,
-    "fields": {
-      "created": "2024-01-16T14:04:19.079Z",
-      "modified": "2024-01-16T14:04:21.412Z",
-      "column": 37,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 20,
-    "fields": {
-      "created": "2024-01-16T14:04:19.236Z",
-      "modified": "2024-01-16T14:04:21.512Z",
-      "column": 38,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 21,
-    "fields": {
-      "created": "2024-01-16T14:04:19.411Z",
-      "modified": "2024-01-16T14:04:21.614Z",
-      "column": 39,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 22,
-    "fields": {
-      "created": "2024-01-16T14:04:19.595Z",
-      "modified": "2024-01-16T14:04:21.715Z",
-      "column": 40,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 23,
-    "fields": {
-      "created": "2024-01-16T14:04:19.769Z",
-      "modified": "2024-01-16T14:04:21.820Z",
-      "column": 41,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatafloat",
-    "pk": 24,
-    "fields": {
-      "created": "2024-01-16T14:04:19.927Z",
-      "modified": "2024-01-16T14:04:21.945Z",
-      "column": 42,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 1,
-    "fields": {
-      "created": "2024-01-16T14:02:04.337Z",
-      "modified": "2024-01-16T14:02:34.231Z",
-      "column": 1,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 2,
-    "fields": {
-      "created": "2024-01-16T14:02:04.466Z",
-      "modified": "2024-01-16T14:02:34.438Z",
-      "column": 2,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 3,
-    "fields": {
-      "created": "2024-01-16T14:02:04.566Z",
-      "modified": "2024-01-16T14:02:34.626Z",
-      "column": 3,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 4,
-    "fields": {
-      "created": "2024-01-16T14:02:04.673Z",
-      "modified": "2024-01-16T14:02:34.818Z",
-      "column": 4,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 5,
-    "fields": {
-      "created": "2024-01-16T14:02:05.806Z",
-      "modified": "2024-01-16T14:02:38.308Z",
-      "column": 13,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 6,
-    "fields": {
-      "created": "2024-01-16T14:02:40.572Z",
-      "modified": "2024-01-16T14:03:44.479Z",
-      "column": 14,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 7,
-    "fields": {
-      "created": "2024-01-16T14:02:40.736Z",
-      "modified": "2024-01-16T14:03:44.804Z",
-      "column": 15,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 8,
-    "fields": {
-      "created": "2024-01-16T14:02:40.886Z",
-      "modified": "2024-01-16T14:03:45.087Z",
-      "column": 16,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 9,
-    "fields": {
-      "created": "2024-01-16T14:02:41.036Z",
-      "modified": "2024-01-16T14:03:45.371Z",
-      "column": 17,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 10,
-    "fields": {
-      "created": "2024-01-16T14:02:42.593Z",
-      "modified": "2024-01-16T14:03:50.953Z",
-      "column": 26,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 11,
-    "fields": {
-      "created": "2024-01-16T14:03:55.063Z",
-      "modified": "2024-01-16T14:04:13.757Z",
-      "column": 27,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 12,
-    "fields": {
-      "created": "2024-01-16T14:04:18.165Z",
-      "modified": "2024-01-16T14:04:20.934Z",
-      "column": 31,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 13,
-    "fields": {
-      "created": "2024-01-16T14:04:18.320Z",
-      "modified": "2024-01-16T14:04:21.010Z",
-      "column": 32,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 14,
-    "fields": {
-      "created": "2024-01-16T14:04:18.471Z",
-      "modified": "2024-01-16T14:04:21.075Z",
-      "column": 33,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 15,
-    "fields": {
-      "created": "2024-01-16T14:04:18.611Z",
-      "modified": "2024-01-16T14:04:21.142Z",
-      "column": 34,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdataint",
-    "pk": 16,
-    "fields": {
-      "created": "2024-01-16T14:04:20.094Z",
-      "modified": "2024-01-16T14:04:22.049Z",
-      "column": 43,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 1,
-    "fields": {
-      "created": "2024-01-16T14:03:55.265Z",
-      "modified": "2024-01-16T14:04:14.407Z",
-      "column": 28,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 2,
-    "fields": {
-      "created": "2024-01-16T14:03:55.450Z",
-      "modified": "2024-01-16T14:04:15.256Z",
-      "column": 29,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 3,
-    "fields": {
-      "created": "2024-01-16T14:03:55.609Z",
-      "modified": "2024-01-16T14:04:15.860Z",
-      "column": 30,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 4,
-    "fields": {
-      "created": "2024-01-16T14:04:59.148Z",
-      "modified": "2024-01-16T14:13:44.755Z",
-      "column": 44,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 5,
-    "fields": {
-      "created": "2024-01-16T14:04:59.277Z",
-      "modified": "2024-01-16T14:13:46.013Z",
-      "column": 45,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 6,
-    "fields": {
-      "created": "2024-01-16T14:04:59.394Z",
-      "modified": "2024-01-16T14:13:47.205Z",
-      "column": 46,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 7,
-    "fields": {
-      "created": "2024-01-16T14:04:59.510Z",
-      "modified": "2024-01-16T14:13:48.578Z",
-      "column": 47,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 8,
-    "fields": {
-      "created": "2024-01-16T14:04:59.619Z",
-      "modified": "2024-01-16T14:13:49.930Z",
-      "column": 48,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 9,
-    "fields": {
-      "created": "2024-01-16T14:04:59.727Z",
-      "modified": "2024-01-16T14:13:51.091Z",
-      "column": 49,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 10,
-    "fields": {
-      "created": "2024-01-16T14:04:59.836Z",
-      "modified": "2024-01-16T14:13:52.334Z",
-      "column": 50,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 11,
-    "fields": {
-      "created": "2024-01-16T14:04:59.944Z",
-      "modified": "2024-01-16T14:13:53.480Z",
-      "column": 51,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 12,
-    "fields": {
-      "created": "2024-01-16T14:05:00.052Z",
-      "modified": "2024-01-16T14:13:54.616Z",
-      "column": 52,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 13,
-    "fields": {
-      "created": "2024-01-16T14:05:00.185Z",
-      "modified": "2024-01-16T14:13:55.683Z",
-      "column": 53,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 14,
-    "fields": {
-      "created": "2024-01-16T14:05:00.302Z",
-      "modified": "2024-01-16T14:13:56.852Z",
-      "column": 54,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 15,
-    "fields": {
-      "created": "2024-01-16T14:05:00.412Z",
-      "modified": "2024-01-16T14:13:58.200Z",
-      "column": 55,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 16,
-    "fields": {
-      "created": "2024-01-16T14:05:00.527Z",
-      "modified": "2024-01-16T14:13:59.401Z",
-      "column": 56,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 17,
-    "fields": {
-      "created": "2024-01-16T14:05:00.636Z",
-      "modified": "2024-01-16T14:14:00.561Z",
-      "column": 57,
-      "values": "[\"1\", \"2\", \"3\", \"4\", \"5\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 18,
-    "fields": {
-      "created": "2024-01-16T14:05:00.636Z",
-      "modified": "2024-01-16T14:14:00.561Z",
-      "column": 58,
-      "values": "[0, 1, 2, 3]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 19,
-    "fields": {
-      "created": "2024-01-16T14:05:00.636Z",
-      "modified": "2024-01-16T14:14:00.561Z",
-      "column": 59,
-      "values": "[\"Ford\", \"Chevy\", \"Chevy\", \"Jeep\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 20,
-    "fields": {
-      "created": "2024-01-16T14:05:00.636Z",
-      "modified": "2024-01-16T14:14:00.561Z",
-      "column": 60,
-      "values": "[\"1997\", \"1999\", \"1999\", \"1996\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 21,
-    "fields": {
-      "created": "2024-01-16T14:05:00.636Z",
-      "modified": "2024-01-16T14:14:00.561Z",
-      "column": 61,
-      "values": "[\"E350\", \"Venture \\\"Extended Edition\\\"\", \"Venture \\\"Extended Edition, Very Large\\\"\", \"Grand Cherokee\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 22,
-    "fields": {
-      "created": "2024-01-16T14:05:00.636Z",
-      "modified": "2024-01-16T14:14:00.561Z",
-      "column": 62,
-      "values": "[\"3000.00\", \"4900.00\", \"5000.00\", \"4799.00\"]"
-    }
-  },
-  {
-    "model": "galv.timeseriesdatastr",
-    "pk": 23,
-    "fields": {
-      "created": "2024-01-16T14:05:00.636Z",
-      "modified": "2024-01-16T14:14:00.561Z",
-      "column": 63,
-      "values": "[\"ac, abs, moon\", \"\", \"\", \"MUST SELL!\\nair, moon roof, loaded\"]"
     }
   }
 ]

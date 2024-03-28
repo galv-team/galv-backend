@@ -3,10 +3,13 @@
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 import json
 import unittest
+from unittest.mock import patch
+
 from django.urls import reverse
 from rest_framework import status
 import logging
 
+from backend_django.config import settings
 from .utils import assert_response_property, GalvTestCase
 from .factories import HarvesterFactory, \
     MonitoredPathFactory
@@ -209,13 +212,18 @@ class HarvesterTests(GalvTestCase):
     def test_report_unauthorized(self):
         self.client.force_authenticate(self.lab_admin)
         url = reverse(f'{self.stub}-report', args=(self.harvester.uuid,))
-        response = self.client.post(url, {'status': 'success'})
+        response = self.client.post(url, {'status': settings.HARVESTER_STATUS_SUCCESS})
         assert_response_property(
             self, response, self.assertEqual, response.status_code,
             403, msg=f"Check manual harvester report is not allowed"
         )
 
-    def test_report(self):
+    class MockBoto3Client:
+        def generate_presigned_post(self, bucket, object, *args, **kwargs):
+            return {'url': f"https://example.com/s3/{bucket}/{object}", 'fields': {}}
+
+    @patch('boto3.client', return_value=MockBoto3Client())
+    def test_report(self, *args):
         mp = MonitoredPathFactory.create(harvester=self.harvester)
         f = ObservedFile.objects.create(path='/a/b/c/d.ext', harvester=self.harvester)
         self.client._credentials = {'HTTP_AUTHORIZATION': f'Harvester {self.harvester.api_key}'}
@@ -237,14 +245,14 @@ class HarvesterTests(GalvTestCase):
             },
             {
                 'name': 'error_none',
-                'data': {'status': 'error', 'path': '/a/b/c.ext'},
+                'data': {'status': settings.HARVESTER_STATUS_ERROR, 'path': '/a/b/c.ext'},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_400_BAD_REQUEST)
                 ]
             },
             {
                 'name': 'error_str',
-                'data': {'status': 'error', 'path': '/a/b/c.ext', 'error': 'test'},
+                'data': {'status': settings.HARVESTER_STATUS_ERROR, 'path': '/a/b/c.ext', 'error': 'test'},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_200_OK),
                     lambda r: check_response(r, HarvestError.objects.filter(error='test').count(), 1),
@@ -252,7 +260,7 @@ class HarvesterTests(GalvTestCase):
             },
             {
                 'name': 'error_str',
-                'data': {'status': 'error', 'path': '/a/b/c.ext', 'error': {'test': 'test'}},
+                'data': {'status': settings.HARVESTER_STATUS_ERROR, 'path': '/a/b/c.ext', 'error': {'test': 'test'}},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_200_OK),
                     lambda r: check_response(r, HarvestError.objects.filter(error=json.dumps({'test': 'test'})).count(), 1),
@@ -260,28 +268,28 @@ class HarvesterTests(GalvTestCase):
             },
             {
                 'name': 'no_path',
-                'data': {'status': 'success'},
+                'data': {'status': settings.HARVESTER_STATUS_SUCCESS},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_400_BAD_REQUEST),
                 ]
             },
             {
                 'name': 'no_monitored_path',
-                'data': {'status': 'success', 'path': '/a/b/c.ext'},
+                'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': '/a/b/c.ext'},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_400_BAD_REQUEST),
                 ]
             },
             {
                 'name': 'file_size_no_size',
-                'data': {'status': 'success', 'path': '/a/b/c.ext', 'monitored_path_uuid': mp.uuid, 'content': {'task': 'file_size'}},
+                'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': '/a/b/c.ext', 'monitored_path_uuid': mp.uuid, 'content': {'task': settings.HARVESTER_TASK_FILE_SIZE}},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_400_BAD_REQUEST),
                 ]
             },
             {
                 'name': 'file_size',
-                'data': {'status': 'success', 'path': '/a/b/c.ext', 'monitored_path_uuid': mp.uuid, 'content': {'task': 'file_size', 'size': 1024}},
+                'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': '/a/b/c.ext', 'monitored_path_uuid': mp.uuid, 'content': {'task': settings.HARVESTER_TASK_FILE_SIZE, 'size': 1024}},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_200_OK),
                     lambda r: check_response(r, ObservedFile.objects.filter(path='/a/b/c.ext').count(), 1),
@@ -290,33 +298,36 @@ class HarvesterTests(GalvTestCase):
             },
             {
                 'name': 'import_unrecognised',
-                'data': {'status': 'success', 'path': '/a/b/c.ext', 'monitored_path_uuid': mp.uuid, 'content': {'task': 'import'}},
+                'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': '/a/b/c.ext', 'monitored_path_uuid': mp.uuid, 'content': {'task': settings.HARVESTER_TASK_IMPORT}},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_400_BAD_REQUEST),
                 ]
             },
             {
                 'name': 'import_nonexistent_file',
-                'data': {'status': 'success', 'path': 'foo/bar.ext', 'monitored_path_uuid': mp.uuid, 'content': {'task': 'import'}},
+                'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': 'foo/bar.ext', 'monitored_path_uuid': mp.uuid, 'content': {'task': settings.HARVESTER_TASK_IMPORT}},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_400_BAD_REQUEST),
                 ]
             },
             {
                 'name': 'import_unknown_status',
-                'data': {'status': 'success', 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {'task': 'import', 'status': 'unknown'}},
+                'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {'task': settings.HARVESTER_TASK_IMPORT, 'stage': 'unknown'}},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_400_BAD_REQUEST),
                 ]
             },
             {
                 'name': 'import_begin',
-                'data': {'status': 'success', 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {
-                    'task': 'import',
-                    'status': 'begin',
-                    'test_date': 0.0,
-                    'core_metadata': {},
-                    'extra_metadata': {}
+                'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {
+                    'task': settings.HARVESTER_TASK_IMPORT,
+                    'stage': settings.HARVEST_STAGE_FILE_METADATA,
+                    'data': {
+                        'test_date': 0.0,
+                        'core_metadata': {},
+                        'extra_metadata': {},
+                        'parser': 'TestParser'
+                    }
                 }},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_200_OK),
@@ -326,9 +337,9 @@ class HarvesterTests(GalvTestCase):
             },
             {
                 'name': 'import_complete',
-                'data': {'status': 'success', 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {
-                    'task': 'import',
-                    'status': 'complete'
+                'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {
+                    'task': settings.HARVESTER_TASK_IMPORT,
+                    'stage': settings.HARVEST_STAGE_COMPLETE
                 }},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_200_OK),
@@ -338,9 +349,9 @@ class HarvesterTests(GalvTestCase):
             },
             {
                 'name': 'import_failed',
-                'data': {'status': 'success', 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {
-                    'task': 'import',
-                    'status': 'failed'
+                'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {
+                    'task': settings.HARVESTER_TASK_IMPORT,
+                    'stage': settings.HARVEST_STAGE_FAILED
                 }},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_200_OK),
@@ -350,16 +361,41 @@ class HarvesterTests(GalvTestCase):
             },
             {
                 'name': 'import_in_progress',
-                'data': {'status': 'success', 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {
-                    'task': 'import',
-                    'status': 'in_progress',
-                    'data': [
-                        {'unit_symbol': "s", 'data_type': 'int', 'column_name': "sometimes", 'values': [7, 8, 9]}
-                    ]
+                'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {
+                    'task': settings.HARVESTER_TASK_IMPORT,
+                    'stage': settings.HARVEST_STAGE_COLUMN_METADATA,
+                    'data': {
+                        "first_column": {'unit_symbol': "s", 'data_type': 'int', 'column_name': "first_column", 'values': [7, 8, 9]}
+                    }
                 }},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_200_OK),
                     lambda r: check_response(r, r.json()['uuid'], str(ObservedFile.objects.get(path=f.path).uuid)),
+                ]
+            },
+            {
+                'name': 'get_upload_urls',
+                'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {
+                    'task': settings.HARVESTER_TASK_IMPORT,
+                    'stage': settings.HARVEST_STAGE_GET_UPLOAD_URLS,
+                    'data': {'row_count': 1024, 'partition_count': 3}
+                }},
+                'checks': [
+                    lambda r: check_response(r, r.status_code, status.HTTP_200_OK),
+                    lambda r: check_response(r, r.json()['uuid'], str(ObservedFile.objects.get(path=f.path).uuid)),
+                    lambda r: check_response(r, len(r.json()['storage_urls']) == 3, True),
+                ]
+            },
+            {
+                'name': 'upload_complete',
+                'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {
+                    'task': settings.HARVESTER_TASK_IMPORT,
+                    'stage': settings.HARVEST_STAGE_UPLOAD_COMPLETE,
+                    'data': {'successes': 2, 'errors': [str(BaseException('test'))]}
+                }},
+                'checks': [
+                    lambda r: check_response(r, r.status_code, status.HTTP_200_OK),
+                    lambda r: check_response(r, r.json()['uuid'], str(ObservedFile.objects.get(path=f.path).uuid))
                 ]
             }
         ]:

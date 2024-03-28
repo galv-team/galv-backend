@@ -7,6 +7,8 @@ import datetime
 
 import knox.auth
 import os
+
+from django.conf import settings
 from django.http import StreamingHttpResponse
 from django.urls import NoReverseMatch
 from drf_spectacular.types import OpenApiTypes
@@ -25,7 +27,6 @@ from .serializers import HarvesterSerializer, \
     CellSerializer, \
     EquipmentSerializer, \
     DataUnitSerializer, \
-    TimeseriesRangeLabelSerializer, \
     UserSerializer, \
     TransparentGroupSerializer, \
     HarvestErrorSerializer, \
@@ -42,26 +43,21 @@ from .models import Harvester, \
     Equipment, \
     DataUnit, \
     DataColumnType, \
-    TimeseriesDataFloat, \
-    TimeseriesDataInt, \
-    TimeseriesDataStr, \
     DataColumn, \
-    UnsupportedTimeseriesDataTypeError, \
-    get_timeseries_handler_by_type, \
     TimeseriesRangeLabel, \
     FileState, \
     KnoxAuthToken, CellFamily, EquipmentTypes, EquipmentModels, EquipmentManufacturers, CellModels, CellManufacturers, \
     CellChemistries, CellFormFactors, ScheduleIdentifiers, EquipmentFamily, Schedule, CyclerTest, ScheduleFamily, \
     ValidationSchema, Experiment, Lab, Team, UserProxy, GroupProxy, ValidatableBySchemaMixin, SchemaValidation, \
     UserActivation, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, ALLOWED_USER_LEVELS_DELETE, \
-    ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile
+    ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, PresignedDataFile
 from .permissions import HarvesterFilterBackend, TeamFilterBackend, LabFilterBackend, GroupFilterBackend, \
     ResourceFilterBackend, ObservedFileFilterBackend, UserFilterBackend, SchemaValidationFilterBackend
 from .serializers.utils import get_GetOrCreateTextStringSerializer
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import viewsets, serializers, permissions
-from rest_framework.decorators import action, api_view, renderer_classes
+from rest_framework.decorators import action, api_view, renderer_classes, parser_classes
 from rest_framework.response import Response
 from knox.views import LoginView as KnoxLoginView
 from knox.views import LogoutView as KnoxLogoutView
@@ -597,14 +593,18 @@ class HarvesterViewSet(viewsets.ModelViewSet):
         If the task is 'file_size', the content must include a 'size' field.
         A representation of the file will be returned.
 
-        If the task is 'import', the content must include a 'status' field.
-        The status field can be one of:
-        - begin: The harvester is beginning an import.
-        - in_progress: The harvester is reporting progress on an import.
-        - complete: The harvester has completed an import.
-        - failed: The harvester has failed to import a file.
+        If the task is 'import', the content must include a 'stage' field.
+        Entries prefixed with * must also include a 'data' field.
+        The stage field can be one of:
+        - * file metadata: The harvester is beginning an import.
+        - * column metadata: The harvester is reporting progress on an import.
+        - * get upload urls: The harvester is requesting upload information.
+        - * upload complete: The harvester has completed uploading files.
+        - harvest complete: The harvester has completed an import.
+        - harvest failed: The harvester has failed to import a file.
+        These are stored as constants in the settings file.
 
-        If the status is 'begin', the content must include 'test_date', 'core_metadata' and 'extra_metadata' fields.
+        If the stage is 'file metadata', the data must include 'test_date', 'core_metadata' and 'extra_metadata' fields.
         It may also include a 'parser' field identifying the parser used to import the file.
         The core_metadata and extra_metadata fields must be dictionaries.
         - core_metadata may include:
@@ -615,7 +615,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
             - last_sample_no: The number of the last sample in the dataset.
         Extra metadata will be stored as a JSON.
 
-        If the status is 'in_progress', the content must include a 'data' field.
+        If the stage is 'column metadata', the data must include a 'metadata' field.
         This field will be a list of dictionaries, each representing a column of data.
         Each dictionary must include a 'data_type' field.
         Each dictionary must include one of 'column_id' or 'unit_id' or 'unit_symbol'.
@@ -624,7 +624,14 @@ class HarvesterViewSet(viewsets.ModelViewSet):
 
         A representation of the file will be returned.
 
-        If the status is 'complete' or 'failed', no additional content is required.
+        If the stage is 'get upload urls', the data must include 'row_count' and 'partition_count'
+        fields describing the total rows in the dataset and the number of parquet partitions into which it is split.
+        The response will provide a presigned upload URL for each partition.
+
+        If the stage is 'upload complete', the data must include 'successes',
+        the number of successful partition uploads, and errors, a list of errors encountered while uploading.
+
+        If the stage is 'harvest complete' or 'harvest failed', no additional content is required.
 
         Only Harvesters are authorised to issue reports.
         """
@@ -633,11 +640,11 @@ class HarvesterViewSet(viewsets.ModelViewSet):
         harvester.last_check_in = timezone.now()
         harvester.last_check_in_job = request.data.get('content', {}).get('task', 'error_report')
         harvester.save()
-        if request.data.get('status') is None:
+        if request.data.get('status') not in [settings.HARVESTER_STATUS_SUCCESS, settings.HARVESTER_STATUS_ERROR]:
             return error_response('Badly formatted request')
         try:
             path = request.data.get('path')
-            if request.data.get('status') != 'error':
+            if request.data.get('status') != settings.HARVESTER_STATUS_ERROR:
                 assert path is not None
             if path is not None:
                 path = os.path.normpath(path)
@@ -645,7 +652,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
             return error_response('Harvester report must specify a path')
         try:
             monitored_path_uuid = request.data.get('monitored_path_uuid')
-            if request.data.get('status') != 'error':
+            if request.data.get('status') != settings.HARVESTER_STATUS_ERROR:
                 assert monitored_path_uuid is not None
                 monitored_path = MonitoredPath.objects.get(uuid=monitored_path_uuid)
             else:
@@ -654,7 +661,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
             return error_response('Harvester report must specify a monitored_path_uuid')
         except MonitoredPath.DoesNotExist:
             return error_response('Harvester report must specify a valid monitored_path_uuid', 404)
-        if request.data['status'] == 'error':
+        if request.data['status'] == settings.HARVESTER_STATUS_ERROR:
             error = request.data.get('error')
             if error is None:
                 return error_response('error field required when status=error')
@@ -679,12 +686,12 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                     error=str(error)
                 )
             return Response({})
-        elif request.data['status'] == 'success':
+        else:
             # Figure out what we succeeded in doing!
             content = request.data.get('content')
             if content is None:
                 return error_response('content field required when status=success')
-            if content['task'] == 'file_size':
+            if content['task'] == settings.HARVESTER_TASK_FILE_SIZE:
                 if content.get('size') is None:
                     return error_response('file_size task requires content to include size field')
 
@@ -711,123 +718,98 @@ class HarvesterViewSet(viewsets.ModelViewSet):
 
                 file.save()
                 return Response(ObservedFileSerializer(file, context={'request': self.request}).data)
-            elif content['task'] == 'import':
+            elif content['task'] == settings.HARVESTER_TASK_IMPORT:
                 try:
                     file = ObservedFile.objects.get(harvester=harvester, path=path)
                 except ObservedFile.DoesNotExist:
                     return error_response("ObservedFile does not exist")
-                if 'status' not in content:
-                    return error_response("'status' field must be present where task=import")
-                if content['status'] not in ['begin', 'in_progress', 'complete', 'failed']:
-                    return error_response("Unknown status")
-                if content['status'] in ['begin', 'in_progress', 'complete']:
+                if 'stage' not in content:
+                    return error_response("'stage' field must be present where task=import")
+                if content['stage'] not in [
+                    settings.HARVEST_STAGE_FILE_METADATA,
+                    settings.HARVEST_STAGE_COLUMN_METADATA,
+                    settings.HARVEST_STAGE_GET_UPLOAD_URLS,
+                    settings.HARVEST_STAGE_UPLOAD_COMPLETE,
+                    settings.HARVEST_STAGE_COMPLETE,
+                    settings.HARVEST_STAGE_FAILED
+                ]:
+                    return error_response("Unknown stage")
+                if content['stage'] in [
+                    settings.HARVEST_STAGE_FILE_METADATA,
+                    settings.HARVEST_STAGE_COLUMN_METADATA,
+                    settings.HARVEST_STAGE_GET_UPLOAD_URLS,
+                    settings.HARVEST_STAGE_UPLOAD_COMPLETE
+                ]:
+                    if 'data' not in content:
+                        return error_response(f"'data' field must be present where stage={content['stage']}")
+                    data = content['data']
                     try:
-                        if content['status'] == 'begin':
+                        if content['stage'] == settings.HARVEST_STAGE_FILE_METADATA:
                             file.state = FileState.IMPORTING
-                            file.data_generation_date = deserialize_datetime(content['test_date'])
-                            # process metadata under 'begin'
-                            core_metadata = content['core_metadata']
-                            extra_metadata = content['extra_metadata']
+                            file.data_generation_date = deserialize_datetime(data['test_date'])
+                            if 'parser' in data:
+                                file.parser = data['parser']
+
+                            core_metadata = data['core_metadata']
+                            extra_metadata = data['extra_metadata']
                             if 'Machine Type' in core_metadata:
                                 file.inferred_format = core_metadata['Machine Type']
                             if 'Dataset Name' in core_metadata:
                                 file.name = core_metadata['Dataset Name']
-                            if 'num_rows' in core_metadata:
-                                file.num_rows = core_metadata['num_rows']
-                            if 'parser' in content:
-                                file.parser = content['parser']
                             if 'first_sample_no' in core_metadata:
                                 file.first_sample_no = core_metadata['first_sample_no']
                             if 'last_sample_no' in core_metadata:
                                 file.last_sample_no = core_metadata['last_sample_no']
                             if extra_metadata:
                                 file.extra_metadata = extra_metadata
-
-                        elif content['status'] == 'complete':
-                            if file.state == FileState.IMPORTING:
-                                file.state = FileState.IMPORTED
+                        elif content['stage'] == settings.HARVEST_STAGE_COLUMN_METADATA:
+                            if not isinstance(data, dict):
+                                return error_response("Column metadata must be a dictionary")
+                            for column in data.values():
+                                if column.get('column_id') is not None:
+                                    data_column, _ = DataColumn.objects.get_or_create(
+                                        file=file,
+                                        id=column['column_id']
+                                    )
+                                else:
+                                    data_column = DataColumn.objects.create(file=file)
+                                if column.get('unit_id') is not None:
+                                    data_column.unit = DataUnit.objects.get(unit_id=column.get('unit_id'))
+                                elif column.get('unit_symbol') is not None:
+                                    data_column.unit = DataUnit.objects.get_or_create(symbol=column.get('unit_symbol'))[0]
+                                data_column.column_name = column.get('column_name')
+                                data_column.data_type = column.get('data_type')
+                                data_column.save()
+                        elif content['stage'] == settings.HARVEST_STAGE_GET_UPLOAD_URLS:
+                            file.num_rows = data['row_count']
+                            file.num_partitions = data['partition_count']
+                            file.create_upload_urls()
                         else:
-                            time_start = time.time()
-                            for column_data in content['data']:
-                                time_col_start = time.time()
-                                logger.warning(f"Column {column_data.get('column_name', column_data.get('column_id'))}")
-                                try:
-                                    data_type = column_data['data_type']
-                                except KeyError:
-                                    return error_response(f"Could not find sample data for column {column_data}")
-                                try:
-                                    column_type = DataColumnType.objects.get(id=column_data['column_id'])
-                                    column, _ = DataColumn.objects.get_or_create(
-                                        name_in_file=column_type.name,
-                                        data_type=data_type,
-                                        type=column_type,
-                                        file=file
-                                    )
-                                except KeyError:
-                                    if 'unit_id' in column_data:
-                                        unit = DataUnit.objects.get(id=column_data['unit_id'])
-                                    else:
-                                        unit, _ = DataUnit.objects.get_or_create(
-                                            symbol=column_data['unit_symbol'],
-                                            defaults={'team': monitored_path.team}
-                                        )
-                                    try:
-                                        column_type = DataColumnType.objects.get(unit=unit, is_default=True)
-                                        # # Don't create multiple special columns for the same unit
-                                        # if column_type.override_child_name is not None:
-                                        #     assert not DataColumn.objects.filter(file=file, type=column_type).exists()
-                                    except DataColumnType.DoesNotExist:
-                                        column_type = DataColumnType.objects.create(
-                                            name=column_data['column_name'],
-                                            unit=unit,
-                                            team=monitored_path.team
-                                        )
-                                    column, _ = DataColumn.objects.get_or_create(
-                                        name_in_file=column_data['column_name'],
-                                        data_type=data_type,
-                                        type=column_type,
-                                        file=file
-                                    )
+                            # content['stage'] == settings.HARVEST_STAGE_UPLOAD_COMPLETE
+                            errors = data.get('errors', [])
+                            for e in errors:
+                                HarvestError.objects.create(harvester=harvester, file=file, error=e)
 
-                                time_ts_prep = time.time()
-                                # get timeseries handler
-                                try:
-                                    handler = get_timeseries_handler_by_type(column.data_type)
-                                except UnsupportedTimeseriesDataTypeError:
-                                    return error_response(
-                                        f'Unsupported variable type {column.data_type} in column {column.name}'
-                                    )
-                                try:
-                                    # insert values
-                                    timeseries, _ = handler.objects.get_or_create(column=column)
-                                    data = timeseries.values if timeseries.values is not None else []
-                                    data = [*data, *column_data["values"]]
-                                    timeseries.values = data
-                                    timeseries.save()
-                                except Exception as e:
-                                    return error_response(f"Error saving column {column_data['column_name']}. {type(e)}: {e.args[0]}")
-                                checkpoint('created timeseries data', time_ts_prep)
-                                checkpoint('column complete', time_col_start)
-
-                            checkpoint('complete', time_start)
                     except BaseException as e:
                         file.state = FileState.IMPORT_FAILED
                         HarvestError.objects.create(harvester=harvester, file=file, error=str(e))
                         file.save()
                         return error_response(f"Error importing data: {e.args}")
-                if content['status'] == 'failed':
+
+                elif content['stage'] == settings.HARVEST_STAGE_COMPLETE:
+                    if file.state == FileState.IMPORTING:
+                        file.state = FileState.IMPORTED
+                elif content['stage'] == settings.HARVEST_STAGE_FAILED:
                     file.state = FileState.IMPORT_FAILED
 
                 file.save()
 
                 return Response(ObservedFileSerializer(file, context={
                     'request': self.request,
-                    'with_upload_info': content['status'] == 'begin'
+                    'with_upload_info': content['stage'] == settings.HARVEST_STAGE_FILE_METADATA
                 }).data)
             else:
                 return error_response('Unrecognised task')
-        else:
-            return error_response('Unrecognised status')
 
 
 @extend_schema_view(
@@ -964,9 +946,6 @@ class ObservedFileViewSet(viewsets.ModelViewSet):
             self.check_object_permissions(self.request, file)
         except ObservedFile.DoesNotExist:
             return error_response('Requested file not found')
-        TimeseriesDataFloat.objects.filter(column__file=file).delete()
-        TimeseriesDataInt.objects.filter(column__file=file).delete()
-        TimeseriesDataStr.objects.filter(column__file=file).delete()
         file.state = FileState.RETRY_IMPORT
         file.save()
         return Response(self.get_serializer(file, context={'request': request}).data)
@@ -1564,19 +1543,6 @@ Searchable fields:
 - dataset__name
 - type__name (Column Type name)
         """
-    ),
-    values=extend_schema(
-        summary="View Column data as newline-separated stream of values",
-        description="""
-View the TimeseriesData contents of the Column.
-
-Data are presented as a stream of values separated by newlines.
-
-Can be filtered with querystring parameters `min` and `max`, and `mod` (modulo) by specifying a sample number.
-        """,
-        responses={
-            (200, 'application/octet-stream'): OpenApiTypes.BINARY,
-        }
     )
 )
 class DataColumnViewSet(viewsets.ModelViewSet):
@@ -1591,71 +1557,45 @@ class DataColumnViewSet(viewsets.ModelViewSet):
     queryset = DataColumn.objects.all().order_by('-file__uuid', '-id')
     http_method_names = ['get', 'patch', 'options']
 
-    @action(methods=['GET'], detail=True)
-    def values(self, request, pk: int = None):
-        """
-        Fetch the data for this column in an 'observations' dictionary of record_id: observed_value pairs.
-        """
-        column = get_object_or_404(DataColumn, id=pk)
-        self.check_object_permissions(self.request, column)
-        handlers = [TimeseriesDataFloat, TimeseriesDataInt, TimeseriesDataStr]
-        for handler in handlers:
-            if handler.objects.filter(column=column).exists():
-                values = handler.objects.get(column=column).values
-                # Handle querystring parameters
-                if 'min' in request.query_params:
-                    values = values[int(request.query_params['min']):]
-                if 'max' in request.query_params:
-                    values = values[:int(request.query_params['max'])]
-                if 'mod' in request.query_params:
-                    values = values[::int(request.query_params['mod'])]
 
-                def stream():
-                    for v in values:
-                        yield v
-                        yield '\n'
-                return StreamingHttpResponse(stream(), content_type='application/octet-stream')
-        return error_response('No data found for this column.', 404)
-
-
-@extend_schema_view(
-    list=extend_schema(
-        summary="View time-series range labels to which you have access",
-        description="""
-Labels marking blocks of contiguous time series data.
-
-Searchable fields:
-- label
-        """
-    ),
-    retrieve=extend_schema(
-        summary="View a specific label.",
-        description="""
-Labels marking blocks of contiguous time series data.
-        """
-    ),
-    create=extend_schema(
-        summary="Create a label.",
-        description="""
-Create a label with a description.
-        """
-    ),
-    destroy=extend_schema(
-        summary="Delete a label.",
-        description="""
-RangeLabels not used in any Dataset may be deleted.
-        """
-    )
-)
-class TimeseriesRangeLabelViewSet(viewsets.ModelViewSet):
-    """
-    TimeseriesRangeLabels mark contiguous observations using start and endpoints.
-    """
-    serializer_class = TimeseriesRangeLabelSerializer
-    queryset = TimeseriesRangeLabel.objects.all().order_by('id')
-    filterset_fields = ['label', 'info']
-    search_fields = ['@label']
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+# @extend_schema_view(
+#     list=extend_schema(
+#         summary="View time-series range labels to which you have access",
+#         description="""
+# Labels marking blocks of contiguous time series data.
+#
+# Searchable fields:
+# - label
+#         """
+#     ),
+#     retrieve=extend_schema(
+#         summary="View a specific label.",
+#         description="""
+# Labels marking blocks of contiguous time series data.
+#         """
+#     ),
+#     create=extend_schema(
+#         summary="Create a label.",
+#         description="""
+# Create a label with a description.
+#         """
+#     ),
+#     destroy=extend_schema(
+#         summary="Delete a label.",
+#         description="""
+# RangeLabels not used in any Dataset may be deleted.
+#         """
+#     )
+# )
+# class TimeseriesRangeLabelViewSet(viewsets.ModelViewSet):
+#     """
+#     TimeseriesRangeLabels mark contiguous observations using start and endpoints.
+#     """
+#     serializer_class = TimeseriesRangeLabelSerializer
+#     queryset = TimeseriesRangeLabel.objects.all().order_by('id')
+#     filterset_fields = ['label', 'info']
+#     search_fields = ['@label']
+#     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
 
 @extend_schema_view(
@@ -1865,3 +1805,34 @@ class ArbitraryFileViewSet(viewsets.ModelViewSet):
         if self.action is not None and self.action == 'create':
             return ArbitraryFileCreateSerializer
         return ArbitraryFileSerializer
+
+
+if settings.LOCAL_DATA_STORAGE:
+    @extend_schema(
+        request=inline_serializer('UploadedFile', {
+            'auth_key': serializers.CharField(help_text="The auth_key provided by the presigned URL"),
+            'file': serializers.FileField(help_text="The file to upload")
+        }),
+        responses={204: inline_serializer('UploadedFileConfirmation', {})}
+    )
+    @api_view(('POST',))
+    @renderer_classes((JSONRenderer,))
+    @parser_classes((MultiPartParser, FormParser,))
+    def upload_file(request):
+        """
+        Upload a file to the local storage by submitting the file along with its auth_key.
+        """
+        auth_key = request.data.get('auth_key', None)
+        if auth_key is None:
+            return error_response("No auth_key provided")
+        try:
+            file = PresignedDataFile.objects.get(auth_key=auth_key)
+        except PresignedDataFile.DoesNotExist:
+            return error_response("Invalid auth_key")
+        if file.file:
+            return error_response("File already uploaded")
+        if file.created < timezone.now() - datetime.timedelta(seconds=settings.DATA_STORAGE_UPLOAD_URL_EXPIRY_S):
+            return error_response("Presigned URL expired")
+        file.file = request.FILES.get('file')
+        file.save()
+        return Response({})

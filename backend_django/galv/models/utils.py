@@ -9,7 +9,7 @@ import json
 from django_json_field_schema_validator.validators import JSONFieldSchemaValidator
 from django.db import models
 
-with open("galv/schemas/typedObjectStrict.json") as f:
+with open(f"{os.path.dirname(__file__)}/../schemas/typedObjectStrict.json") as f:
     TYPED_OBJECT_SCHEMA = json.load(f)
 
 LD_SOURCE_MAP = {
