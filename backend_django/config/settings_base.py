@@ -204,7 +204,7 @@ DATAFILES_LOCATION = "data"
 if os.environ.get("AWS_SECRET_ACCESS_KEY") is not None:
     data_storage = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
-        "LOCATION": "/data",
+        "LOCATION": f"/{DATAFILES_LOCATION}",
     } if LOCAL_DATA_STORAGE else {
         "BACKEND": "galv.storages.DataStorage"
     }
@@ -218,19 +218,23 @@ if os.environ.get("AWS_SECRET_ACCESS_KEY") is not None:
     STATICFILES_DIRS = [
         f"/{STATICFILES_LOCATION}",
     ]
+    DATA_ROOT = f"NOT_IN_USE"
+    DATA_URL = f"NOT_IN_USE"
 else:
     if AWS_S3_REGION_NAME or AWS_STORAGE_BUCKET_NAME or AWS_DEFAULT_ACL:
         print(os.system('env'))
         raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")
     STORAGES = {
-        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": "/media"},
-        "data": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": "/data"},
-        "staticfiles": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": "/static"},
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": f"/{MEDIAFILES_LOCATION}"},
+        "data": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": f"/{DATAFILES_LOCATION}"},
+        "staticfiles": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": f"/{STATICFILES_LOCATION}"},
     }
     STATIC_ROOT = f"/{STATICFILES_LOCATION}"
     STATIC_URL = f"/{STATICFILES_LOCATION}/"
     MEDIA_ROOT = f"/{MEDIAFILES_LOCATION}"
     MEDIA_URL = f"/{MEDIAFILES_LOCATION}/"
+    DATA_ROOT = f"/{DATAFILES_LOCATION}"
+    DATA_URL = f"/{DATAFILES_LOCATION}/"
 
 # These definitions should be kept in sync with the definitions in the harvester program
 HARVESTER_TASK_FILE_SIZE = 'file_size'

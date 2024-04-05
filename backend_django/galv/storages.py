@@ -4,13 +4,16 @@
 
 # adapted from https://backendengineer.io/store-django-static-and-media-files-in-aws-s3/
 from django.conf import settings
+from django.core.files.storage import FileSystemStorage
 from storages.backends.s3boto3 import S3Boto3Storage
 from storages.utils import clean_name
+
 
 class StaticStorage(S3Boto3Storage):
     location = settings.STATICFILES_LOCATION
     default_acl = "public-read"
     querystring_auth = False
+
 
 class MediaStorage(S3Boto3Storage):
     location = settings.MEDIAFILES_LOCATION
@@ -29,9 +32,19 @@ class MediaStorage(S3Boto3Storage):
             if set_querystring_auth:
                 self.querystring_auth = acl != "public-read"
 
+
 class DataStorage(S3Boto3Storage):
     location = settings.DATAFILES_LOCATION
     default_acl = "private"
     querystring_auth = True
     custom_domain = False
     file_overwrite = False
+
+
+class LocalDataStorage(FileSystemStorage):
+    def __init__(self, location=None, base_url=None, file_permissions_mode=None, directory_permissions_mode=None):
+        location = location or settings.DATA_ROOT
+        base_url = base_url or settings.DATA_URL
+        file_permissions_mode = file_permissions_mode or 0o700
+        directory_permissions_mode = directory_permissions_mode or 0o700
+        super().__init__(location, base_url, file_permissions_mode, directory_permissions_mode)

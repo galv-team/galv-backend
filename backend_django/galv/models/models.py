@@ -23,13 +23,11 @@ from rest_framework.reverse import reverse
 
 from .choices import FileState, UserLevel, ValidationStatus
 
-#from dry_rest_permissions.generics import allow_staff_or_superuser
-
 from .utils import CustomPropertiesModel, JSONModel, LDSources, render_pybamm_schedule, UUIDModel, \
     combine_rdf_props, TimestampedModel
 from .autocomplete_entries import *
 from ..fields import DynamicStorageFileField
-
+from ..storages import LocalDataStorage
 
 ALLOWED_USER_LEVELS_DELETE = [UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]]
 ALLOWED_USER_LEVELS_EDIT_PATH = [UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]]
@@ -1338,7 +1336,7 @@ class PresignedDataFile(TimestampedModel):
     """
     A file that has been uploaded to the server while running with LOCAL_DATA_STORAGE=True.
     """
-    file = models.FileField(upload_to=settings.DATAFILES_LOCATION, null=True, blank=True)
+    file = models.FileField(storage=LocalDataStorage, null=True, blank=True)
     auth_key = models.TextField(unique=True, null=True, blank=True)
     observed_file = models.ForeignKey(to=ObservedFile, on_delete=models.CASCADE, null=True, blank=True)
 

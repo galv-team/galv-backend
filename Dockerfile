@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     build-essential libssl-dev libffi-dev python3-dev python-dev \
     libpq-dev \
     gcc \
+    nginx \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /code
@@ -32,7 +33,11 @@ RUN set -ex && \
 COPY . /code
 RUN chmod +x /code/*.sh
 
+# Set up nginx proxy server to serve static/data files if needed, and to serve the Django app
+RUN ln -f /code/nginx-confs/* /etc/nginx/conf.d
+
+# Nginx should be set up to listen on 8000
 EXPOSE 8000
 
 WORKDIR /code/backend_django
-CMD ["bash", "-c", "(/code/setup_db.sh); (/code/validation_monitor.sh &); python manage.py collectstatic --noinput; gunicorn --bind 0.0.0.0:8000 --workers 2 config.wsgi"]
+CMD ["bash", "-c", "../server.sh"]

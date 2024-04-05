@@ -9,7 +9,7 @@ import knox.auth
 import os
 
 from django.conf import settings
-from django.http import StreamingHttpResponse
+from django.http import StreamingHttpResponse, HttpResponse
 from django.urls import NoReverseMatch
 from drf_spectacular.types import OpenApiTypes
 from dry_rest_permissions.generics import DRYPermissions
@@ -1836,3 +1836,19 @@ if settings.LOCAL_DATA_STORAGE:
         file.file = request.FILES.get('file')
         file.save()
         return Response({})
+
+    @api_view(('GET',))
+    def view_file(request, pk):
+        """
+        View a file stored in the local storage.
+        """
+        try:
+            file = PresignedDataFile.objects.get(uuid=pk)
+        except PresignedDataFile.DoesNotExist:
+            return error_response("File not found")
+        if file.file:
+            response = HttpResponse()
+            response["Content-Disposition"] = f"attachment; filename={file.file.pretty_name}"
+            response['X-Accel-Redirect'] = f"/protected/{file.file.name}"
+            return response
+        return error_response("File not uploaded")
