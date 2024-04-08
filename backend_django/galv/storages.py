@@ -45,6 +45,6 @@ class LocalDataStorage(FileSystemStorage):
     def __init__(self, location=None, base_url=None, file_permissions_mode=None, directory_permissions_mode=None):
         location = location or settings.DATA_ROOT
         base_url = base_url or settings.DATA_URL
-        file_permissions_mode = file_permissions_mode or 0o700
-        directory_permissions_mode = directory_permissions_mode or 0o700
+        file_permissions_mode = file_permissions_mode or 0o744  # any user in container can read -- potentially dangerous
+        directory_permissions_mode = directory_permissions_mode or 0o744
         super().__init__(location, base_url, file_permissions_mode, directory_permissions_mode)

@@ -201,13 +201,28 @@ STATICFILES_LOCATION = "static"
 MEDIAFILES_LOCATION = "media"
 DATAFILES_LOCATION = "data"
 
-if os.environ.get("AWS_SECRET_ACCESS_KEY") is not None:
+S3_ENABLED = AWS_S3_REGION_NAME and AWS_STORAGE_BUCKET_NAME and AWS_DEFAULT_ACL
+if not S3_ENABLED and not os.environ.get("AWS_SECRET_ACCESS_KEY"):
+    print(os.system('env'))
+    raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")
+
+# If LOCAL_DATA_STORAGE is set, data files are stored in the local filesystem
+# Otherwise, they're stored in S3 if S3 is enabled
+if LOCAL_DATA_STORAGE or not S3_ENABLED:
     data_storage = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
         "LOCATION": f"/{DATAFILES_LOCATION}",
-    } if LOCAL_DATA_STORAGE else {
+    }
+    DATA_ROOT = f"/{DATAFILES_LOCATION}"
+    DATA_URL = f"/{DATAFILES_LOCATION}/"
+else:
+    data_storage = {
         "BACKEND": "galv.storages.DataStorage"
     }
+    DATA_ROOT = f"NOT_IN_USE"
+    DATA_URL = f"NOT_IN_USE"
+
+if S3_ENABLED:
     STORAGES = {
         "default": {"BACKEND": "galv.storages.MediaStorage"},  # for media
         "data": data_storage,  # for data
@@ -218,24 +233,18 @@ if os.environ.get("AWS_SECRET_ACCESS_KEY") is not None:
     STATICFILES_DIRS = [
         f"/{STATICFILES_LOCATION}",
     ]
-    DATA_ROOT = f"NOT_IN_USE"
-    DATA_URL = f"NOT_IN_USE"
 else:
-    if AWS_S3_REGION_NAME or AWS_STORAGE_BUCKET_NAME or AWS_DEFAULT_ACL:
-        print(os.system('env'))
-        raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")
     STORAGES = {
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": f"/{MEDIAFILES_LOCATION}"},
-        "data": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": f"/{DATAFILES_LOCATION}"},
+        "data": data_storage,
         "staticfiles": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": f"/{STATICFILES_LOCATION}"},
     }
     STATIC_ROOT = f"/{STATICFILES_LOCATION}"
     STATIC_URL = f"/{STATICFILES_LOCATION}/"
     MEDIA_ROOT = f"/{MEDIAFILES_LOCATION}"
     MEDIA_URL = f"/{MEDIAFILES_LOCATION}/"
-    DATA_ROOT = f"/{DATAFILES_LOCATION}"
-    DATA_URL = f"/{DATAFILES_LOCATION}/"
 
+# Harvester report constants
 # These definitions should be kept in sync with the definitions in the harvester program
 HARVESTER_TASK_FILE_SIZE = 'file_size'
 HARVESTER_TASK_IMPORT = 'import'

@@ -20,7 +20,9 @@ services:
       - ./.dev/.static_files:/static
       - ./backend_django:/code/backend_django
       - ./.dev/spec:/spec
-      - ./.dev/data:/data
+      # datafiles should be mounted to DATA_ROOT in the container
+      # only matters when LOCAL_DATA_STORAGE is enabled
+      - ./.dev/datafiles:/data
     environment:
       VIRTUAL_HOST: "localhost"
       FRONTEND_VIRTUAL_HOST: "http://${VIRTUAL_HOST_ROOT},https://${VIRTUAL_HOST_ROOT}"
@@ -30,18 +32,27 @@ services:
       DJANGO_AWS_STORAGE_BUCKET_NAME: "galv"
       DJANGO_AWS_S3_REGION_NAME: "eu-west-2"
       # Test local data storage mode by enabling DJANGO_LOCAL_DATA_STORAGE (will override AWS settings for data files)
-      # DJANGO_LOCAL_DATA_STORAGE: "True"
+      DJANGO_LOCAL_DATA_STORAGE: "True"
     env_file:
       - ./.env
       - ./.env.secret
     restart: unless-stopped
     ports:
-      - "8001:8000"
+      - "8000:8000"
     # Replace the gnuicorn server with the Django development runserver
-#    command:
-#      - "bash"
-#      - "-c"
-#      - "(/code/setup_db.sh); (/code/validation_monitor.sh &); python manage.py collectstatic --noinput; python manage.py runserver 0.0.0.0:8000"
+    command: "python manage.py runserver 0.0.0.0:8000"
+
+  nginx:
+    image: nginx:1.21.3
+    volumes:
+      - ./nginx-confs:/etc/nginx/conf.d
+      - ./.dev/.static_files:/static
+      - ./.dev/datafiles:/data
+    ports:
+      - "8001:80"
+    depends_on:
+      - app
+    restart: unless-stopped
 
   mailhog:
     image: mailhog/mailhog

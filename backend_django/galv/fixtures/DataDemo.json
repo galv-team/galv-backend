@@ -31,7 +31,12 @@
       "num_rows": 165649,
       "num_partitions": 1,
       "storage_urls": [
-        "https://example.com/storage/0d9f87b4-334d-4676-aca0-057400d7ac15/1"
+        {
+          "url": "https://example.com/storage/0d9f87b4-334d-4676-aca0-057400d7ac15/1",
+          "fields": {
+            "auth_key": "abc"
+          }
+        }
       ],
       "first_sample_no": 1,
       "last_sample_no": 6,
@@ -72,7 +77,12 @@
       "num_rows": 55809,
       "num_partitions": 1,
       "storage_urls": [
-        "https://example.com/storage/301bd545-c917-407c-a51c-e4ec347c9daf/1"
+        {
+          "url": "https://example.com/storage/301bd545-c917-407c-a51c-e4ec347c9daf/1",
+          "fields": {
+            "auth_key": "abc"
+          }
+        }
       ],
       "first_sample_no": 0,
       "last_sample_no": 5,
@@ -146,7 +156,12 @@
       "num_rows": 401993,
       "num_partitions": 1,
       "storage_urls": [
-        "https://example.com/storage/60bad6ef-2a11-4159-bba8-6fc37ab55e65/1"
+        {
+          "url": "https://example.com/storage/60bad6ef-2a11-4159-bba8-6fc37ab55e65/1",
+          "fields": {
+            "auth_key": "abc"
+          }
+        }
       ],
       "first_sample_no": 1,
       "last_sample_no": 6,
@@ -436,7 +451,12 @@
       "num_rows": 95052,
       "num_partitions": 1,
       "storage_urls": [
-        "https://example.com/storage/6c27d223-8619-47be-959f-09323741a7f4/1"
+        {
+          "url": "https://example.com/storage/6c27d223-8619-47be-959f-09323741a7f4/1",
+          "fields": {
+            "auth_key": "abc"
+          }
+        }
       ],
       "first_sample_no": 0,
       "last_sample_no": 5,
@@ -510,7 +530,12 @@
       "num_rows": 8938,
       "num_partitions": 1,
       "storage_urls": [
-        "https://example.com/storage/fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1/1"
+        {
+          "url": "https://example.com/storage/fe1651ad-4395-4a39-b3a8-d8a02e4ad0c1/1",
+          "fields": {
+            "auth_key": "abc"
+          }
+        }
       ],
       "first_sample_no": 0,
       "last_sample_no": 5,
@@ -584,7 +609,12 @@
       "num_rows": null,
       "num_partitions": 1,
       "storage_urls": [
-        "https://example.com/storage/e67cd964-951b-48eb-9b7c-f7166655923c/1"
+        {
+          "url": "https://example.com/storage/e67cd964-951b-48eb-9b7c-f7166655923c/1",
+          "fields": {
+            "auth_key": "abc"
+          }
+        }
       ],
       "first_sample_no": null,
       "last_sample_no": null,

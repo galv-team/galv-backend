@@ -6,6 +6,7 @@ import re
 
 import jsonschema
 from drf_spectacular.types import OpenApiTypes
+from rest_framework.generics import get_object_or_404
 from rest_framework.reverse import reverse
 from drf_spectacular.utils import extend_schema_field, extend_schema_serializer, OpenApiExample
 from rest_framework.exceptions import ValidationError
@@ -26,7 +27,7 @@ from ..models import Harvester, \
     EquipmentManufacturers, EquipmentModels, EquipmentFamily, Schedule, ScheduleIdentifiers, CyclerTest, \
     render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, user_labs, \
     user_teams, SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
-    ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile
+    ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, PresignedDataFile
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
 from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
@@ -1273,7 +1274,7 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
     )
     columns = TruncatedHyperlinkedRelatedIdField(
         'DataColumnSerializer',
-        ['name', 'name_in_file', 'type', 'values'],
+        ['name', 'name_in_file', 'type'],
         view_name='datacolumn-detail',
         read_only=True,
         many=True,
@@ -1308,7 +1309,29 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
         return instance.column_errors()
 
     def get_storage_urls(self, instance) -> list:
-        return [s['url'] for s in instance.storage_urls]
+        storage_urls = []
+        for storage in instance.storage_urls:
+            if storage.get('url') is not None:
+                storage_urls.append(storage)  # S3 links already have url and fields keys
+            else:
+                presigned_data_file = get_object_or_404(
+                    PresignedDataFile,
+                    pk=storage.get('presigned_data_file'),
+                    observed_file=instance
+                )
+                storage_urls.append({
+                    'url': reverse(
+                        'datafiles',
+                        (presigned_data_file.pk,),
+                        request=self.context.get('request')
+                    ),
+                    'fields': {
+                        "auth_key": presigned_data_file.auth_key
+                    }
+                })
+        if self.context.get('with_upload_info'):
+            return storage_urls
+        return [s.get('url') for s in storage_urls]
 
     class Meta:
         model = ObservedFile

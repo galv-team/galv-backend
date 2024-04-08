@@ -743,6 +743,10 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
         null=True,
         help_text="Number of the last sample in the file"
     )
+    core_metadata = models.JSONField(
+        null=True,
+        help_text="Unparsed core metadata from the harvester"
+    )
     extra_metadata = models.JSONField(
         null=True,
         help_text="Extra metadata from the harvester"
@@ -791,17 +795,18 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
             names.append(c.get_name())
         return [*self.missing_required_columns(), *errors]
 
-    def create_upload_urls(self):
+    def create_upload_urls(self, request):
         if self.num_partitions is None or self.num_partitions == 0:
             raise ValueError("Number of partitions must be set before creating upload URLs")
+        if len(self.storage_urls) > 0:
+            raise RuntimeError("Storage URLs already exist, reset them by settings file state to RETRY_IMPORT first")
         storage_urls = self.storage_urls
         if settings.LOCAL_DATA_STORAGE:
             for i in range(self.num_partitions):
                 presigned = PresignedDataFile.objects.create(observed_file=self)
                 presigned.save()
                 storage_urls.append({
-                    "url": reverse("upload_data"),
-                    "fields": {'auth_key': presigned.auth_key}
+                    "presigned_data_file": presigned.pk
                 })
             self.storage_urls = storage_urls
             return
@@ -1379,4 +1384,4 @@ class PresignedDataFile(TimestampedModel):
         return self.observed_file.has_object_write_permission(request)
 
     def __str__(self):
-        return self.file
+        return f"{self.file.name}"

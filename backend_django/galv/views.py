@@ -17,7 +17,7 @@ from rest_framework.mixins import ListModelMixin
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.renderers import JSONRenderer
 from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT
 
 from .serializers import HarvesterSerializer, \
     HarvesterCreateSerializer, \
@@ -753,15 +753,16 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                             core_metadata = data['core_metadata']
                             extra_metadata = data['extra_metadata']
                             if 'Machine Type' in core_metadata:
-                                file.inferred_format = core_metadata['Machine Type']
+                                file.inferred_format = core_metadata.pop('Machine Type')
                             if 'Dataset Name' in core_metadata:
-                                file.name = core_metadata['Dataset Name']
+                                file.name = core_metadata.pop('Dataset Name')
                             if 'first_sample_no' in core_metadata:
-                                file.first_sample_no = core_metadata['first_sample_no']
+                                file.first_sample_no = core_metadata.pop('first_sample_no')
                             if 'last_sample_no' in core_metadata:
-                                file.last_sample_no = core_metadata['last_sample_no']
+                                file.last_sample_no = core_metadata.pop('last_sample_no')
                             if extra_metadata:
                                 file.extra_metadata = extra_metadata
+                            file.core_metadata = core_metadata
                         elif content['stage'] == settings.HARVEST_STAGE_COLUMN_METADATA:
                             if not isinstance(data, dict):
                                 return error_response("Column metadata must be a dictionary")
@@ -769,12 +770,16 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                                 if column.get('column_id') is not None:
                                     data_column, _ = DataColumn.objects.get_or_create(
                                         file=file,
-                                        id=column['column_id']
+                                        id=column['column_id'],
+                                        defaults={'name_in_file': column.get('column_name')}
                                     )
                                 else:
-                                    data_column = DataColumn.objects.create(file=file)
+                                    data_column, _ = DataColumn.objects.get_or_create(
+                                        file=file,
+                                        name_in_file=column['column_name']
+                                    )
                                 if column.get('unit_id') is not None:
-                                    data_column.unit = DataUnit.objects.get(unit_id=column.get('unit_id'))
+                                    data_column.unit = DataUnit.objects.get(id=column.get('unit_id'))
                                 elif column.get('unit_symbol') is not None:
                                     data_column.unit = DataUnit.objects.get_or_create(symbol=column.get('unit_symbol'))[0]
                                 data_column.column_name = column.get('column_name')
@@ -783,7 +788,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                         elif content['stage'] == settings.HARVEST_STAGE_GET_UPLOAD_URLS:
                             file.num_rows = data['row_count']
                             file.num_partitions = data['partition_count']
-                            file.create_upload_urls()
+                            file.create_upload_urls(request=request)
                         else:
                             # content['stage'] == settings.HARVEST_STAGE_UPLOAD_COMPLETE
                             errors = data.get('errors', [])
@@ -801,12 +806,17 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                         file.state = FileState.IMPORTED
                 elif content['stage'] == settings.HARVEST_STAGE_FAILED:
                     file.state = FileState.IMPORT_FAILED
+                    if 'error' in content:
+                        HarvestError.objects.create(harvester=harvester, file=file, error=content['error'])
 
                 file.save()
 
                 return Response(ObservedFileSerializer(file, context={
                     'request': self.request,
-                    'with_upload_info': content['stage'] == settings.HARVEST_STAGE_FILE_METADATA
+                    'with_upload_info': (
+                            content['stage'] == settings.HARVEST_STAGE_FILE_METADATA or
+                            content['stage'] == settings.HARVEST_STAGE_GET_UPLOAD_URLS
+                    )
                 }).data)
             else:
                 return error_response('Unrecognised task')
@@ -947,7 +957,10 @@ class ObservedFileViewSet(viewsets.ModelViewSet):
         except ObservedFile.DoesNotExist:
             return error_response('Requested file not found')
         file.state = FileState.RETRY_IMPORT
+        file.storage_urls = []
         file.save()
+        for dataset in PresignedDataFile.objects.filter(file=file):
+            dataset.delete()
         return Response(self.get_serializer(file, context={'request': request}).data)
 
 
@@ -1808,6 +1821,22 @@ class ArbitraryFileViewSet(viewsets.ModelViewSet):
 
 
 if settings.LOCAL_DATA_STORAGE:
+
+    def view_datafile(request, pk):
+        """
+        View a file stored in the local storage.
+        """
+        try:
+            file = PresignedDataFile.objects.get(pk=pk)
+        except PresignedDataFile.DoesNotExist:
+            return error_response("File not found")
+        if file.file:
+            response = HttpResponse()
+            response["Content-Disposition"] = f"attachment; filename={file.file.name}"
+            response['X-Accel-Redirect'] = file.file.url
+            return response
+        return error_response("File not uploaded")
+
     @extend_schema(
         request=inline_serializer('UploadedFile', {
             'auth_key': serializers.CharField(help_text="The auth_key provided by the presigned URL"),
@@ -1815,40 +1844,28 @@ if settings.LOCAL_DATA_STORAGE:
         }),
         responses={204: inline_serializer('UploadedFileConfirmation', {})}
     )
-    @api_view(('POST',))
+    @api_view(('POST','GET',))
     @renderer_classes((JSONRenderer,))
     @parser_classes((MultiPartParser, FormParser,))
-    def upload_file(request):
+    def datafiles(request, pk):
         """
         Upload a file to the local storage by submitting the file along with its auth_key.
         """
+        if pk is None:
+            return error_response("No datafile id provided")
+        if request.method == 'GET':
+            return view_datafile(request, pk)
         auth_key = request.data.get('auth_key', None)
         if auth_key is None:
             return error_response("No auth_key provided")
         try:
-            file = PresignedDataFile.objects.get(auth_key=auth_key)
+            file = PresignedDataFile.objects.get(pk=pk, auth_key=auth_key)
         except PresignedDataFile.DoesNotExist:
-            return error_response("Invalid auth_key")
+            return error_response("Could not find datafile with given id and auth_key")
         if file.file:
             return error_response("File already uploaded")
         if file.created < timezone.now() - datetime.timedelta(seconds=settings.DATA_STORAGE_UPLOAD_URL_EXPIRY_S):
             return error_response("Presigned URL expired")
         file.file = request.FILES.get('file')
         file.save()
-        return Response({})
-
-    @api_view(('GET',))
-    def view_file(request, pk):
-        """
-        View a file stored in the local storage.
-        """
-        try:
-            file = PresignedDataFile.objects.get(uuid=pk)
-        except PresignedDataFile.DoesNotExist:
-            return error_response("File not found")
-        if file.file:
-            response = HttpResponse()
-            response["Content-Disposition"] = f"attachment; filename={file.file.pretty_name}"
-            response['X-Accel-Redirect'] = f"/protected/{file.file.name}"
-            return response
-        return error_response("File not uploaded")
+        return Response({}, status=HTTP_204_NO_CONTENT)
