@@ -9,7 +9,7 @@ from django.urls import reverse
 from rest_framework import status
 import logging
 
-from backend_django.config import settings
+from ...config import settings
 from .utils import assert_response_property, GalvTestCase
 from .factories import HarvesterFactory, \
     MonitoredPathFactory
