@@ -610,10 +610,7 @@
       "num_partitions": 1,
       "storage_urls": [
         {
-          "url": "https://example.com/storage/e67cd964-951b-48eb-9b7c-f7166655923c/1",
-          "fields": {
-            "auth_key": "abc"
-          }
+          "presigned_data_file": "1"
         }
       ],
       "first_sample_no": null,
@@ -635,6 +632,17 @@
           "has_data": true
         }
       }
+    }
+  },
+  {
+    "model": "galv.presigneddatafile",
+    "pk": 1,
+    "fields": {
+      "created": "2024-04-08T14:06:47.551Z",
+      "modified": "2024-04-08T14:06:47.815Z",
+      "file": "part.0_gRVgJb6.parquet",
+      "auth_key": "galv_$Qdpfabk=7E-&^=M+WWf!36aJxY^g4vvIH*T^U%dsIq+b!=$cd=RLdX5xb£$",
+      "observed_file": "e67cd964-951b-48eb-9b7c-f7166655923c"
     }
   },
   {

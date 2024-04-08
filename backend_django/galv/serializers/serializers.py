@@ -6,7 +6,6 @@ import re
 
 import jsonschema
 from drf_spectacular.types import OpenApiTypes
-from rest_framework.generics import get_object_or_404
 from rest_framework.reverse import reverse
 from drf_spectacular.utils import extend_schema_field, extend_schema_serializer, OpenApiExample
 from rest_framework.exceptions import ValidationError
@@ -1314,11 +1313,16 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
             if storage.get('url') is not None:
                 storage_urls.append(storage)  # S3 links already have url and fields keys
             else:
-                presigned_data_file = get_object_or_404(
-                    PresignedDataFile,
-                    pk=storage.get('presigned_data_file'),
-                    observed_file=instance
-                )
+                try:
+                    presigned_data_file = PresignedDataFile.objects.get(
+                        pk=storage.get('presigned_data_file'),
+                        observed_file=instance
+                    )
+                except PresignedDataFile.DoesNotExist:
+                    storage_urls.append({
+                        'error': 'Error: Reference to non-existent Datafile'
+                    })
+                    continue
                 storage_urls.append({
                     'url': reverse(
                         'datafiles',
@@ -1331,7 +1335,7 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
                 })
         if self.context.get('with_upload_info'):
             return storage_urls
-        return [s.get('url') for s in storage_urls]
+        return [s.get('url', s.get('error')) for s in storage_urls]
 
     class Meta:
         model = ObservedFile
