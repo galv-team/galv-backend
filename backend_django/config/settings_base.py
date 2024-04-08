@@ -202,7 +202,7 @@ MEDIAFILES_LOCATION = "media"
 DATAFILES_LOCATION = "data"
 
 S3_ENABLED = AWS_S3_REGION_NAME and AWS_STORAGE_BUCKET_NAME and AWS_DEFAULT_ACL
-if not S3_ENABLED and not os.environ.get("AWS_SECRET_ACCESS_KEY"):
+if S3_ENABLED and not os.environ.get("AWS_SECRET_ACCESS_KEY"):
     print(os.system('env'))
     raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")
 
