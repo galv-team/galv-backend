@@ -228,11 +228,19 @@ class Lab(TimestampedModel):
     s3_location = models.TextField(null=True, blank=True, help_text="Directory within the S3 bucket to store files in")
     s3_access_key = models.TextField(null=True, blank=True, help_text="Access key for the S3 bucket")
     s3_secret_key = models.TextField(null=True, blank=True, help_text="Secret key for the S3 bucket")
-    s3_region = models.TextField(null=True, blank=True, help_text="Region for the S3 bucket.")
+    s3_region = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Region for the S3 bucket. Only one of custom domain or region should be set."
+    )
     s3_custom_domain = models.TextField(
         null=True,
         blank=True,
-        help_text="Custom domain for the S3 bucket. Probably region-name.s3.amazonaws.com"
+        help_text=(
+            "Custom domain for the S3 bucket. "
+            "Probably region-name.s3.amazonaws.com. "
+            "Only one of custom domain or region should be set."
+        )
     )
 
     admin_group = models.OneToOneField(
@@ -282,39 +290,65 @@ class Lab(TimestampedModel):
         super(Lab, self).delete(using, keep_parents)
 
     @property
-    def s3_enabled(self):
-        return (
-                self.s3_bucket_name is not None and
-                self.s3_access_key is not None and
-                self.s3_secret_key is not None and
-                (self.s3_region is not None or self.s3_custom_domain is not None)
-        )
+    def s3_configuration_status(self):
+        s3_settings = [
+            's3_bucket_name',
+            's3_access_key',
+            's3_secret_key',
+            's3_domain'
+        ]
+        enabled = any([getattr(self, s) is not None for s in s3_settings])
+        missing = []
+        for s in s3_settings:
+            if getattr(self, s) is None:
+                missing.append(s)
+        ok = len(missing) == 0
+        error = None
+        if ok:
+            try:
+                DataStorage(
+                    access_key=self.s3_access_key,
+                    secret_key=self.s3_secret_key,
+                    bucket_name=self.s3_bucket_name,
+                    location=self.s3_location,
+                    custom_domain=self.s3_domain
+                )
+            except Exception as e:
+                ok = False
+                error = e
+        return {
+            'enabled': enabled,
+            'ok': ok,
+            'missing_properties': missing,
+            'initialization_error': error
+        }
+
+    @property
+    def s3_domain(self):
+        if self.s3_custom_domain:
+            return self.s3_custom_domain
+        if self.s3_region:
+            return f"{self.s3_region}.s3.amazonaws.com"
+        return None
 
     def get_storage(self, instance):
         if instance.storage_class_name == "LocalDataStorage":
             return LocalDataStorage()
         try:
-            s3_settings = [
-                self.s3_bucket_name, self.s3_access_key, self.s3_secret_key, self.s3_region, self.s3_custom_domain
-            ]
-            if not any(s3_settings):
+            s3_status = self.s3_configuration_status
+            if not s3_status.get('enabled'):
                 instance.storage_class_name = "LocalDataStorage"
                 if not settings.ALLOW_LOCAL_DATA_STORAGE:
                     raise S3NotConfiguredError("Local data storage is disabled")
                 return LocalDataStorage()
-            elif not self.s3_enabled:
-                raise S3IncorrectlyConfiguredError((
-                    "S3 settings are incomplete. "
-                    "Please provide: s3_bucket_name, s3access_key, s3_secret_key, "
-                    "and either s3_region or s3_custom_domain. "
-                    "You may also provide s3_location."
-                ))
+            elif not s3_status.get('ok'):
+                raise S3IncorrectlyConfiguredError(f"Missing properties: {s3_status.get('missing_properties')}")
             storage = DataStorage(
                 access_key=self.s3_access_key,
                 secret_key=self.s3_secret_key,
                 bucket_name=self.s3_bucket_name,
                 location=self.s3_location,
-                custom_domain=self.s3_custom_domain if self.s3_custom_domain else f"{self.s3_region}.s3.amazonaws.com"
+                custom_domain=self.s3_domain
             )
             instance.storage_class_name = storage.__class__.__name__
             return storage

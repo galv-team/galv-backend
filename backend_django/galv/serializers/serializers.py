@@ -150,7 +150,9 @@ class TransparentGroupSerializer(serializers.HyperlinkedModelSerializer, Permiss
         return ret['users']
 
     def to_internal_value(self, data):
-        return super().to_internal_value({'users': data})
+        if isinstance(data, list):
+            return super().to_internal_value({'users': data})
+        return super().to_internal_value(data)
 
     class Meta:
         model = GroupProxy
@@ -317,6 +319,15 @@ class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             raise ValidationError("You may only create Teams in your own lab(s)")
         return value
 
+    def create(self, validated_data):
+        admin_group = validated_data.pop('admin_group')
+        member_group = validated_data.pop('member_group')
+        team = super().create(validated_data)
+        TransparentGroupSerializer().update(team.admin_group, admin_group)
+        TransparentGroupSerializer().update(team.member_group, member_group)
+        team.save()
+        return team
+
     def update(self, instance, validated_data):
         """
         Pass group updates to the group serializer
@@ -391,6 +402,13 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         help_text="Teams in this Lab"
     )
 
+    def create(self, validated_data):
+        admin_group = validated_data.pop('admin_group')
+        lab = super().create(validated_data)
+        TransparentGroupSerializer().update(lab.admin_group, admin_group)
+        lab.save()
+        return lab
+
     def update(self, instance, validated_data):
         """
         Pass group updates to the group serializer
@@ -400,10 +418,38 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             TransparentGroupSerializer().update(instance.admin_group, admin_group)
         return super().update(instance, validated_data)
 
+    def validate_s3_access_key(self, value):
+        if self.instance is not None and value is None:
+            return self.instance.s3_access_key
+        return value
+
+    def validate_s3_secret_key(self, value):
+        if self.instance is not None and value is None:
+            return self.instance.s3_secret_key
+        return value
+
     class Meta:
         model = Lab
-        fields = ['url', 'id', 'name', 'description', 'admin_group', 'harvesters', 's3_enabled', 'teams', 'permissions']
-        read_only_fields = ['url', 'id', 'teams', 'admin_group', 'harvesters', 's3_enabled', 'permissions']
+        fields = [
+            'url', 'id',
+            'name', 'description',
+            'admin_group',
+            'harvesters',
+            's3_bucket_name',
+            's3_location',
+            's3_access_key',
+            's3_secret_key',
+            's3_region',
+            's3_custom_domain',
+            's3_configuration_status',
+            'teams',
+            'permissions'
+        ]
+        read_only_fields = ['url', 'id', 'teams', 'harvesters', 's3_configuration_status', 'permissions']
+        extra_kwargs = augment_extra_kwargs({
+            's3_access_key': {'write_only': True},
+            's3_secret_key': {'write_only': True}
+        })
 
 class WithTeamMixin(serializers.Serializer):
     team = TruncatedHyperlinkedRelatedIdField(
