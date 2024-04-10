@@ -21,7 +21,7 @@ from ..models import EquipmentFamily, Harvester, \
     Equipment, ScheduleFamily, Schedule, CyclerTest, \
     ScheduleIdentifiers, CellFormFactors, CellChemistries, CellManufacturers, \
     CellModels, EquipmentManufacturers, EquipmentModels, EquipmentTypes, Experiment, \
-    ValidationSchema, GroupProxy, UserProxy, Lab, Team, AutoCompleteEntry, DataUnit, DataColumnType
+    ValidationSchema, GroupProxy, UserProxy, Lab, Team, AutoCompleteEntry, DataUnit, DataColumnType, ParquetPartition
 from ..models.choices import UserLevel
 
 fake = faker.Faker(django.conf.global_settings.LANGUAGE_CODE)
@@ -193,6 +193,14 @@ class ObservedFileFactory(factory.django.DjangoModelFactory):
     path_root = factory.Faker('file_path', depth=1, absolute=True)
     path = factory.LazyAttribute(path_with_root)
     harvester = factory.SubFactory(HarvesterFactory)
+
+
+class ParquetPartitionFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = ParquetPartition
+        django_get_or_create = ('observed_file', 'partition_number')
+
+    observed_file = factory.SubFactory(ObservedFileFactory)
 
 
 class CellFamilyFactory(factory.django.DjangoModelFactory):

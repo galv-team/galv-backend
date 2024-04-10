@@ -184,6 +184,8 @@ DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_DEFAULT_FROM_EMAIL", "admin@galv")
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 # Amazon Web Services S3 storage settings
+# These apply for static files and media files only.
+# Data files may be uploaded to S3, but Labs have to configure their own S3 access settings.
 AWS_S3_REGION_NAME = os.environ.get("DJANGO_AWS_S3_REGION_NAME")
 AWS_STORAGE_BUCKET_NAME = os.environ.get("DJANGO_AWS_STORAGE_BUCKET_NAME")
 AWS_DEFAULT_ACL = os.environ.get("DJANGO_AWS_DEFAULT_ACL")
@@ -191,9 +193,11 @@ AWS_S3_OBJECT_PARAMETERS = {
     "CacheControl": "max-age=2592000",
 }
 AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
-LOCAL_DATA_STORAGE = os.environ.get("DJANGO_LOCAL_DATA_STORAGE")
 DATA_STORAGE_UPLOAD_URL_EXPIRY_S = int(os.environ.get("DJANGO_DATA_STORAGE_UPLOAD_URL_EXPIRY_S", 60 * 60))  # 1 hour
 
+# If ALLOW_LOCAL_DATA_STORAGE is set, data files may be stored locally.
+# Labs can still define their own S3 storage settings to save to the S3 cloud.
+ALLOW_LOCAL_DATA_STORAGE = os.environ.get("DJANGO_ALLOW_LOCAL_DATA_STORAGE")
 
 # Static, media, and data files are served from S3 if S3 is configured
 # Otherwise, they are served from the local filesystem
@@ -206,26 +210,9 @@ if S3_ENABLED and not os.environ.get("AWS_SECRET_ACCESS_KEY"):
     print(os.system('env'))
     raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")
 
-# If LOCAL_DATA_STORAGE is set, data files are stored in the local filesystem
-# Otherwise, they're stored in S3 if S3 is enabled
-if LOCAL_DATA_STORAGE or not S3_ENABLED:
-    data_storage = {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-        "LOCATION": f"/{DATAFILES_LOCATION}",
-    }
-    DATA_ROOT = f"/{DATAFILES_LOCATION}"
-    DATA_URL = f"/{DATAFILES_LOCATION}/"
-else:
-    data_storage = {
-        "BACKEND": "galv.storages.DataStorage"
-    }
-    DATA_ROOT = f"NOT_IN_USE"
-    DATA_URL = f"NOT_IN_USE"
-
 if S3_ENABLED:
     STORAGES = {
         "default": {"BACKEND": "galv.storages.MediaStorage"},  # for media
-        "data": data_storage,  # for data
         "staticfiles": {"BACKEND": "galv.storages.StaticStorage"}
     }
     STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/"
@@ -236,13 +223,16 @@ if S3_ENABLED:
 else:
     STORAGES = {
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": f"/{MEDIAFILES_LOCATION}"},
-        "data": data_storage,
         "staticfiles": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": f"/{STATICFILES_LOCATION}"},
     }
     STATIC_ROOT = f"/{STATICFILES_LOCATION}"
     STATIC_URL = f"/{STATICFILES_LOCATION}/"
     MEDIA_ROOT = f"/{MEDIAFILES_LOCATION}"
     MEDIA_URL = f"/{MEDIAFILES_LOCATION}/"
+
+# DATA_* settings are only used if ALLOW_LOCAL_DATA_STORAGE is set
+DATA_ROOT = f"/{DATAFILES_LOCATION}"
+DATA_URL = f"/{DATAFILES_LOCATION}/"
 
 # Harvester report constants
 # These definitions should be kept in sync with the definitions in the harvester program
@@ -252,7 +242,7 @@ HARVESTER_STATUS_SUCCESS = 'success'
 HARVESTER_STATUS_ERROR = 'error'
 HARVEST_STAGE_FILE_METADATA = 'file metadata'
 HARVEST_STAGE_COLUMN_METADATA = 'column metadata'
-HARVEST_STAGE_GET_UPLOAD_URLS = 'get upload urls'
+HARVEST_STAGE_UPLOAD_PARQUET = 'upload parquet partitions'
 HARVEST_STAGE_UPLOAD_COMPLETE = 'upload complete'
 HARVEST_STAGE_COMPLETE = 'harvest complete'
 HARVEST_STAGE_FAILED = 'harvest failed'

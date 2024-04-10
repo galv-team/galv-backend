@@ -21,12 +21,11 @@ from ..models import Harvester, \
     DataUnit, \
     DataColumnType, \
     DataColumn, \
-    TimeseriesRangeLabel, \
     KnoxAuthToken, CellFamily, EquipmentTypes, CellFormFactors, CellChemistries, CellModels, CellManufacturers, \
     EquipmentManufacturers, EquipmentModels, EquipmentFamily, Schedule, ScheduleIdentifiers, CyclerTest, \
     render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, user_labs, \
     user_teams, SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
-    ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, PresignedDataFile
+    ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
 from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
@@ -34,8 +33,8 @@ from rest_framework import serializers
 from knox.models import AuthToken
 
 from .utils import CustomPropertiesModelSerializer, GetOrCreateTextField, augment_extra_kwargs, url_help_text, \
-    get_model_field, PermissionsMixin, TruncatedUserHyperlinkedRelatedIdField, \
-    TruncatedGroupHyperlinkedRelatedIdField, TruncatedHyperlinkedRelatedIdField, \
+    PermissionsMixin, TruncatedUserHyperlinkedRelatedIdField, \
+    TruncatedHyperlinkedRelatedIdField, \
     CreateOnlyMixin, ValidationPresentationMixin
 
 @extend_schema_serializer(examples = [
@@ -403,8 +402,8 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
 
     class Meta:
         model = Lab
-        fields = ['url', 'id', 'name', 'description', 'admin_group', 'harvesters', 'teams', 'permissions']
-        read_only_fields = ['url', 'id', 'teams', 'admin_group', 'harvesters', 'permissions']
+        fields = ['url', 'id', 'name', 'description', 'admin_group', 'harvesters', 's3_enabled', 'teams', 'permissions']
+        read_only_fields = ['url', 'id', 'teams', 'admin_group', 'harvesters', 's3_enabled', 'permissions']
 
 class WithTeamMixin(serializers.Serializer):
     team = TruncatedHyperlinkedRelatedIdField(
@@ -1206,7 +1205,8 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
     class Meta:
         model = MonitoredPath
         fields = [
-            'url', 'uuid', 'path', 'regex', 'stable_time', 'active', 'files', 'harvester', 'team',
+            'url', 'uuid', 'path', 'regex', 'stable_time', 'active', 'max_partition_line_count',
+            'files', 'harvester', 'team',
             'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
         ]
         read_only_fields = ['url', 'uuid', 'files', 'harvester', 'permissions']
@@ -1216,39 +1216,120 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
         })
 
 
+class ParquetPartitionSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+    observed_file = TruncatedHyperlinkedRelatedIdField(
+        'ObservedFileSerializer',
+        ['name', 'state', 'parser', 'num_rows'],
+        'observedfile-detail',
+        read_only=True,
+        help_text="Observed File this Parquet Partition belongs to"
+    )
+
+    class Meta:
+        model = ParquetPartition
+        read_only_fields = [
+            'url', 'uuid',
+            'observed_file', 'partition_number', 'uploaded', 'upload_errors',
+            'permissions'
+        ]
+        fields = [*read_only_fields, 'parquet_file']
+
+
 @extend_schema_serializer(examples = [
     OpenApiExample(
         'Valid example',
         summary='Observed File details',
         description='Observed Files are the raw data produced by cycler tests. They are uploaded to the system by Harvesters.',
         value={
-            "url": "http://localhost:8001/observed_files/1/",
-            "uuid": "c690ddf0-9527-11ee-8454-eb9d381d3cc4",
-            "path": "/home/example_user/example_data.csv",
-            "name": "example_data.csv",
+            "url": "http://localhost:8001/files/19b16096-737f-4d94-8cc6-802dbf129704/",
+            "uuid": "19b16096-737f-4d94-8cc6-802dbf129704",
+            "harvester": {
+                "uuid": "340efe2d-1040-4992-ae38-87d7e06b8054",
+                "name": "Harvey",
+                "url": "http://localhost:8001/harvesters/340efe2d-1040-4992-ae38-87d7e06b8054/"
+            },
+            "name": None,
+            "path": "/usr/harvester/.test-data/test-suite-small/headerless.csv",
             "state": "IMPORTED",
-            "parser": "Biologic",
-            "num_rows": 100,
-            "first_sample_no": 1,
-            "last_sample_no": 100,
-            "extra_metadata": {},
-            "has_required_columns": True,
-            "last_observed_time": "2021-08-18T15:23:45.123456Z",
-            "last_observed_size": 123456,
-            "upload_errors": [],
-            "upload_info": {},
-            "harvester": "http://localhost:8001/harvesters/d8290e68-bfbb-3bc8-b621-5a9590aa29fd/",
-            "columns": [
-                "http://localhost:8001/columns/1/",
-                "http://localhost:8001/columns/2/",
-                "http://localhost:8001/columns/3/"
+            "parser": "DelimitedInputFile",
+            "num_rows": 4,
+            "first_sample_no": None,
+            "last_sample_no": None,
+            "extra_metadata": {
+                "column_0": {
+                    "has_data": True
+                },
+                "column_1": {
+                    "has_data": True
+                },
+                "column_2": {
+                    "has_data": True
+                },
+                "column_3": {
+                    "has_data": True
+                },
+                "column_4": {
+                    "has_data": True
+                }
+            },
+            "has_required_columns": False,
+            "last_observed_time": "2024-04-10T14:35:44.467420Z",
+            "last_observed_size": 225,
+            "column_errors": [
+                "Missing required column: Elapsed_time_s",
+                "Missing required column: Voltage_V",
+                "Missing required column: Current_A"
             ],
-            "storage_urls": [],
-            "column_errors": [],
-            "team": "http://localhost:8001/teams/1/",
+            "upload_errors": [],
+            "parquet_partitions": [
+                {
+                    "upload_errors": [],
+                    "url": "http://localhost:8001/parquet_partitions/359e1a24-6d7f-4aaa-adc2-2a9d8a8c7c48/",
+                    "partition_number": 0,
+                    "uuid": "359e1a24-6d7f-4aaa-adc2-2a9d8a8c7c48",
+                    "parquet_file": "http://localhost:8001/parquet_partitions/359e1a24-6d7f-4aaa-adc2-2a9d8a8c7c48/file/",
+                    "uploaded": True
+                }
+            ],
+            "upload_info": None,
+            "columns": [
+                {
+                    "name": "column_0",
+                    "url": "http://localhost:8001/columns/30/",
+                    "name_in_file": "column_0",
+                    "id": 30,
+                    "type": None
+                },
+                {
+                    "name": "column_1",
+                    "url": "http://localhost:8001/columns/31/",
+                    "name_in_file": "column_1",
+                    "id": 31,
+                    "type": None
+                },
+                {
+                    "name": "column_2",
+                    "url": "http://localhost:8001/columns/32/",
+                    "name_in_file": "column_2",
+                    "id": 32,
+                    "type": None
+                },
+                {
+                    "name": "column_3",
+                    "url": "http://localhost:8001/columns/33/",
+                    "name_in_file": "column_3",
+                    "id": 33,
+                    "type": None
+                },
+                {
+                    "name": "column_4",
+                    "url": "http://localhost:8001/columns/34/",
+                    "name_in_file": "column_4",
+                    "id": 34,
+                    "type": None
+                }
+            ],
             "permissions": {
-                "create": False,
-                "destroy": False,
                 "write": True,
                 "read": True
             }
@@ -1257,7 +1338,14 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
     ),
 ])
 class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
-    storage_urls = serializers.SerializerMethodField(help_text="Storage URLs for this file")
+    parquet_partitions = TruncatedHyperlinkedRelatedIdField(
+        'ParquetPartitionSerializer',
+        ['parquet_file', 'partition_number', 'uploaded', 'upload_errors'],
+        'parquetpartition-detail',
+        read_only=True,
+        many=True,
+        help_text="Parquet partitions of this File"
+    )
     harvester = TruncatedHyperlinkedRelatedIdField(
         'HarvesterSerializer',
         ['name'],
@@ -1307,36 +1395,6 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
     def get_column_errors(self, instance) -> list:
         return instance.column_errors()
 
-    def get_storage_urls(self, instance) -> list:
-        storage_urls = []
-        for storage in instance.storage_urls:
-            if storage.get('url') is not None:
-                storage_urls.append(storage)  # S3 links already have url and fields keys
-            else:
-                try:
-                    presigned_data_file = PresignedDataFile.objects.get(
-                        pk=storage.get('presigned_data_file'),
-                        observed_file=instance
-                    )
-                except PresignedDataFile.DoesNotExist:
-                    storage_urls.append({
-                        'error': 'Error: Reference to non-existent Datafile'
-                    })
-                    continue
-                storage_urls.append({
-                    'url': reverse(
-                        'datafiles',
-                        (presigned_data_file.pk,),
-                        request=self.context.get('request')
-                    ),
-                    'fields': {
-                        "auth_key": presigned_data_file.auth_key
-                    }
-                })
-        if self.context.get('with_upload_info'):
-            return storage_urls
-        return [s.get('url', s.get('error')) for s in storage_urls]
-
     class Meta:
         model = ObservedFile
         read_only_fields = [
@@ -1348,9 +1406,10 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
             'last_sample_no',
             'extra_metadata',
             'has_required_columns',
-            'last_observed_time', 'last_observed_size', 'upload_errors',
+            'last_observed_time', 'last_observed_size',
             'column_errors',
-            'storage_urls',
+            'upload_errors',
+            'parquet_partitions',
             'upload_info', 'columns', 'permissions'
         ]
         fields = [*read_only_fields, 'name']

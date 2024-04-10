@@ -9,15 +9,14 @@ import knox.auth
 import os
 
 from django.conf import settings
-from django.http import StreamingHttpResponse, HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import NoReverseMatch
-from drf_spectacular.types import OpenApiTypes
 from dry_rest_permissions.generics import DRYPermissions
 from rest_framework.mixins import ListModelMixin
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.renderers import JSONRenderer
 from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT
+from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 
 from .serializers import HarvesterSerializer, \
     HarvesterCreateSerializer, \
@@ -34,7 +33,7 @@ from .serializers import HarvesterSerializer, \
     KnoxTokenFullSerializer, CellFamilySerializer, EquipmentFamilySerializer, \
     ScheduleSerializer, CyclerTestSerializer, ScheduleFamilySerializer, DataColumnTypeSerializer, DataColumnSerializer, \
     ExperimentSerializer, LabSerializer, TeamSerializer, ValidationSchemaSerializer, SchemaValidationSerializer, \
-    ArbitraryFileSerializer, ArbitraryFileCreateSerializer
+    ArbitraryFileSerializer, ArbitraryFileCreateSerializer, ParquetPartitionSerializer
 from .models import Harvester, \
     HarvestError, \
     MonitoredPath, \
@@ -44,13 +43,12 @@ from .models import Harvester, \
     DataUnit, \
     DataColumnType, \
     DataColumn, \
-    TimeseriesRangeLabel, \
     FileState, \
     KnoxAuthToken, CellFamily, EquipmentTypes, EquipmentModels, EquipmentManufacturers, CellModels, CellManufacturers, \
     CellChemistries, CellFormFactors, ScheduleIdentifiers, EquipmentFamily, Schedule, CyclerTest, ScheduleFamily, \
     ValidationSchema, Experiment, Lab, Team, UserProxy, GroupProxy, ValidatableBySchemaMixin, SchemaValidation, \
     UserActivation, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, ALLOWED_USER_LEVELS_DELETE, \
-    ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, PresignedDataFile
+    ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, S3Error
 from .permissions import HarvesterFilterBackend, TeamFilterBackend, LabFilterBackend, GroupFilterBackend, \
     ResourceFilterBackend, ObservedFileFilterBackend, UserFilterBackend, SchemaValidationFilterBackend
 from .serializers.utils import get_GetOrCreateTextStringSerializer
@@ -569,6 +567,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
         ).data)
 
     @action(detail=True, methods=['POST'])
+    @parser_classes([JSONParser, MultiPartParser, FormParser])
     def report(self, request, pk = None):
         """
         Process a Harvester's report on its activity.
@@ -598,7 +597,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
         The stage field can be one of:
         - * file metadata: The harvester is beginning an import.
         - * column metadata: The harvester is reporting progress on an import.
-        - * get upload urls: The harvester is requesting upload information.
+        - * upload parquet partitions: The harvester is uploading datafiles.
         - * upload complete: The harvester has completed uploading files.
         - harvest complete: The harvester has completed an import.
         - harvest failed: The harvester has failed to import a file.
@@ -624,9 +623,11 @@ class HarvesterViewSet(viewsets.ModelViewSet):
 
         A representation of the file will be returned.
 
-        If the stage is 'get upload urls', the data must include 'row_count' and 'partition_count'
-        fields describing the total rows in the dataset and the number of parquet partitions into which it is split.
-        The response will provide a presigned upload URL for each partition.
+        If the stage is 'upload parquet partitions', the data must include 'row_count', 'partition_count',
+        and 'partition_number' fields describing the total rows in the dataset (derived by inspecting the parquet
+         object), the number of parquet partitions into which it is split, and the number of the current partition.
+        A file must also be uploaded as a form data field named 'file'.
+        The response will be the serialized ParquetPartition object created in response.
 
         If the stage is 'upload complete', the data must include 'successes',
         the number of successful partition uploads, and errors, a list of errors encountered while uploading.
@@ -635,33 +636,9 @@ class HarvesterViewSet(viewsets.ModelViewSet):
 
         Only Harvesters are authorised to issue reports.
         """
-        harvester = get_object_or_404(Harvester, uuid=pk)
-        self.check_object_permissions(self.request, harvester)
-        harvester.last_check_in = timezone.now()
-        harvester.last_check_in_job = request.data.get('content', {}).get('task', 'error_report')
-        harvester.save()
-        if request.data.get('status') not in [settings.HARVESTER_STATUS_SUCCESS, settings.HARVESTER_STATUS_ERROR]:
-            return error_response('Badly formatted request')
-        try:
-            path = request.data.get('path')
-            if request.data.get('status') != settings.HARVESTER_STATUS_ERROR:
-                assert path is not None
-            if path is not None:
-                path = os.path.normpath(path)
-        except AssertionError:
-            return error_response('Harvester report must specify a path')
-        try:
-            monitored_path_uuid = request.data.get('monitored_path_uuid')
-            if request.data.get('status') != settings.HARVESTER_STATUS_ERROR:
-                assert monitored_path_uuid is not None
-                monitored_path = MonitoredPath.objects.get(uuid=monitored_path_uuid)
-            else:
-                monitored_path = MonitoredPath.objects.get(uuid=monitored_path_uuid) if monitored_path_uuid else None
-        except AssertionError:
-            return error_response('Harvester report must specify a monitored_path_uuid')
-        except MonitoredPath.DoesNotExist:
-            return error_response('Harvester report must specify a valid monitored_path_uuid', 404)
-        if request.data['status'] == settings.HARVESTER_STATUS_ERROR:
+        def handle_error_report(request, harvester):
+            if request.data.get('error') is None:
+                return error_response('error field required when status=error')
             error = request.data.get('error')
             if error is None:
                 return error_response('error field required when status=error')
@@ -670,6 +647,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                     error = json.dumps(error)
                 except json.JSONDecodeError:
                     error = str(error)
+            path = request.data.get('path')
             if path:
                 HarvestError.objects.create(
                     harvester=harvester,
@@ -686,140 +664,209 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                     error=str(error)
                 )
             return Response({})
-        else:
-            # Figure out what we succeeded in doing!
-            content = request.data.get('content')
-            if content is None:
-                return error_response('content field required when status=success')
-            if content['task'] == settings.HARVESTER_TASK_FILE_SIZE:
-                if content.get('size') is None:
-                    return error_response('file_size task requires content to include size field')
 
-                # Harvester is reporting the size of a file
-                # Update our database record and return a file status
-                file, _ = ObservedFile.objects.get_or_create(harvester=harvester, path=path)
+        def handle_file_size_report(harvester, path, monitored_path, content):
+            # Harvester is reporting the size of a file
+            # Update our database record and return a file status
+            if content.get('size') is None:
+                return error_response('file_size task requires content to include size field')
 
-                size = content['size']
-                if size < file.last_observed_size:
+            file, _ = ObservedFile.objects.get_or_create(harvester=harvester, path=path)
+
+            size = content['size']
+            if size < file.last_observed_size:
+                file.state = FileState.UNSTABLE
+            elif size > file.last_observed_size:
+                file.state = FileState.GROWING
+
+            if size != file.last_observed_size:
+                file.last_observed_size = size
+                file.last_observed_time = timezone.now()
+            else:
+                # Recent changes
+                if file.last_observed_time + timezone.timedelta(seconds=monitored_path.stable_time) > timezone.now():
                     file.state = FileState.UNSTABLE
-                elif size > file.last_observed_size:
-                    file.state = FileState.GROWING
+                # Stable file -- already imported?
+                elif file.state not in [FileState.IMPORTED, FileState.IMPORT_FAILED]:
+                    file.state = FileState.STABLE
 
-                if size != file.last_observed_size:
-                    file.last_observed_size = size
-                    file.last_observed_time = timezone.now()
-                else:
-                    # Recent changes
-                    if file.last_observed_time + timezone.timedelta(seconds=monitored_path.stable_time) > timezone.now():
-                        file.state = FileState.UNSTABLE
-                    # Stable file -- already imported?
-                    elif file.state not in [FileState.IMPORTED, FileState.IMPORT_FAILED]:
-                        file.state = FileState.STABLE
+            file.save()
+            return Response(ObservedFileSerializer(file, context={'request': self.request}).data)
 
+        def handle_import_report(harvester, path, content, request):
+            def handle_file_metadata(file, data):
+                file.state = FileState.IMPORTING
+                file.data_generation_date = deserialize_datetime(data['test_date'])
+                if 'parser' in data:
+                    file.parser = data['parser']
+
+                core_metadata = data['core_metadata']
+                extra_metadata = data['extra_metadata']
+                if 'Machine Type' in core_metadata:
+                    file.inferred_format = core_metadata.pop('Machine Type')
+                if 'Dataset Name' in core_metadata:
+                    file.name = core_metadata.pop('Dataset Name')
+                if 'first_sample_no' in core_metadata:
+                    file.first_sample_no = core_metadata.pop('first_sample_no')
+                if 'last_sample_no' in core_metadata:
+                    file.last_sample_no = core_metadata.pop('last_sample_no')
+                if extra_metadata:
+                    file.extra_metadata = extra_metadata
+                file.core_metadata = core_metadata
+
+            def handle_column_metadata(file, data):
+                if not isinstance(data, dict):
+                    return error_response("Column metadata must be a dictionary")
+                for name, column in data.items():
+                    if column.get('column_id') is not None:
+                        data_column, _ = DataColumn.objects.get_or_create(
+                            file=file,
+                            type_id=column['column_type_id'],
+                            defaults={'name_in_file': column.get('column_name', name)}
+                        )
+                    else:
+                        data_column, _ = DataColumn.objects.get_or_create(
+                            file=file,
+                            name_in_file=column.get('column_name', name)
+                        )
+                    if column.get('unit_id') is not None:
+                        data_column.unit = DataUnit.objects.get(id=column.get('unit_id'))
+                    elif column.get('unit_symbol') is not None:
+                        data_column.unit = DataUnit.objects.get_or_create(symbol=column.get('unit_symbol'))[0]
+                    data_column.column_name = column.get('column_name')
+                    data_column.data_type = column.get('data_type')
+                    data_column.save()
+
+            def handle_upload_urls(file, data, request):
+                file.num_rows = data['total_row_count']
+                file.num_partitions = data['partition_count']
                 file.save()
-                return Response(ObservedFileSerializer(file, context={'request': self.request}).data)
-            elif content['task'] == settings.HARVESTER_TASK_IMPORT:
                 try:
-                    file = ObservedFile.objects.get(harvester=harvester, path=path)
-                except ObservedFile.DoesNotExist:
-                    return error_response("ObservedFile does not exist")
-                if 'stage' not in content:
-                    return error_response("'stage' field must be present where task=import")
-                if content['stage'] not in [
-                    settings.HARVEST_STAGE_FILE_METADATA,
-                    settings.HARVEST_STAGE_COLUMN_METADATA,
-                    settings.HARVEST_STAGE_GET_UPLOAD_URLS,
-                    settings.HARVEST_STAGE_UPLOAD_COMPLETE,
-                    settings.HARVEST_STAGE_COMPLETE,
-                    settings.HARVEST_STAGE_FAILED
-                ]:
-                    return error_response("Unknown stage")
-                if content['stage'] in [
-                    settings.HARVEST_STAGE_FILE_METADATA,
-                    settings.HARVEST_STAGE_COLUMN_METADATA,
-                    settings.HARVEST_STAGE_GET_UPLOAD_URLS,
-                    settings.HARVEST_STAGE_UPLOAD_COMPLETE
-                ]:
-                    if 'data' not in content:
-                        return error_response(f"'data' field must be present where stage={content['stage']}")
-                    data = content['data']
-                    try:
-                        if content['stage'] == settings.HARVEST_STAGE_FILE_METADATA:
-                            file.state = FileState.IMPORTING
-                            file.data_generation_date = deserialize_datetime(data['test_date'])
-                            if 'parser' in data:
-                                file.parser = data['parser']
+                    partition, _ = ParquetPartition.objects.get_or_create(
+                        observed_file=file,
+                        partition_number=data['partition_number']
+                    )
+                    partition.parquet_file = request.FILES.get('parquet_file')
+                    # partition.parquet_file.save()
+                    partition.save()
+                except S3Error as e:
+                    return error_response(f"Error uploading file to storage: {e}")
+                return Response(ParquetPartitionSerializer(partition, context={'request': request}).data)
 
-                            core_metadata = data['core_metadata']
-                            extra_metadata = data['extra_metadata']
-                            if 'Machine Type' in core_metadata:
-                                file.inferred_format = core_metadata.pop('Machine Type')
-                            if 'Dataset Name' in core_metadata:
-                                file.name = core_metadata.pop('Dataset Name')
-                            if 'first_sample_no' in core_metadata:
-                                file.first_sample_no = core_metadata.pop('first_sample_no')
-                            if 'last_sample_no' in core_metadata:
-                                file.last_sample_no = core_metadata.pop('last_sample_no')
-                            if extra_metadata:
-                                file.extra_metadata = extra_metadata
-                            file.core_metadata = core_metadata
-                        elif content['stage'] == settings.HARVEST_STAGE_COLUMN_METADATA:
-                            if not isinstance(data, dict):
-                                return error_response("Column metadata must be a dictionary")
-                            for column in data.values():
-                                if column.get('column_id') is not None:
-                                    data_column, _ = DataColumn.objects.get_or_create(
-                                        file=file,
-                                        id=column['column_id'],
-                                        defaults={'name_in_file': column.get('column_name')}
-                                    )
-                                else:
-                                    data_column, _ = DataColumn.objects.get_or_create(
-                                        file=file,
-                                        name_in_file=column['column_name']
-                                    )
-                                if column.get('unit_id') is not None:
-                                    data_column.unit = DataUnit.objects.get(id=column.get('unit_id'))
-                                elif column.get('unit_symbol') is not None:
-                                    data_column.unit = DataUnit.objects.get_or_create(symbol=column.get('unit_symbol'))[0]
-                                data_column.column_name = column.get('column_name')
-                                data_column.data_type = column.get('data_type')
-                                data_column.save()
-                        elif content['stage'] == settings.HARVEST_STAGE_GET_UPLOAD_URLS:
-                            file.num_rows = data['row_count']
-                            file.num_partitions = data['partition_count']
-                            file.create_upload_urls(request=request)
-                        else:
-                            # content['stage'] == settings.HARVEST_STAGE_UPLOAD_COMPLETE
-                            errors = data.get('errors', [])
-                            for e in errors:
-                                HarvestError.objects.create(harvester=harvester, file=file, error=e)
+            def handle_upload_complete(file, data):
+                file.successful_uploads = data['successes']
+                errors = data.get('errors', {})
+                for i, e in errors.items():
+                    pq = ParquetPartition.objects.get(observed_file=file, partition_number=i)
+                    pq.upload_errors.append(e)
+                    pq.save()
 
-                    except BaseException as e:
-                        file.state = FileState.IMPORT_FAILED
-                        HarvestError.objects.create(harvester=harvester, file=file, error=str(e))
-                        file.save()
-                        return error_response(f"Error importing data: {e.args}")
-
-                elif content['stage'] == settings.HARVEST_STAGE_COMPLETE:
-                    if file.state == FileState.IMPORTING:
-                        file.state = FileState.IMPORTED
-                elif content['stage'] == settings.HARVEST_STAGE_FAILED:
+            def handle_completion(file, stage, content):
+                if stage == settings.HARVEST_STAGE_FAILED:
                     file.state = FileState.IMPORT_FAILED
                     if 'error' in content:
                         HarvestError.objects.create(harvester=harvester, file=file, error=content['error'])
+                elif file.state == FileState.IMPORTING:
+                    file.state = FileState.IMPORTED
 
+            try:
+                file = ObservedFile.objects.get(harvester=harvester, path=path)
+            except ObservedFile.DoesNotExist:
+                return error_response("ObservedFile does not exist")
+            stage = content.get('stage')
+            if stage is None:
+                return error_response("'stage' field must be present where task=import")
+
+            try:
+                if stage == settings.HARVEST_STAGE_COMPLETE or stage == settings.HARVEST_STAGE_FAILED:
+                    handle_completion(file, stage, content)
+                else:
+                    data = content.get('data')
+                    if data is None:
+                        return error_response("'data' field must be present where task=import")
+
+                    if stage == settings.HARVEST_STAGE_FILE_METADATA:
+                        handle_file_metadata(file, data)
+                    elif stage == settings.HARVEST_STAGE_COLUMN_METADATA:
+                        handle_column_metadata(file, data)
+                    elif stage == settings.HARVEST_STAGE_UPLOAD_PARQUET:
+                        return handle_upload_urls(file, data, request)  # return because we return the ParquetPartition
+                    elif stage == settings.HARVEST_STAGE_UPLOAD_COMPLETE:
+                        handle_upload_complete(file, data)
+                    else:
+                        return error_response("Unknown stage")
+
+            except BaseException as e:
+                file.state = FileState.IMPORT_FAILED
+                HarvestError.objects.create(harvester=harvester, file=file, error=str(e))
                 file.save()
+                return error_response(f"Error importing data: {e.args}")
 
-                return Response(ObservedFileSerializer(file, context={
-                    'request': self.request,
-                    'with_upload_info': (
-                            content['stage'] == settings.HARVEST_STAGE_FILE_METADATA or
-                            content['stage'] == settings.HARVEST_STAGE_GET_UPLOAD_URLS
-                    )
-                }).data)
-            else:
-                return error_response('Unrecognised task')
+            file.save()
+
+            return Response(ObservedFileSerializer(file, context={
+                'request': self.request,
+                'with_upload_info': content['stage'] == settings.HARVEST_STAGE_FILE_METADATA
+            }).data)
+
+        harvester = get_object_or_404(Harvester, uuid=pk)
+        self.check_object_permissions(self.request, harvester)
+        harvester.last_check_in = timezone.now()
+
+        content = request.data.get('content')
+        if request.data.get('content') is None and request.data.get('stage') == settings.HARVEST_STAGE_UPLOAD_PARQUET:
+            # Upload comes in a different format with the properties unnested.
+            content = {
+                'task': request.data.get('task'),
+                'stage': request.data.get('stage'),
+                'data': {
+                    'total_row_count': int(float(request.data.get('total_row_count'))),
+                    'partition_number': int(float(request.data.get('partition_number'))),
+                    'partition_count': int(float(request.data.get('partition_count'))),
+                    'filename': request.data.get('filename')
+                }
+            }
+        else:
+            content = content or {}
+
+        harvester.last_check_in_job = content.get('task', 'error_report')
+        harvester.save()
+
+        if request.data.get('status') == settings.HARVESTER_STATUS_ERROR:
+            return handle_error_report(request, harvester)
+
+        if request.data.get('status') != settings.HARVESTER_STATUS_SUCCESS:
+            return error_response('Badly formatted request')
+
+        try:
+            path = request.data.get('path')
+            assert path is not None
+            path = os.path.normpath(path)
+        except AssertionError:
+            return error_response('Harvester report must specify a path')
+
+        try:
+            monitored_path_uuid = request.data.get('monitored_path_uuid')
+            assert monitored_path_uuid is not None
+            monitored_path = MonitoredPath.objects.get(uuid=monitored_path_uuid)
+        except AssertionError:
+            return error_response('Harvester report must specify a monitored_path_uuid')
+        except MonitoredPath.DoesNotExist:
+            return error_response('Harvester report must specify a valid monitored_path_uuid', 404)
+
+        # Figure out what we succeeded in doing!
+        if content is None:
+            return error_response('content field required when status=success')
+        task = content.get('task')
+        if task is None:
+            return error_response('content field must include task field')
+
+        if task == settings.HARVESTER_TASK_FILE_SIZE:
+            return handle_file_size_report(harvester, path, monitored_path, content)
+        elif task == settings.HARVESTER_TASK_IMPORT:
+            return handle_import_report(harvester, path, content, request)
+        else:
+            return error_response('Unrecognised task')
 
 
 @extend_schema_view(
@@ -959,9 +1006,36 @@ class ObservedFileViewSet(viewsets.ModelViewSet):
         file.state = FileState.RETRY_IMPORT
         file.storage_urls = []
         file.save()
-        for dataset in PresignedDataFile.objects.filter(file=file):
+        for dataset in file.parquet_partitions.all():
             dataset.delete()
         return Response(self.get_serializer(file, context={'request': request}).data)
+
+
+class ParquetPartitionViewSet(viewsets.ModelViewSet):
+    permission_classes = [DRYPermissions]
+    serializer_class = ParquetPartitionSerializer
+    queryset = ParquetPartition.objects.all().order_by('-uuid')
+    http_method_names = ['get', 'post', 'options']
+
+    @action(detail=True, methods=['GET'])
+    def file(self, request, pk = None):
+        try:
+            partition = self.queryset.get(uuid=pk)
+        except ParquetPartition.DoesNotExist:
+            return error_response('Requested partition not found')
+        self.check_object_permissions(self.request, partition)
+        parquet_file = partition.parquet_file
+        if parquet_file:
+            if partition.storage_class_name == "LocalDataStorage":
+                # Send the file directly via the upstream nginx proxy
+                response = HttpResponse()
+                response["Content-Disposition"] = f"attachment; filename={parquet_file.name}"
+                response['X-Accel-Redirect'] = parquet_file.backend_url
+            else:
+                # Redirect to S3
+                response = HttpResponseRedirect(parquet_file.backend_url)
+            return response
+        return error_response("File not uploaded")
 
 
 @extend_schema_view(
@@ -1818,54 +1892,3 @@ class ArbitraryFileViewSet(viewsets.ModelViewSet):
         if self.action is not None and self.action == 'create':
             return ArbitraryFileCreateSerializer
         return ArbitraryFileSerializer
-
-
-if settings.LOCAL_DATA_STORAGE:
-
-    def view_datafile(request, pk):
-        """
-        View a file stored in the local storage.
-        """
-        try:
-            file = PresignedDataFile.objects.get(pk=pk)
-        except PresignedDataFile.DoesNotExist:
-            return error_response("File not found")
-        if file.file:
-            response = HttpResponse()
-            response["Content-Disposition"] = f"attachment; filename={file.file.name}"
-            response['X-Accel-Redirect'] = file.file.url
-            return response
-        return error_response("File not uploaded")
-
-    @extend_schema(
-        request=inline_serializer('UploadedFile', {
-            'auth_key': serializers.CharField(help_text="The auth_key provided by the presigned URL"),
-            'file': serializers.FileField(help_text="The file to upload")
-        }),
-        responses={204: inline_serializer('UploadedFileConfirmation', {})}
-    )
-    @api_view(('POST','GET',))
-    @renderer_classes((JSONRenderer,))
-    @parser_classes((MultiPartParser, FormParser,))
-    def datafiles(request, pk):
-        """
-        Upload a file to the local storage by submitting the file along with its auth_key.
-        """
-        if pk is None:
-            return error_response("No datafile id provided")
-        if request.method == 'GET':
-            return view_datafile(request, pk)
-        auth_key = request.data.get('auth_key', None)
-        if auth_key is None:
-            return error_response("No auth_key provided")
-        try:
-            file = PresignedDataFile.objects.get(pk=pk, auth_key=auth_key)
-        except PresignedDataFile.DoesNotExist:
-            return error_response("Could not find datafile with given id and auth_key")
-        if file.file:
-            return error_response("File already uploaded")
-        if file.created < timezone.now() - datetime.timedelta(seconds=settings.DATA_STORAGE_UPLOAD_URL_EXPIRY_S):
-            return error_response("Presigned URL expired")
-        file.file = request.FILES.get('file')
-        file.save()
-        return Response({}, status=HTTP_204_NO_CONTENT)

@@ -2,6 +2,7 @@
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 import json
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -12,7 +13,7 @@ from django.conf import settings
 
 from .utils import assert_response_property, GalvTestCase
 from .factories import HarvesterFactory, \
-    MonitoredPathFactory
+    MonitoredPathFactory, ParquetPartitionFactory
 from ..models import HarvestError, \
     ObservedFile, \
     FileState
@@ -222,10 +223,11 @@ class HarvesterTests(GalvTestCase):
         def generate_presigned_post(self, bucket, object, *args, **kwargs):
             return {'url': f"https://example.com/s3/{bucket}/{object}", 'fields': {}}
 
-    @patch('boto3.client', return_value=MockBoto3Client())
     def test_report(self, *args):
         mp = MonitoredPathFactory.create(harvester=self.harvester)
         f = ObservedFile.objects.create(path='/a/b/c/d.ext', harvester=self.harvester)
+        for i in range(3):
+            ParquetPartitionFactory.create(observed_file=f, partition_number=i)
         self.client._credentials = {'HTTP_AUTHORIZATION': f'Harvester {self.harvester.api_key}'}
         url = reverse(f'{self.stub}-report', args=(self.harvester.uuid,))
 
@@ -374,24 +376,11 @@ class HarvesterTests(GalvTestCase):
                 ]
             },
             {
-                'name': 'get_upload_urls',
-                'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {
-                    'task': settings.HARVESTER_TASK_IMPORT,
-                    'stage': settings.HARVEST_STAGE_GET_UPLOAD_URLS,
-                    'data': {'row_count': 1024, 'partition_count': 3}
-                }},
-                'checks': [
-                    lambda r: check_response(r, r.status_code, status.HTTP_200_OK),
-                    lambda r: check_response(r, r.json()['uuid'], str(ObservedFile.objects.get(path=f.path).uuid)),
-                    lambda r: check_response(r, len(r.json()['storage_urls']) == 3, True),
-                ]
-            },
-            {
                 'name': 'upload_complete',
                 'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {
                     'task': settings.HARVESTER_TASK_IMPORT,
                     'stage': settings.HARVEST_STAGE_UPLOAD_COMPLETE,
-                    'data': {'successes': 2, 'errors': [str(BaseException('test'))]}
+                    'data': {'successes': 2, 'errors': {1: str(BaseException('test'))}}
                 }},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_200_OK),
@@ -404,6 +393,33 @@ class HarvesterTests(GalvTestCase):
                 for check in report['checks']:
                     check(response)
 
+
+    @patch('boto3.client', return_value=MockBoto3Client())
+    def test_parquet_upload(self, mock_boto3_client):
+        """
+        Test that the parquet upload works.
+        We upload a file, along with some data, and check that we receive a ParquetPartition object in response.
+        """
+        mp = MonitoredPathFactory.create(harvester=self.harvester)
+        f = ObservedFile.objects.create(path='/a/b/c/d.ext', harvester=self.harvester)
+        self.client._credentials = {'HTTP_AUTHORIZATION': f'Harvester {self.harvester.api_key}'}
+        url = reverse(f'{self.stub}-report', args=(self.harvester.uuid,))
+        response = self.client.post(url, {
+            'status': settings.HARVESTER_STATUS_SUCCESS,
+            'path': f.path,
+            'monitored_path_uuid': mp.uuid,
+            'task': settings.HARVESTER_TASK_IMPORT,
+            'stage': settings.HARVEST_STAGE_UPLOAD_PARQUET,
+            'total_row_count': 500,
+            'partition_number': 0,
+            'partition_count': 1,
+            'filename': 'filename.part0.parquet',
+            'parquet_file': tempfile.TemporaryFile()
+        }, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            response.json()['observed_file'].endswith(f"{ObservedFile.objects.get(path=f.path).uuid}/")
+        )
 
 if __name__ == '__main__':
     unittest.main()

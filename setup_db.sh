@@ -7,8 +7,8 @@ set -e
 
 >&2 echo "DJANGO_TEST=${DJANGO_TEST}"
 >&2 echo "DJANGO_SETTINGS=${DJANGO_SETTINGS}"
-python manage.py makemigrations
-python manage.py migrate
-python manage.py create_superuser
+python manage.py makemigrations --no-input
+python manage.py migrate --no-input
+python manage.py create_superuser --no-input
 >&2 echo "... populating database"
-python manage.py loaddata galv/fixtures/*
+python manage.py loaddata galv/fixtures/* --no-input

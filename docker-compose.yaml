@@ -16,12 +16,13 @@ services:
     depends_on:
       - postgres
       - mailhog
+      - nginx
     volumes:
       - ./.dev/.static_files:/static
       - ./backend_django:/code/backend_django
       - ./.dev/spec:/spec
       # datafiles should be mounted to DATA_ROOT in the container
-      # only matters when LOCAL_DATA_STORAGE is enabled
+      # only matters when ALLOW_LOCAL_DATA_STORAGE is enabled
       - ./.dev/datafiles:/data
     environment:
       VIRTUAL_HOST: "localhost"
@@ -31,8 +32,8 @@ services:
       AWS_ACCESS_KEY_ID: "AKIAZQ3DU5GQ7Y5V7TFJ"
       DJANGO_AWS_STORAGE_BUCKET_NAME: "galv"
       DJANGO_AWS_S3_REGION_NAME: "eu-west-2"
-      # Test local data storage mode by enabling DJANGO_LOCAL_DATA_STORAGE (will override AWS settings for data files)
-      DJANGO_LOCAL_DATA_STORAGE: "True"
+      # Test local data storage mode by enabling DJANGO_ALLOW_LOCAL_DATA_STORAGE (will override AWS settings for data files)
+      DJANGO_ALLOW_LOCAL_DATA_STORAGE: "True"
     env_file:
       - ./.env
       - ./.env.secret
@@ -50,8 +51,6 @@ services:
       - ./.dev/datafiles:/data
     ports:
       - "8001:80"
-    depends_on:
-      - app
     restart: unless-stopped
 
   mailhog:
@@ -88,6 +87,7 @@ services:
       VIRTUAL_HOST: "localhost"
       VIRTUAL_HOST_ROOT: "localhost"
       DJANGO_SETTINGS: "dev"
+      DJANGO_ALLOW_LOCAL_DATA_STORAGE: "True"
     env_file:
       - ./.env
     restart: "no"

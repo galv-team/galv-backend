@@ -3,9 +3,7 @@
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 import os
 import re
-from typing import Type
 
-import boto3
 import jsonschema
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -19,15 +17,14 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 from jsonschema.exceptions import _WrappedReferencingError
 from rest_framework import serializers
-from rest_framework.reverse import reverse
 
 from .choices import FileState, UserLevel, ValidationStatus
 
 from .utils import CustomPropertiesModel, JSONModel, LDSources, render_pybamm_schedule, UUIDModel, \
     combine_rdf_props, TimestampedModel
 from .autocomplete_entries import *
-from ..fields import DynamicStorageFileField
-from ..storages import LocalDataStorage
+from ..fields import DynamicStorageFileField, ParquetPartitionFileField
+from ..storages import LocalDataStorage, DataStorage, DummyDataStorage
 
 ALLOWED_USER_LEVELS_DELETE = [UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]]
 ALLOWED_USER_LEVELS_EDIT_PATH = [UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]]
@@ -205,6 +202,19 @@ class GroupProxy(Group):
             return owner.has_object_read_permission(request) or self in request.user.groups.all()
         return self in request.user.groups.all()
 
+
+class S3Error(Exception):
+    pass
+
+class S3StorageConstructionError(S3Error):
+    pass
+
+class S3IncorrectlyConfiguredError(S3Error):
+    pass
+
+class S3NotConfiguredError(S3Error):
+    pass
+
 class Lab(TimestampedModel):
     name = models.TextField(
         unique=True,
@@ -214,6 +224,17 @@ class Lab(TimestampedModel):
         null=True,
         help_text="Description of the Lab"
     )
+    s3_bucket_name = models.TextField(null=True, blank=True, help_text="Name of the S3 bucket to store files in")
+    s3_location = models.TextField(null=True, blank=True, help_text="Directory within the S3 bucket to store files in")
+    s3_access_key = models.TextField(null=True, blank=True, help_text="Access key for the S3 bucket")
+    s3_secret_key = models.TextField(null=True, blank=True, help_text="Secret key for the S3 bucket")
+    s3_region = models.TextField(null=True, blank=True, help_text="Region for the S3 bucket.")
+    s3_custom_domain = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Custom domain for the S3 bucket. Probably region-name.s3.amazonaws.com"
+    )
+
     admin_group = models.OneToOneField(
         to=GroupProxy,
         on_delete=models.CASCADE,
@@ -259,6 +280,46 @@ class Lab(TimestampedModel):
     def delete(self, using=None, keep_parents=False):
         self.admin_group.delete()
         super(Lab, self).delete(using, keep_parents)
+
+    @property
+    def s3_enabled(self):
+        return (
+                self.s3_bucket_name is not None and
+                self.s3_access_key is not None and
+                self.s3_secret_key is not None and
+                (self.s3_region is not None or self.s3_custom_domain is not None)
+        )
+
+    def get_storage(self, instance):
+        if instance.storage_class_name == "LocalDataStorage":
+            return LocalDataStorage()
+        try:
+            s3_settings = [
+                self.s3_bucket_name, self.s3_access_key, self.s3_secret_key, self.s3_region, self.s3_custom_domain
+            ]
+            if not any(s3_settings):
+                instance.storage_class_name = "LocalDataStorage"
+                if not settings.ALLOW_LOCAL_DATA_STORAGE:
+                    raise S3NotConfiguredError("Local data storage is disabled")
+                return LocalDataStorage()
+            elif not self.s3_enabled:
+                raise S3IncorrectlyConfiguredError((
+                    "S3 settings are incomplete. "
+                    "Please provide: s3_bucket_name, s3access_key, s3_secret_key, "
+                    "and either s3_region or s3_custom_domain. "
+                    "You may also provide s3_location."
+                ))
+            storage = DataStorage(
+                access_key=self.s3_access_key,
+                secret_key=self.s3_secret_key,
+                bucket_name=self.s3_bucket_name,
+                location=self.s3_location,
+                custom_domain=self.s3_custom_domain if self.s3_custom_domain else f"{self.s3_region}.s3.amazonaws.com"
+            )
+            instance.storage_class_name = storage.__class__.__name__
+            return storage
+        except Exception as e:
+            raise S3StorageConstructionError from e
 
 
 class Team(TimestampedModel):
@@ -730,11 +791,6 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
         null=True,
         help_text="Number of partitions in the file's parquet format"
     )
-    storage_urls = models.JSONField(
-        null=False,
-        default=list,
-        help_text="URLs for the file's storage"
-    )
     first_sample_no = models.PositiveIntegerField(
         null=True,
         help_text="Number of the first sample in the file"
@@ -794,34 +850,6 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
                 errors.append(f"Duplicate column name: {c.get_name()}")
             names.append(c.get_name())
         return [*self.missing_required_columns(), *errors]
-
-    def create_upload_urls(self, request):
-        if self.num_partitions is None or self.num_partitions == 0:
-            raise ValueError("Number of partitions must be set before creating upload URLs")
-        if len(self.storage_urls) > 0:
-            raise RuntimeError("Storage URLs already exist, reset them by settings file state to RETRY_IMPORT first")
-        storage_urls = self.storage_urls
-        if settings.LOCAL_DATA_STORAGE:
-            for i in range(self.num_partitions):
-                presigned = PresignedDataFile.objects.create(observed_file=self)
-                presigned.save()
-                storage_urls.append({
-                    "presigned_data_file": presigned.pk
-                })
-            self.storage_urls = storage_urls
-            return
-        # We have AWS S3 env vars all set up and okay to go
-        s3_client = boto3.client('s3')
-        for i in range(self.num_partitions):
-            response = s3_client.generate_presigned_post(
-                settings.AWS_STORAGE_BUCKET_NAME,
-                f"{self.uuid}_{i}.parquet",
-                Conditions=[],
-                Fields={"Content-Type": "application/octet-stream"},
-                ExpiresIn=300
-            )
-            storage_urls.append(response)
-        self.storage_urls = storage_urls
 
     def __str__(self):
         return self.path
@@ -916,6 +944,14 @@ class MonitoredPath(UUIDModel, ResourceModelPermissionsMixin):
     stable_time = models.PositiveSmallIntegerField(
         default=60,
         help_text="Number of seconds files must remain stable to be processed"
+    )
+    max_partition_line_count = models.PositiveIntegerField(
+        default=100_000,
+        help_text=(
+            "Maximum number of lines per parquet partition. "
+            "If your data are very wide, select a lower number. "
+            "For data with < 50 columns or so, 100,000 is a good starting point."
+        )
     )
     active = models.BooleanField(default=True, null=False)
     team = models.ForeignKey(
@@ -1337,33 +1373,34 @@ class ArbitraryFile(JSONModel, ResourceModelPermissionsMixin):
         return self.name
 
 
-class PresignedDataFile(TimestampedModel):
+class ParquetPartition(UUIDModel):
     """
-    A file that has been uploaded to the server while running with LOCAL_DATA_STORAGE=True.
+    A datafile partition in .parquet format.
+    Part of an ObservedFile's source datafile.
+    Either saved locally as a LocalParquetPartition, or saved in S3 as an S3ParquetPartition.
     """
-    file = models.FileField(storage=LocalDataStorage, null=True, blank=True)
-    auth_key = models.TextField(unique=True, null=True, blank=True)
-    observed_file = models.ForeignKey(to=ObservedFile, on_delete=models.CASCADE, null=True, blank=True)
-
-    def save(self, *args, **kwargs):
-        """
-        Generate a key if we don't have one
-        """
-        if self.auth_key is None:
-            text = 'abcdefghijklmnopqrstuvwxyz' + \
-                   'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + \
-                   '0123456789' + \
-                   '!£$%^&*-=+'
-            while True:
-                key = f"galv_{''.join(random.choices(text, k=60))}"
-                if not PresignedDataFile.objects.filter(auth_key=f"galv_{''.join(random.choices(text, k=60))}").exists():
-                    break
-            self.auth_key = key
-        super(PresignedDataFile, self).save(*args, **kwargs)
-
-    def delete(self, using=None, keep_parents=False):
-        self.file.delete()
-        super(PresignedDataFile, self).delete(using, keep_parents)
+    observed_file = models.ForeignKey(
+        to=ObservedFile,
+        on_delete=models.CASCADE,
+        null=False,
+        help_text="ObservedFile containing this partition",
+        related_name="parquet_partitions"
+    )
+    parquet_file = ParquetPartitionFileField(
+        null=True,
+        blank=True,
+        help_text="Parquet file"
+    )
+    partition_number = models.PositiveIntegerField(
+        null=False,
+        help_text="Partition number"
+    )
+    upload_errors = models.JSONField(
+        null=False,
+        default=list,
+        help_text="Upload errors"
+    )
+    storage_class_name = models.TextField(null=True, blank=True)
 
     @staticmethod
     def has_read_permission(request):
@@ -1378,10 +1415,11 @@ class PresignedDataFile(TimestampedModel):
         return False
 
     def has_object_read_permission(self, request):
-        return self.observed_file.has_read_permission(request)
+        return self.observed_file.has_object_read_permission(request)
 
     def has_object_write_permission(self, request):
         return self.observed_file.has_object_write_permission(request)
 
-    def __str__(self):
-        return f"{self.file.name}"
+    @property
+    def uploaded(self):
+        return self.parquet_file and self.parquet_file.file is not None
