@@ -320,8 +320,13 @@ class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         return value
 
     def create(self, validated_data):
-        admin_group = validated_data.pop('admin_group')
-        member_group = validated_data.pop('member_group')
+        admin_group = validated_data.pop('admin_group', [])
+        member_group = validated_data.pop('member_group', [])
+        if len(admin_group) == 0:
+            try:
+                admin_group = [self.context['request'].user.id]
+            except KeyError:
+                raise ValidationError("No admins specified and no request context available to determine user.")
         team = super().create(validated_data)
         TransparentGroupSerializer().update(team.admin_group, admin_group)
         TransparentGroupSerializer().update(team.member_group, member_group)
@@ -401,6 +406,8 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         many=True,
         help_text="Teams in this Lab"
     )
+    s3_secret_key = serializers.SerializerMethodField()
+    s3_access_key = serializers.SerializerMethodField()
 
     def create(self, validated_data):
         admin_group = validated_data.pop('admin_group')
@@ -417,6 +424,14 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             admin_group = validated_data.pop('admin_group')
             TransparentGroupSerializer().update(instance.admin_group, admin_group)
         return super().update(instance, validated_data)
+
+    def get_s3_access_key(self, instance):
+        if instance.s3_access_key:
+            return f"{instance.s3_access_key[:4]}********"
+        return instance.s3_access_key
+
+    def get_s3_secret_key(self, instance):
+        return instance.s3_secret_key if not instance.s3_secret_key else "********"
 
     def validate_s3_access_key(self, value):
         if self.instance is not None and value is None:
@@ -439,17 +454,12 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             's3_location',
             's3_access_key',
             's3_secret_key',
-            's3_region',
             's3_custom_domain',
             's3_configuration_status',
             'teams',
             'permissions'
         ]
         read_only_fields = ['url', 'id', 'teams', 'harvesters', 's3_configuration_status', 'permissions']
-        extra_kwargs = augment_extra_kwargs({
-            's3_access_key': {'write_only': True},
-            's3_secret_key': {'write_only': True}
-        })
 
 class WithTeamMixin(serializers.Serializer):
     team = TruncatedHyperlinkedRelatedIdField(

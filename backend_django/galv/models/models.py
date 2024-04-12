@@ -228,19 +228,15 @@ class Lab(TimestampedModel):
     s3_location = models.TextField(null=True, blank=True, help_text="Directory within the S3 bucket to store files in")
     s3_access_key = models.TextField(null=True, blank=True, help_text="Access key for the S3 bucket")
     s3_secret_key = models.TextField(null=True, blank=True, help_text="Secret key for the S3 bucket")
-    s3_region = models.TextField(
-        null=True,
-        blank=True,
-        help_text="Region for the S3 bucket. Only one of custom domain or region should be set."
-    )
+    # s3_region = models.TextField(
+    #     null=True,
+    #     blank=True,
+    #     help_text="Region for the S3 bucket. Only one of custom domain or region should be set."
+    # )
     s3_custom_domain = models.TextField(
         null=True,
         blank=True,
-        help_text=(
-            "Custom domain for the S3 bucket. "
-            "Probably region-name.s3.amazonaws.com. "
-            "Only one of custom domain or region should be set."
-        )
+        help_text=("Custom domain for the S3 bucket.")
     )
 
     admin_group = models.OneToOneField(
@@ -295,10 +291,11 @@ class Lab(TimestampedModel):
             's3_bucket_name',
             's3_access_key',
             's3_secret_key',
-            's3_domain'
+            's3_custom_domain'
         ]
         enabled = any([getattr(self, s) is not None for s in s3_settings])
         missing = []
+        s3_settings.pop(-1)  # custom domain is optional
         for s in s3_settings:
             if getattr(self, s) is None:
                 missing.append(s)
@@ -311,7 +308,7 @@ class Lab(TimestampedModel):
                     secret_key=self.s3_secret_key,
                     bucket_name=self.s3_bucket_name,
                     location=self.s3_location,
-                    custom_domain=self.s3_domain
+                    custom_domain=self.s3_custom_domain
                 )
             except Exception as e:
                 ok = False
@@ -322,14 +319,6 @@ class Lab(TimestampedModel):
             'missing_properties': missing,
             'initialization_error': error
         }
-
-    @property
-    def s3_domain(self):
-        if self.s3_custom_domain:
-            return self.s3_custom_domain
-        if self.s3_region:
-            return f"{self.s3_region}.s3.amazonaws.com"
-        return None
 
     def get_storage(self, instance):
         if instance.storage_class_name == "LocalDataStorage":
@@ -348,7 +337,7 @@ class Lab(TimestampedModel):
                 secret_key=self.s3_secret_key,
                 bucket_name=self.s3_bucket_name,
                 location=self.s3_location,
-                custom_domain=self.s3_domain
+                custom_domain=self.s3_custom_domain or False
             )
             instance.storage_class_name = storage.__class__.__name__
             return storage
