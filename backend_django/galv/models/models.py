@@ -286,7 +286,7 @@ class Lab(TimestampedModel):
         super(Lab, self).delete(using, keep_parents)
 
     @property
-    def s3_configuration_status(self):
+    def s3_configuration_status(self) -> dict:
         s3_settings = [
             's3_bucket_name',
             's3_access_key',
@@ -1444,5 +1444,5 @@ class ParquetPartition(UUIDModel):
         return self.observed_file.has_object_write_permission(request)
 
     @property
-    def uploaded(self):
+    def uploaded(self) -> bool:
         return self.parquet_file and self.parquet_file.file is not None

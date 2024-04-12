@@ -425,12 +425,12 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             TransparentGroupSerializer().update(instance.admin_group, admin_group)
         return super().update(instance, validated_data)
 
-    def get_s3_access_key(self, instance):
+    def get_s3_access_key(self, instance) -> str|None:
         if instance.s3_access_key:
             return f"{instance.s3_access_key[:4]}********"
         return instance.s3_access_key
 
-    def get_s3_secret_key(self, instance):
+    def get_s3_secret_key(self, instance) -> str|None:
         return instance.s3_secret_key if not instance.s3_secret_key else "********"
 
     def validate_s3_access_key(self, value):
