@@ -3,13 +3,16 @@
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 from __future__ import annotations
 
+import cProfile
 import datetime
+import pstats
+from pstats import SortKey
 
 import knox.auth
 import os
 
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, FileResponse
 from django.urls import NoReverseMatch
 from dry_rest_permissions.generics import DRYPermissions
 from rest_framework.mixins import ListModelMixin
@@ -33,7 +36,7 @@ from .serializers import HarvesterSerializer, \
     KnoxTokenFullSerializer, CellFamilySerializer, EquipmentFamilySerializer, \
     ScheduleSerializer, CyclerTestSerializer, ScheduleFamilySerializer, DataColumnTypeSerializer, DataColumnSerializer, \
     ExperimentSerializer, LabSerializer, TeamSerializer, ValidationSchemaSerializer, SchemaValidationSerializer, \
-    ArbitraryFileSerializer, ArbitraryFileCreateSerializer, ParquetPartitionSerializer
+    ArbitraryFileSerializer, ArbitraryFileCreateSerializer, ParquetPartitionSerializer, ColumnMappingSerializer
 from .models import Harvester, \
     HarvestError, \
     MonitoredPath, \
@@ -48,7 +51,7 @@ from .models import Harvester, \
     CellChemistries, CellFormFactors, ScheduleIdentifiers, EquipmentFamily, Schedule, CyclerTest, ScheduleFamily, \
     ValidationSchema, Experiment, Lab, Team, UserProxy, GroupProxy, ValidatableBySchemaMixin, SchemaValidation, \
     UserActivation, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, ALLOWED_USER_LEVELS_DELETE, \
-    ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, S3Error
+    ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, S3Error, ColumnMapping
 from .permissions import HarvesterFilterBackend, TeamFilterBackend, LabFilterBackend, GroupFilterBackend, \
     ResourceFilterBackend, ObservedFileFilterBackend, UserFilterBackend, SchemaValidationFilterBackend
 from .serializers.utils import get_GetOrCreateTextStringSerializer
@@ -672,6 +675,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                 return error_response('file_size task requires content to include size field')
 
             file, _ = ObservedFile.objects.get_or_create(harvester=harvester, path=path)
+            file.monitored_paths.add(monitored_path)
 
             size = content['size']
             if size < file.last_observed_size:
@@ -687,7 +691,12 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                 if file.last_observed_time + timezone.timedelta(seconds=monitored_path.stable_time) > timezone.now():
                     file.state = FileState.UNSTABLE
                 # Stable file -- already imported?
-                elif file.state not in [FileState.IMPORTED, FileState.IMPORT_FAILED]:
+                elif file.state not in [
+                    FileState.IMPORTED,
+                    FileState.IMPORT_FAILED,
+                    FileState.MAP_ASSIGNED,
+                    FileState.AWAITING_MAP_ASSIGNMENT
+                ]:
                     file.state = FileState.STABLE
 
             file.save()
@@ -714,32 +723,44 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                     file.extra_metadata = extra_metadata
                 file.core_metadata = core_metadata
 
-            def handle_column_metadata(file, data):
+            def handle_data_summary(file, data, request):
+                try:
+                    data = json.loads(data)
+                except json.JSONDecodeError:
+                    return error_response("Data summary must be a JSON string of the first few rows of the file")
                 if not isinstance(data, dict):
-                    return error_response("Column metadata must be a dictionary")
-                for name, column in data.items():
-                    if column.get('column_id') is not None:
-                        data_column, _ = DataColumn.objects.get_or_create(
-                            file=file,
-                            type_id=column['column_type_id'],
-                            defaults={'name_in_file': column.get('column_name', name)}
-                        )
-                    else:
-                        data_column, _ = DataColumn.objects.get_or_create(
-                            file=file,
-                            name_in_file=column.get('column_name', name)
-                        )
-                    if column.get('unit_id') is not None:
-                        data_column.unit = DataUnit.objects.get(id=column.get('unit_id'))
-                    elif column.get('unit_symbol') is not None:
-                        data_column.unit = DataUnit.objects.get_or_create(symbol=column.get('unit_symbol'))[0]
-                    data_column.column_name = column.get('column_name')
-                    data_column.data_type = column.get('data_type')
-                    data_column.save()
+                    return error_response("Data summary must be a dictionary")
+
+                # data is a summary of the data in the file
+                # If data are different to existing data, remove mapping
+                # This prevents a user-assigned mapping being inappropriately applied
+                if file.summary != data:
+                    file.mapping = None
+                    file.state = FileState.AWAITING_MAP_ASSIGNMENT
+
+                file.summary = data
+                file.save()
+
+                # Check if we can assign a mapping automatically
+                if file.mapping:
+                    file.state = FileState.MAP_ASSIGNED
+                    return
+                mappings = file.applicable_mappings(request)
+                mappings = [m for m in mappings if m['mapping'].is_valid]
+                if mappings:
+                    best = mappings[0]
+                    if best['mapping'].is_valid:  # only assign if the mapping is valid
+                        # If there's a tie for best mapping, don't assign (let the user choose later)
+                        if len(mappings) == 1 or mappings[1]['missing'] > best['missing']:
+                            file.mapping = best['mapping']
+                            file.state = FileState.MAP_ASSIGNED
+                            return
+                file.state = FileState.AWAITING_MAP_ASSIGNMENT
 
             def handle_upload_urls(file, data, request):
                 file.num_rows = data['total_row_count']
                 file.num_partitions = data['partition_count']
+                file.state = FileState.IMPORTING
                 file.save()
                 try:
                     partition, _ = ParquetPartition.objects.get_or_create(
@@ -787,8 +808,8 @@ class HarvesterViewSet(viewsets.ModelViewSet):
 
                     if stage == settings.HARVEST_STAGE_FILE_METADATA:
                         handle_file_metadata(file, data)
-                    elif stage == settings.HARVEST_STAGE_COLUMN_METADATA:
-                        handle_column_metadata(file, data)
+                    elif stage == settings.HARVEST_STAGE_DATA_SUMMARY:
+                        handle_data_summary(file, data, request)
                     elif stage == settings.HARVEST_STAGE_UPLOAD_PARQUET:
                         return handle_upload_urls(file, data, request)  # return because we return the ParquetPartition
                     elif stage == settings.HARVEST_STAGE_UPLOAD_COMPLETE:
@@ -1011,11 +1032,48 @@ class ObservedFileViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(file, context={'request': request}).data)
 
 
+class ColumnMappingViewSet(viewsets.ModelViewSet):
+    permission_classes = [DRYPermissions]
+    serializer_class = ColumnMappingSerializer
+    queryset = ColumnMapping.objects.all().order_by('-uuid')
+    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            mapping = self.get_object()
+            self.check_object_permissions(self.request, mapping)
+        except ColumnMapping.DoesNotExist:
+            return error_response("Mapping not found")
+        if mapping.in_use:
+            return error_response("Mapping is in use and cannot be deleted")
+        return super().destroy(request, *args, **kwargs)
+
+
+@extend_schema_view(
+    file=extend_schema(
+        summary="Download a file",
+        description="""
+Download a file from the API.
+        """,
+        responses={
+            200: FileResponse
+        }
+    )
+)
 class ParquetPartitionViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     serializer_class = ParquetPartitionSerializer
-    queryset = ParquetPartition.objects.all().order_by('-uuid')
+    queryset = ParquetPartition.objects.all().order_by('-observed_file__uuid', 'partition_number')
     http_method_names = ['get', 'post', 'options']
+
+    # def list(self, request, *args, **kwargs):
+    #     if not kwargs.get('skiprecur'):
+    #         cProfile.runctx('self.list(request, skiprecur=True, *args, **kwargs)', locals(), globals(), filename='stats')
+    #         p = pstats.Stats('stats')
+    #         p.strip_dirs().sort_stats('cumulative').print_stats(30)
+    #         os.unlink('stats')
+    #     response = super().list(request, *args, **kwargs)
+    #     return response
 
     @action(detail=True, methods=['GET'])
     def file(self, request, pk = None):
@@ -1030,10 +1088,10 @@ class ParquetPartitionViewSet(viewsets.ModelViewSet):
                 # Send the file directly via the upstream nginx proxy
                 response = HttpResponse()
                 response["Content-Disposition"] = f"attachment; filename={parquet_file.name}"
-                response['X-Accel-Redirect'] = parquet_file.backend_url
+                response['X-Accel-Redirect'] = parquet_file.backend_url()
             else:
                 # Redirect to S3
-                response = HttpResponseRedirect(parquet_file.backend_url)
+                response = HttpResponseRedirect(parquet_file.backend_url())
             return response
         return error_response("File not uploaded")
 

@@ -59,8 +59,12 @@ class ParquetPartitionFieldFile(FieldFile):
             return None
         return reverse('parquetpartition-file', args=[self.instance.pk])
 
-    @property
     def backend_url(self):
+        """
+        Returns the backend URL for the file.
+
+        Not a property because it takes a long time to run.
+        """
         return super().url
 
 
@@ -71,13 +75,6 @@ class ParquetPartitionFileField(models.FileField):
      unless provided with a model instance.
     """
     attr_class = ParquetPartitionFieldFile
-
-    # def __init__(self, storage=None, *args, **kwargs):
-    #     if callable(storage):
-    #         self._storage_callable = storage
-    #         self._storage_kwargs = storage_kwargs or {}
-    #         storage = storage(**self._storage_kwargs)
-    #     super().__init__(storage=storage, *args, **kwargs)
 
     def pre_save(self, model_instance, add):
         self.storage = model_instance.observed_file.harvester.lab.get_storage(model_instance)

@@ -24,15 +24,6 @@ class HarvesterFilterBackend(DRYPermissionFiltersBase):
             return queryset.none()
         return queryset.filter(lab__in=labs)
 
-    # def filter_config_queryset(self, request, queryset, view):
-    #     key = request.META.get('HTTP_AUTHORIZATION', '')
-    #     if key.startswith('Harvester '):
-    #         return queryset.filter(api_key=key.split(' ')[1])
-    #     return queryset.none()
-    #
-    # def filter_report_queryset(self, request, queryset, view):
-    #     return self.filter_config_queryset(request, queryset, view)
-
 class LabFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):
@@ -74,17 +65,8 @@ class UserFilterBackend(DRYPermissionFiltersBase):
 class ObservedFileFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):
-        files = ObservedFile.objects.filter(harvester__lab__in=user_labs(request.user)).values("path", "pk", "harvester")
-        paths = MonitoredPath.objects.filter(team__in=user_teams(request.user)).values("path", "harvester", "regex")
-        file_ids = []
-        # Not sure there's a good way around checking every file against every path
-        for file in files:
-            for path in paths:
-                if path.get('harvester') == file.get('harvester') and MonitoredPath.paths_match(path['path'], file['path'], path['regex']):
-                    file_ids.append(file.get('pk'))
-                    break
-
-        return queryset.filter(pk__in=file_ids)
+        paths = MonitoredPath.objects.filter(team__in=user_teams(request.user)).values('pk')
+        return queryset.filter(monitored_paths__pk__in=paths)
 
 
 class ResourceFilterBackend(DRYPermissionFiltersBase):

@@ -42,6 +42,14 @@ ALLOWED_USER_LEVELS_READ = [UserLevel(v) for v in [
     UserLevel.ANONYMOUS
 ]]
 
+DATA_TYPES = [
+    "int",
+    "float",
+    "str",
+    "bool",
+    "datetime64[ns]",
+]
+
 
 VALIDATION_MOCK_ENDPOINT = "/validation_mock_request_target/"
 
@@ -425,6 +433,14 @@ def user_teams(user, editable=False):
     Return a list of all teams the user is a member of
     """
     teams = []
+    # Harvesters are part of any team that owns one of their monitored paths
+    if isinstance(user, HarvesterUser):
+        if editable:  # Harvesters don't have write access based on Team membership
+            return []
+        for mp in user.harvester.monitored_paths.all():
+            if mp.team not in teams:
+                teams.append(mp.team)
+        return teams
     for g in user.groups.all():
         if hasattr(g, 'editable_team'):
             teams.append(g.editable_team)
@@ -768,6 +784,65 @@ class Harvester(UUIDModel):
         super(Harvester, self).save(*args, **kwargs)
 
 
+class ColumnMapping(UUIDModel, ResourceModelPermissionsMixin):
+    """
+    A mapping of DataColumn names to DataColumnType names.
+    Mapping has the structure:
+    {
+        "column_name_in_file": {
+            "column_type": "DataColumnType_id",
+            "new_name": "New name for the column",
+            "multiplier": 1.0,
+            "addition": 1.0
+        }
+    }
+    """
+    name = models.TextField(unique=True)
+    map = models.JSONField(
+        null=False,
+        help_text=(
+            "Mapping of column names to Column objects. "
+            "Each key is a column name in the file, and each value is a dictionary with the following keys: "
+            "`column_type` (required): the ID of the DataColumnType object to map to, "
+            "`new_name` (optional): a new name for the column (defaults to column_type's name) "
+            "and cannot be specified for required columns "
+            "(recommended to use a lowercase style with units in square brackets e.g. `speed_increase[m.s-1]`), "
+            "`multiplier` (optional): a multiplier to apply to the column, "
+            "`addition` (optional): a value to add to the column. "
+            "Multiplier and addition are only used for numerical (int/float) columns. "
+            "The new value is calculated as `new_value = (old_value + addition) * multiplier`. "
+            "Columns will be renamed to match the DataColumnType name. "
+            "**Columns not in the map will be coerced to float datatype.**"
+        )
+    )
+
+    @property
+    def in_use(self) -> bool:
+        return self.observed_files.count() > 0
+
+    @property
+    def missing_required_columns(self):
+        """
+        Return a list of missing required columns.
+        """
+        ids = [col['column_type'] for col in self.map.values()]
+        missing = []
+        for col in DataColumnType.objects.filter(is_required=True):
+            if col.pk not in ids:
+                missing.append(col.name)
+        return missing
+
+    @property
+    def is_valid(self):
+        """
+        A valid mapping contains all required columns.
+        """
+        return len(self.missing_required_columns) == 0
+
+    def __str__(self):
+        return self.name
+
+
 class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
     path = models.TextField(help_text="Absolute file path")
     harvester = models.ForeignKey(
@@ -830,6 +905,20 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
         null=True,
         help_text="Extra metadata from the harvester"
     )
+    monitored_paths = models.ManyToManyField(
+        to='MonitoredPath',
+        help_text="Paths that this file is on",
+        related_name="files",
+        blank=True
+    )
+    summary = models.JSONField(null=True, blank=True)
+    mapping = models.ForeignKey(
+        ColumnMapping,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="observed_files"
+    )
 
     @staticmethod
     def has_read_permission(request):
@@ -842,37 +931,56 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
     def has_object_read_permission(self, request):
         if self.harvester.is_valid_harvester(request):
             return True
-        try:
-            teams = [t for t in user_teams(request.user) if t.lab == self.harvester.lab]
-            for team in teams:
-                for path in team.monitored_paths.all():
-                    if path.matches(self.path):
-                        return True
-        except AttributeError:
-            return False
-        return False
+        return any([path.has_object_read_permission(request) for path in self.monitored_paths.all()])
 
     def has_object_write_permission(self, request):
-        return self.has_object_read_permission(request)
+        if self.harvester.is_valid_harvester(request):
+            return True
+        return any([path.has_object_write_permission(request) for path in self.monitored_paths.all()])
 
-    def missing_required_columns(self):
-        errors = []
-        for required_column in DataColumnType.objects.filter(is_required=True):
-            if not self.columns.filter(type=required_column).count() == 1:
-                errors.append(f"Missing required column: {required_column.override_child_name or required_column.name}")
-        return errors
+    def applicable_mappings(self, request):
+        """
+        Return a list of applicable mappings for this file,
+        sorted by validity (whether the mapping has all key columns),
+        and applicability (number of file columns missed).
+        """
+        if not isinstance(self.summary, dict):
+            return []
+        col_names = self.summary.keys()
+        applicable_valid_mappings = []
+        applicable_invalid_mappings = []
+        for mapping in ColumnMapping.objects.all():
+            mapping.has_object_read_permission(request)
+            # A mapping is only applicable if all of its keys are in the column names
+            if any([m not in col_names for m in mapping.map.keys()]):
+                continue
+            # Applicability is scored by the number of column names it matches
+            matches = []
+            for col in col_names:
+                if col in mapping.map:
+                    matches.append(col)
+            missing = len(col_names) - len(matches)
+            if mapping.is_valid:
+                applicable_valid_mappings.append({'mapping': mapping, 'missing': missing})
+            else:
+                applicable_invalid_mappings.append({'mapping': mapping, 'missing': missing})
 
-    def has_required_columns(self):
-        return len(self.missing_required_columns()) == 0
+        applicable_valid_mappings = sorted(applicable_valid_mappings, key=lambda x: x['missing'])
+        applicable_invalid_mappings = sorted(applicable_invalid_mappings, key=lambda x: x['missing'])
+        return [*applicable_valid_mappings, *applicable_invalid_mappings]
 
-    def column_errors(self):
-        errors = []
-        names = []
-        for c in self.columns.all():
-            if c.get_name() in names:
-                errors.append(f"Duplicate column name: {c.get_name()}")
-            names.append(c.get_name())
-        return [*self.missing_required_columns(), *errors]
+    def save(
+            self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        # If the mapping is updated, set the state to MAP_ASSIGNED so the harvester reprocesses the data
+        if self.pk:
+            try:
+                prev_mapping = ObservedFile.objects.get(pk=self.pk).mapping
+            except ObservedFile.DoesNotExist:
+                prev_mapping = None
+            if prev_mapping != self.mapping:
+                self.state = FileState.MAP_ASSIGNED if self.mapping else FileState.AWAITING_MAP_ASSIGNMENT
+        super(ObservedFile, self).save(force_insert, force_update, using, update_fields)
 
     def __str__(self):
         return self.path
@@ -1094,6 +1202,12 @@ class DataColumnType(ValidatableBySchemaMixin, ResourceModelPermissionsMixin):
     )
     name = models.TextField(null=False, help_text="Human-friendly identifier")
     description = models.TextField(help_text="Origins and purpose")
+    data_type = models.TextField(
+        null=False,
+        choices=[(v, v) for v in DATA_TYPES],
+        help_text="Type of the data in this column",
+        default="float"
+    )
     is_default = models.BooleanField(
         default=False,
         help_text="Whether the Column is included in the initial list of known Column Types"
@@ -1445,4 +1559,4 @@ class ParquetPartition(UUIDModel):
 
     @property
     def uploaded(self) -> bool:
-        return self.parquet_file and self.parquet_file.file is not None
+        return self.parquet_file is not None

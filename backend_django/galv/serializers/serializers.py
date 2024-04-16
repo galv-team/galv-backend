@@ -25,7 +25,7 @@ from ..models import Harvester, \
     EquipmentManufacturers, EquipmentModels, EquipmentFamily, Schedule, ScheduleIdentifiers, CyclerTest, \
     render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, user_labs, \
     user_teams, SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
-    ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition
+    ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, ColumnMapping
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
 from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
@@ -1272,6 +1272,103 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
         })
 
 
+class ColumnMappingSerializer(serializers.HyperlinkedModelSerializer, WithTeamMixin, PermissionsMixin):
+    rendered_map = serializers.SerializerMethodField()
+
+    def get_rendered_map(self, instance) -> dict:
+        out = {}
+        for key, value in instance.map.items():
+            data_column_type = DataColumnType.objects.get(pk=value['column_type'])
+            out[key] = {
+                'new_name': value.get('new_name', data_column_type.name),
+                'data_type': data_column_type.data_type
+            }
+            if data_column_type.data_type in ['int', 'float']:
+                out[key]['multiplier'] = value.get('multiplier', 1)
+                out[key]['addition'] = value.get('addition', 0)
+        return out
+
+    def validate_map(self, value):
+        """
+        Expect a dictionary with the structure:
+        ```
+        {
+            "column_name_in_file": {
+                "column_type": "DataColumnType uuid",
+                "new_name": "str",
+                "multiplier": "float",
+                "addition": "float"
+            },
+            ...
+        }
+        ```
+        `new_name` is optional and defaults to the name of the DataColumnType.
+        `addition` and `multiplier` are optional.
+        If they are not provided, they default to 0 and 1 respectively.
+        They are only used for numerical columns.
+        New column values = (old column value + addition) * multiplier.
+        E.g. to convert from degrees C to K, you would set multiplier to 1 and addition to 273.15.
+        """
+        if not isinstance(value, dict):
+            raise ValidationError("Map must be a dictionary")
+        required_column_ids = [c.pk for c in DataColumnType.objects.filter(is_required=True)]
+        required_columns_supplied = {}
+        for k, v in value.items():
+            if not isinstance(k, str):
+                raise ValidationError("Keys must be strings representing the names of columns in the file")
+            if not isinstance(v, dict):
+                raise ValidationError("Values must be dictionaries")
+            try:
+                column_type = DataColumnType.objects.get(pk=v.get('column_type'))
+            except DataColumnType.DoesNotExist:
+                if v.get('column_type') is None:
+                    raise ValidationError(
+                        f"No column_type specified for column '{k}' - perhaps you should use Unknown"
+                    )
+                raise ValidationError(f"Invalid column_type id '{v.get('column_type')}' for column '{k}'")
+            if column_type.pk in required_column_ids:
+                if column_type.pk in required_columns_supplied.keys():
+                    raise ValidationError(
+                        f"Cannot assign column '{k}' to required column {column_type.name}. "
+                        f"Column {column_type.name} is already assigned to column '{required_columns_supplied[column_type.pk]}'"
+                    )
+                required_columns_supplied[column_type.pk] = k
+            if 'new_name' in v:
+                if column_type.is_required:
+                    raise ValidationError(f"Column '{k}' is one of the core required columns and cannot be renamed")
+                if not isinstance(v['new_name'], str):
+                    raise ValidationError(f"new_name for column '{k}' must be a string")
+            if column_type.data_type in ['int', 'float']:
+                if 'multiplier' not in v:
+                    v['multiplier'] = 1
+                elif type(v['multiplier']) != column_type.data_type:
+                    raise ValidationError(f"Multiplier for column '{k}' must be a {column_type.data_type}")
+                if 'addition' not in v:
+                    v['addition'] = 0
+                elif type(v['addition']) != column_type.data_type:
+                    raise ValidationError(f"Addition for column '{k}' must be a {column_type.data_type}")
+            elif 'multiplier' in v:
+                raise ValidationError(f"Column '{k}' is not numerical, so it cannot have a multiplier")
+            elif 'addition' in v:
+                raise ValidationError(f"Column '{k}' is not numerical, so it cannot have an addition")
+        return value
+
+    def validate(self, attrs):
+        if self.instance and self.instance.in_use:
+            raise ValidationError("Cannot modify a ColumnMapping that is in use")
+        return super().validate(attrs)
+
+    class Meta:
+        model = ColumnMapping
+        fields = [
+            'url', 'uuid',
+            'name', 'map',
+            'rendered_map', 'is_valid', 'missing_required_columns',
+            'team', 'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
+        ]
+        read_only_fields = ['url', 'uuid', 'rendered_map', 'is_valid', 'missing_required_columns', 'permissions']
+
+
 class ParquetPartitionSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     observed_file = TruncatedHyperlinkedRelatedIdField(
         'ObservedFileSerializer',
@@ -1409,22 +1506,11 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
         read_only=True,
         help_text="Harvester this File belongs to"
     )
+    applicable_mappings = serializers.SerializerMethodField(
+        help_text="Mappings that can be applied to this File"
+    )
     upload_info = serializers.SerializerMethodField(
         help_text="Metadata required for harvester program to resume file parsing"
-    )
-    has_required_columns = serializers.SerializerMethodField(
-        help_text="Whether the file has all required columns"
-    )
-    columns = TruncatedHyperlinkedRelatedIdField(
-        'DataColumnSerializer',
-        ['name', 'name_in_file', 'type'],
-        view_name='datacolumn-detail',
-        read_only=True,
-        many=True,
-        help_text="Columns extracted from this File"
-    )
-    column_errors = serializers.SerializerMethodField(
-        help_text="Errors in uploaded columns"
     )
 
     def get_upload_info(self, instance) -> dict | None:
@@ -1445,11 +1531,14 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
         except BaseException as e:
             return {'columns': [], 'last_record_number': None, 'error': str(e)}
 
-    def get_has_required_columns(self, instance) -> bool:
-        return instance.has_required_columns()
-
-    def get_column_errors(self, instance) -> list:
-        return instance.column_errors()
+    def get_applicable_mappings(self, instance) -> list:
+        mappings = instance.applicable_mappings(self.context.get('request'))
+        if len(mappings):
+            return [
+                {**ColumnMappingSerializer(m['mapping'], context=self.context).data, 'missing': m['missing']}
+                for m in mappings
+            ]
+        return []
 
     class Meta:
         model = ObservedFile
@@ -1461,14 +1550,15 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
             'first_sample_no',
             'last_sample_no',
             'extra_metadata',
-            'has_required_columns',
             'last_observed_time', 'last_observed_size',
-            'column_errors',
             'upload_errors',
+            'summary',
+            'applicable_mappings',
             'parquet_partitions',
-            'upload_info', 'columns', 'permissions'
+            'upload_info',
+            'permissions'
         ]
-        fields = [*read_only_fields, 'name']
+        fields = [*read_only_fields, 'name', 'mapping']
         extra_kwargs = augment_extra_kwargs({
             'upload_errors': {'help_text': "Errors associated with this File"}
         })

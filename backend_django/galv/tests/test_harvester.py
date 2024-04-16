@@ -365,7 +365,7 @@ class HarvesterTests(GalvTestCase):
                 'name': 'import_in_progress',
                 'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {
                     'task': settings.HARVESTER_TASK_IMPORT,
-                    'stage': settings.HARVEST_STAGE_COLUMN_METADATA,
+                    'stage': settings.HARVEST_STAGE_DATA_SUMMARY,
                     'data': {
                         "first_column": {'unit_symbol': "s", 'data_type': 'int', 'column_name': "first_column", 'values': [7, 8, 9]}
                     }
