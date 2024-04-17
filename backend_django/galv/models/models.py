@@ -839,6 +839,20 @@ class ColumnMapping(UUIDModel, ResourceModelPermissionsMixin):
         """
         return len(self.missing_required_columns) == 0
 
+    def save(
+            self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        try:
+            old_self = ColumnMapping.objects.get(pk=self.pk)
+        except ColumnMapping.DoesNotExist:
+            old_self = None
+        update_files = old_self is not None and self.pk and self.map != old_self.map
+        super(ColumnMapping, self).save(force_insert, force_update, using, update_fields)
+        if update_files:
+            for file in self.observed_files.all():
+                file.state = FileState.MAP_ASSIGNED
+                file.save()
+
     def __str__(self):
         return self.name
 
@@ -919,6 +933,15 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
         blank=True,
         related_name="observed_files"
     )
+
+    @property
+    def has_required_columns(self):
+        """
+        Return whether the file has all required columns.
+        """
+        if self.mapping is None:
+            return False
+        return self.mapping.is_valid
 
     @staticmethod
     def has_read_permission(request):

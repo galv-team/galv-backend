@@ -366,9 +366,10 @@ class HarvesterTests(GalvTestCase):
                 'data': {'status': settings.HARVESTER_STATUS_SUCCESS, 'path': f.path, 'monitored_path_uuid': mp.uuid, 'content': {
                     'task': settings.HARVESTER_TASK_IMPORT,
                     'stage': settings.HARVEST_STAGE_DATA_SUMMARY,
-                    'data': {
-                        "first_column": {'unit_symbol': "s", 'data_type': 'int', 'column_name': "first_column", 'values': [7, 8, 9]}
-                    }
+                    'data': json.dumps({
+                        "first_column": [7, 8, 9],
+                        "second_column": [10, 11, 12]
+                    })
                 }},
                 'checks': [
                     lambda r: check_response(r, r.status_code, status.HTTP_200_OK),

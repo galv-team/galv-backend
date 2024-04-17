@@ -53,7 +53,8 @@ from .models import Harvester, \
     UserActivation, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, ALLOWED_USER_LEVELS_DELETE, \
     ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, S3Error, ColumnMapping
 from .permissions import HarvesterFilterBackend, TeamFilterBackend, LabFilterBackend, GroupFilterBackend, \
-    ResourceFilterBackend, ObservedFileFilterBackend, UserFilterBackend, SchemaValidationFilterBackend
+    ResourceFilterBackend, ObservedFileFilterBackend, UserFilterBackend, SchemaValidationFilterBackend, \
+    ParquetPartitionFilterBackend
 from .serializers.utils import get_GetOrCreateTextStringSerializer
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -757,7 +758,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                             return
                 file.state = FileState.AWAITING_MAP_ASSIGNMENT
 
-            def handle_upload_urls(file, data, request):
+            def handle_upload_parquets(file, data, request):
                 file.num_rows = data['total_row_count']
                 file.num_partitions = data['partition_count']
                 file.state = FileState.IMPORTING
@@ -767,6 +768,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                         observed_file=file,
                         partition_number=data['partition_number']
                     )
+                    partition.parquet_file.delete()
                     partition.parquet_file = request.FILES.get('parquet_file')
                     # partition.parquet_file.save()
                     partition.save()
@@ -811,7 +813,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                     elif stage == settings.HARVEST_STAGE_DATA_SUMMARY:
                         handle_data_summary(file, data, request)
                     elif stage == settings.HARVEST_STAGE_UPLOAD_PARQUET:
-                        return handle_upload_urls(file, data, request)  # return because we return the ParquetPartition
+                        return handle_upload_parquets(file, data, request)  # return because we return the ParquetPartition
                     elif stage == settings.HARVEST_STAGE_UPLOAD_COMPLETE:
                         handle_upload_complete(file, data)
                     else:
@@ -1060,11 +1062,11 @@ Download a file from the API.
         }
     )
 )
-class ParquetPartitionViewSet(viewsets.ModelViewSet):
+class ParquetPartitionViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [DRYPermissions]
+    filter_backends = [ParquetPartitionFilterBackend]
     serializer_class = ParquetPartitionSerializer
     queryset = ParquetPartition.objects.all().order_by('-observed_file__uuid', 'partition_number')
-    http_method_names = ['get', 'post', 'options']
 
     # def list(self, request, *args, **kwargs):
     #     if not kwargs.get('skiprecur'):

@@ -69,6 +69,13 @@ class ObservedFileFilterBackend(DRYPermissionFiltersBase):
         return queryset.filter(monitored_paths__pk__in=paths)
 
 
+class ParquetPartitionFilterBackend(DRYPermissionFiltersBase):
+    action_routing = True
+    def filter_list_queryset(self, request, queryset, view):
+        files = ObservedFileFilterBackend().filter_list_queryset(request, ObservedFile.objects.all(), view).values('pk')
+        return queryset.filter(observed_file__pk__in=files)
+
+
 class ResourceFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):

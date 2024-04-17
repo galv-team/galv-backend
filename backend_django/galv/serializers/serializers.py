@@ -1382,10 +1382,11 @@ class ParquetPartitionSerializer(serializers.HyperlinkedModelSerializer, Permiss
         model = ParquetPartition
         read_only_fields = [
             'url', 'uuid',
-            'observed_file', 'partition_number', 'uploaded', 'upload_errors',
+            'parquet_file', 'observed_file',
+            'partition_number', 'uploaded', 'upload_errors',
             'permissions'
         ]
-        fields = [*read_only_fields, 'parquet_file']
+        fields = read_only_fields
 
 
 @extend_schema_serializer(examples = [
@@ -1551,6 +1552,7 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
             'last_sample_no',
             'extra_metadata',
             'last_observed_time', 'last_observed_size',
+            'has_required_columns',
             'upload_errors',
             'summary',
             'applicable_mappings',
