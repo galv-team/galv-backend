@@ -14,6 +14,7 @@ import os
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect, FileResponse
 from django.urls import NoReverseMatch
+from drf_spectacular.types import OpenApiTypes
 from dry_rest_permissions.generics import DRYPermissions
 from rest_framework.mixins import ListModelMixin
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -1057,9 +1058,7 @@ class ColumnMappingViewSet(viewsets.ModelViewSet):
         description="""
 Download a file from the API.
         """,
-        responses={
-            200: FileResponse
-        }
+        responses={200: OpenApiTypes.BINARY}
     )
 )
 class ParquetPartitionViewSet(viewsets.ReadOnlyModelViewSet):

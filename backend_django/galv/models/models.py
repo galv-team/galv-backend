@@ -821,7 +821,7 @@ class ColumnMapping(UUIDModel, ResourceModelPermissionsMixin):
         return self.observed_files.count() > 0
 
     @property
-    def missing_required_columns(self):
+    def missing_required_columns(self) -> list[str]:
         """
         Return a list of missing required columns.
         """
@@ -833,7 +833,7 @@ class ColumnMapping(UUIDModel, ResourceModelPermissionsMixin):
         return missing
 
     @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
         """
         A valid mapping contains all required columns.
         """
@@ -935,7 +935,7 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
     )
 
     @property
-    def has_required_columns(self):
+    def has_required_columns(self) -> bool:
         """
         Return whether the file has all required columns.
         """
