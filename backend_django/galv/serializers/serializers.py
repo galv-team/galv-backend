@@ -1628,9 +1628,13 @@ class DataColumnTypeSerializer(serializers.HyperlinkedModelSerializer, WithTeamM
 
     class Meta:
         model = DataColumnType
-        fields = ['url', 'id', 'name', 'description', 'is_default', 'unit', 'team', 'columns',
-                  'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level']
-        read_only_fields = ['url', 'id', 'is_default', 'columns', 'permissions']
+        fields = [
+            'url', 'id',
+            'name', 'description', 'is_default', 'is_required', 'unit', 'data_type',
+            'team', 'columns',
+            'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
+        ]
+        read_only_fields = ['url', 'id', 'is_default', 'is_required', 'columns', 'permissions']
         extra_kwargs = augment_extra_kwargs()
 
 

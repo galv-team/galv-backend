@@ -84,8 +84,8 @@
             "created": "2023-12-06T15:10:05+00:00",
             "modified": "2023-12-06T15:10:05+00:00",
             "name": "Temperature",
-            "symbol": "°c",
-            "description": "Temperature in Centigrade",
+            "symbol": "K",
+            "description": "Temperature in Kelvin",
             "is_default": true,
             "read_access_level": 0
         }
