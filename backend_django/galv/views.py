@@ -533,7 +533,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
     filter_backends = [HarvesterFilterBackend]
     filterset_fields = ['name', 'lab_id']
     search_fields = ['@name']
-    queryset = Harvester.objects.all().order_by('-last_check_in', '-uuid')
+    queryset = Harvester.objects.all().order_by('-last_check_in', '-id')
     http_method_names = ['get', 'post', 'patch', 'options']
 
     def get_serializer_class(self):
@@ -564,7 +564,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
 
         Only available to Harvesters.
         """
-        harvester = get_object_or_404(Harvester, uuid=pk)
+        harvester = get_object_or_404(Harvester, id=pk)
         self.check_object_permissions(self.request, harvester)
         return Response(HarvesterConfigSerializer(
             harvester,
@@ -584,12 +584,12 @@ class HarvesterViewSet(viewsets.ModelViewSet):
 
         If the status is 'error', the report must include an 'error' field.
         This field is in JSON or string format.
-        The report may also include 'path' and 'monitored_path_uuid' fields.
+        The report may also include 'path' and 'monitored_path_id' fields.
         A blank response will be returned ({}).
 
-        If the status is 'success', the report must include 'task', 'path', and 'monitored_path_uuid' fields.
+        If the status is 'success', the report must include 'task', 'path', and 'monitored_path_id' fields.
         Path is the absolute path of the file being reported on.
-        Monitored path uuid is the uuid of the monitored path the file was found in.
+        Monitored path id is the id of the monitored path the file was found in.
         The task field can be one of:
         - file_size: The harvester is reporting the size of a file.
         - import: The harvester is reporting the result of an import.
@@ -833,7 +833,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                 'with_upload_info': content['stage'] == settings.HARVEST_STAGE_FILE_METADATA
             }).data)
 
-        harvester = get_object_or_404(Harvester, uuid=pk)
+        harvester = get_object_or_404(Harvester, id=pk)
         self.check_object_permissions(self.request, harvester)
         harvester.last_check_in = timezone.now()
 
@@ -870,13 +870,13 @@ class HarvesterViewSet(viewsets.ModelViewSet):
             return error_response('Harvester report must specify a path')
 
         try:
-            monitored_path_uuid = request.data.get('monitored_path_uuid')
-            assert monitored_path_uuid is not None
-            monitored_path = MonitoredPath.objects.get(uuid=monitored_path_uuid)
+            monitored_path_id = request.data.get('monitored_path_id')
+            assert monitored_path_id is not None
+            monitored_path = MonitoredPath.objects.get(id=monitored_path_id)
         except AssertionError:
-            return error_response('Harvester report must specify a monitored_path_uuid')
+            return error_response('Harvester report must specify a monitored_path_id')
         except MonitoredPath.DoesNotExist:
-            return error_response('Harvester report must specify a valid monitored_path_uuid', 404)
+            return error_response('Harvester report must specify a valid monitored_path_id', 404)
 
         # Figure out what we succeeded in doing!
         if content is None:
@@ -956,9 +956,9 @@ class MonitoredPathViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [ResourceFilterBackend]
     serializer_class = MonitoredPathSerializer
-    filterset_fields = ['path', 'harvester__uuid', 'harvester__name']
+    filterset_fields = ['path', 'harvester__id', 'harvester__name']
     search_fields = ['@path']
-    queryset = MonitoredPath.objects.all().order_by('-uuid')
+    queryset = MonitoredPath.objects.all().order_by('-id')
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
 
@@ -1015,15 +1015,15 @@ class ObservedFileViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [ObservedFileFilterBackend]
     serializer_class = ObservedFileSerializer
-    filterset_fields = ['harvester__uuid', 'path', 'state']
+    filterset_fields = ['harvester__id', 'path', 'state']
     search_fields = ['@path', 'state']
-    queryset = ObservedFile.objects.all().order_by('-last_observed_time', '-uuid')
+    queryset = ObservedFile.objects.all().order_by('-last_observed_time', '-id')
     http_method_names = ['get', 'patch', 'options']
 
     @action(detail=True, methods=['GET'])
     def reimport(self, request, pk = None):
         try:
-            file = self.queryset.get(uuid=pk)
+            file = self.queryset.get(id=pk)
             self.check_object_permissions(self.request, file)
         except ObservedFile.DoesNotExist:
             return error_response('Requested file not found')
@@ -1038,18 +1038,18 @@ class ObservedFileViewSet(viewsets.ModelViewSet):
 class ColumnMappingViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     serializer_class = ColumnMappingSerializer
-    queryset = ColumnMapping.objects.all().order_by('-uuid')
+    queryset = ColumnMapping.objects.all().order_by('-id')
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
-    def destroy(self, request, *args, **kwargs):
-        try:
-            mapping = self.get_object()
-            self.check_object_permissions(self.request, mapping)
-        except ColumnMapping.DoesNotExist:
-            return error_response("Mapping not found")
-        if mapping.in_use:
-            return error_response("Mapping is in use and cannot be deleted")
-        return super().destroy(request, *args, **kwargs)
+    # def destroy(self, request, *args, **kwargs):
+    #     try:
+    #         mapping = self.get_object()
+    #         self.check_object_permissions(self.request, mapping)
+    #     except ColumnMapping.DoesNotExist:
+    #         return error_response("Mapping not found")
+    #     if mapping.in_use:
+    #         return error_response("Mapping is in use and cannot be deleted")
+    #     return super().destroy(request, *args, **kwargs)
 
 
 @extend_schema_view(
@@ -1065,7 +1065,7 @@ class ParquetPartitionViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [ParquetPartitionFilterBackend]
     serializer_class = ParquetPartitionSerializer
-    queryset = ParquetPartition.objects.all().order_by('-observed_file__uuid', 'partition_number')
+    queryset = ParquetPartition.objects.all().order_by('-observed_file__id', 'partition_number')
 
     # def list(self, request, *args, **kwargs):
     #     if not kwargs.get('skiprecur'):
@@ -1079,7 +1079,7 @@ class ParquetPartitionViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['GET'])
     def file(self, request, pk = None):
         try:
-            partition = self.queryset.get(uuid=pk)
+            partition = self.queryset.get(id=pk)
         except ParquetPartition.DoesNotExist:
             return error_response('Requested partition not found')
         self.check_object_permissions(self.request, partition)
@@ -1252,7 +1252,7 @@ class CellFamilyViewSet(viewsets.ModelViewSet):
         'model', 'form_factor', 'chemistry', 'nominal_capacity', 'manufacturer'
     ]
     search_fields = ['@model', '@manufacturer', '@form_factor']
-    queryset = CellFamily.objects.all().order_by('-uuid')
+    queryset = CellFamily.objects.all().order_by('-id')
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
 
@@ -1306,9 +1306,9 @@ class CellViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [ResourceFilterBackend]
     serializer_class = CellSerializer
-    filterset_fields = ['identifier', 'family__uuid']
+    filterset_fields = ['identifier', 'family__id']
     search_fields = ['@identifier', '@family__model', '@family__manufacturer']
-    queryset = Cell.objects.all().order_by('-uuid')
+    queryset = Cell.objects.all().order_by('-id')
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
     @action(detail=True, methods=['get'])
@@ -1376,7 +1376,7 @@ class EquipmentFamilyViewSet(viewsets.ModelViewSet):
         'model', 'type', 'manufacturer'
     ]
     search_fields = ['@model', '@manufacturer', '@type']
-    queryset = EquipmentFamily.objects.all().order_by('-uuid')
+    queryset = EquipmentFamily.objects.all().order_by('-id')
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
 
@@ -1552,7 +1552,7 @@ class CyclerTestViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [ResourceFilterBackend]
     queryset = CyclerTest.objects.all()
-    search_fields = ['@cell__uuid', '@schedule__identifier']
+    search_fields = ['@cell__id', '@schedule__identifier']
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
 
@@ -1698,9 +1698,9 @@ class DataColumnViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [ResourceFilterBackend]
     serializer_class = DataColumnSerializer
-    filterset_fields = ['file__uuid', 'type__is_required', 'file__name', 'type__unit__symbol', 'type__id', 'type__name']
+    filterset_fields = ['file__id', 'type__is_required', 'file__name', 'type__unit__symbol', 'type__id', 'type__name']
     search_fields = ['@file__name', '@type__name']
-    queryset = DataColumn.objects.all().order_by('-file__uuid', '-id')
+    queryset = DataColumn.objects.all().order_by('-file__id', '-id')
     http_method_names = ['get', 'patch', 'options']
 
 
@@ -1853,7 +1853,7 @@ class ValidationSchemaViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [ResourceFilterBackend]
     serializer_class = ValidationSchemaSerializer
-    queryset = ValidationSchema.objects.all().order_by('-uuid')
+    queryset = ValidationSchema.objects.all().order_by('-id')
 
     @action(methods=['get'], detail=False)
     def keys(self, request):
@@ -1880,7 +1880,7 @@ class SchemaValidationViewSet(viewsets.ReadOnlyModelViewSet):
     """
     permission_classes = [DRYPermissions]
     filter_backends = [SchemaValidationFilterBackend]
-    filter_fields = ['schema__uuid', 'object_id', 'content_type__model']
+    filter_fields = ['schema__id', 'object_id', 'content_type__model']
     serializer_class = SchemaValidationSerializer
     queryset = SchemaValidation.objects.all().order_by('-last_update')
 
@@ -1938,7 +1938,7 @@ class ArbitraryFileViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [DRYPermissions]
     filter_backends = [ResourceFilterBackend]
-    queryset = ArbitraryFile.objects.all().order_by('-uuid')
+    queryset = ArbitraryFile.objects.all().order_by('-id')
     search_fields = ['@name', '@description']
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 

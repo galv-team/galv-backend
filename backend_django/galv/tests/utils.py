@@ -104,7 +104,7 @@ class GalvTestCase(APITestCaseWrapper):
         results = result.json().get("results", [])
         if not len(results):
             raise AssertionError(f"Empty result when looking for {resource}")
-        pk_field = 'id' if 'id' in results[0] else 'uuid'
+        pk_field = 'id' if 'id' in results[0] else 'id'
         pk = resource.pk if pk_field == 'id' else str(resource.pk)
         matched_result = [r for r in results if r[pk_field] == pk]
         if assert_single_result and len(matched_result) != 1:

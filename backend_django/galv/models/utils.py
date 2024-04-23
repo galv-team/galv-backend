@@ -52,7 +52,7 @@ class UUIDFieldLD(models.UUIDField):
 
 
 class UUIDModel(TimestampedModel):
-    uuid = UUIDFieldLD()
+    id = UUIDFieldLD()
 
     class Meta:
         abstract = True
@@ -109,7 +109,7 @@ class JSONModel(CustomPropertiesModel):
         # Unpack any RDF properties from the additional properties
         custom_properties = self.custom_properties.copy()
         return combine_rdf_props(
-            {'@id': f"{get_namespace()}{str(self.uuid)}"},
+            {'@id': f"{get_namespace()}{str(self.id)}"},
             unpack_rdf(custom_properties)
         )
 

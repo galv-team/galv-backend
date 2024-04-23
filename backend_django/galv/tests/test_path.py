@@ -46,7 +46,7 @@ class MonitoredPathTests(GalvTeamResourceTestCase):
         """
         Inject harvester kwarg into dict_factory
         """
-        return self.raw_dict_factory(*args, **kwargs, harvester={'uuid': str(self.harvester.uuid)})
+        return self.raw_dict_factory(*args, **kwargs, harvester={'id': str(self.harvester.id)})
 
     def test_create_team_member(self):
         """

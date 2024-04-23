@@ -706,7 +706,7 @@ class Schedule(JSONModel, ValidatableBySchemaMixin, ResourceModelPermissionsMixi
         return self.cycler_tests.count() > 0
 
     def __str__(self):
-        return f"{str(self.uuid)} [{str(self.family)}]"
+        return f"{str(self.id)} [{str(self.family)}]"
 
 class Harvester(UUIDModel):
     name = models.TextField(
@@ -771,7 +771,7 @@ class Harvester(UUIDModel):
         return self.is_valid_harvester(request)
 
     def __str__(self):
-        return f"{self.name} [Harvester {self.uuid}]"
+        return f"{self.name} [Harvester {self.id}]"
 
     def save(self, *args, **kwargs):
         if self.api_key is None:
@@ -1019,7 +1019,7 @@ class CyclerTest(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMi
     file = models.ManyToManyField(to=ObservedFile,  help_text="Columns of data in the test", related_name="cycler_tests")
 
     def __str__(self):
-        return f"{self.cell} [CyclerTest {self.uuid}]"
+        return f"{self.cell} [CyclerTest {self.id}]"
 
     def rendered_pybamm_schedule(self, validate = True):
         """

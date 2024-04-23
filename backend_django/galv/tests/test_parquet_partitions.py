@@ -77,7 +77,7 @@ class ParquetPartitionTests(GalvTestCase):
                 assert_response_property(self, response, self.assertEqual, response.status_code, status.HTTP_200_OK)
                 self.assertEqual(len(response.json().get("results", [])), len(details['expected_set']))
                 for file in details['expected_set']:
-                    self.assertIn(str(file.uuid), [p['uuid'] for p in response.json().get("results", [])])
+                    self.assertIn(str(file.id), [p['id'] for p in response.json().get("results", [])])
 
     def test_read(self):
         for user, details in {
@@ -89,15 +89,15 @@ class ParquetPartitionTests(GalvTestCase):
         }.items():
             with self.subTest(user=user):
                 details['login']()
-                response = self.client.get(reverse(f'{self.stub}-detail', args=(self.partition.uuid,)))
+                response = self.client.get(reverse(f'{self.stub}-detail', args=(self.partition.id,)))
                 assert_response_property(self, response, self.assertEqual, response.status_code, details['code'])
                 if response.status_code == 200:
-                    self.assertEqual(response.json()['uuid'], str(self.partition.uuid))
+                    self.assertEqual(response.json()['id'], str(self.partition.id))
                     self.assertEqual(
                         response.json()['parquet_file'],
                         reverse(
                             f"{self.stub}-file",
-                            args=(str(self.partition.uuid),),
+                            args=(str(self.partition.id),),
                             request=response.wsgi_request
                         ),
                         "Parquet file URL should be included in the response"
@@ -113,7 +113,7 @@ class ParquetPartitionTests(GalvTestCase):
         }.items():
             with self.subTest(user=user):
                 details['login']()
-                response = self.client.patch(reverse(f'{self.stub}-detail', args=(self.partition.uuid,)), data=self.get_edit_kwargs(), format='json')
+                response = self.client.patch(reverse(f'{self.stub}-detail', args=(self.partition.id,)), data=self.get_edit_kwargs(), format='json')
                 assert_response_property(self, response, self.assertEqual, response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def test_destroy_rejected(self):
