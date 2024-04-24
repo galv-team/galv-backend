@@ -1509,6 +1509,13 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
         many=True,
         help_text="Parquet partitions of this File"
     )
+    mapping = TruncatedHyperlinkedRelatedIdField(
+        'ColumnMappingSerializer',
+        ['name', 'is_valid'],
+        'columnmapping-detail',
+        queryset=ColumnMapping.objects.all(),
+        help_text="ColumnMapping applied to this File"
+    )
     harvester = TruncatedHyperlinkedRelatedIdField(
         'HarvesterSerializer',
         ['name'],

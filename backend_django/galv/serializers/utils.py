@@ -38,7 +38,8 @@ def serializer_class_from_string(class_name: str):
         'CyclerTestSerializer', 'ExperimentSerializer', 'ValidationSchemaSerializer', 'EquipmentTypesSerializer',
         'EquipmentModelsSerializer', 'EquipmentManufacturersSerializer', 'CellModelsSerializer',
         'CellManufacturersSerializer', 'CellChemistriesSerializer', 'CellFormFactorsSerializer',
-        'ScheduleIdentifiersSerializer', 'ParquetPartitionSerializer', 'ArbitraryFileSerializer'
+        'ScheduleIdentifiersSerializer', 'ParquetPartitionSerializer', 'ArbitraryFileSerializer',
+        'ColumnMappingSerializer'
     ]:
         raise ValueError(f"serializer_class_from_string will only retrieve custom Serializers, not {class_name}")
     s = __import__('galv.serializers', fromlist=[class_name])
