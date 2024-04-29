@@ -1041,6 +1041,25 @@ class ColumnMappingViewSet(viewsets.ModelViewSet):
     queryset = ColumnMapping.objects.all().order_by('-id')
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
+    def destroy(self, request, *args, **kwargs):
+        try:
+            mapping = self.get_object()
+            self.check_object_permissions(self.request, mapping)
+        except ColumnMapping.DoesNotExist:
+            return error_response("Mapping not found")
+        if (mapping.in_use and
+                not all([
+                    f.has_object_write_permission(request=request)
+                    for f in mapping.observed_files.all()
+                ])
+        ):
+            return error_response("You cannot modify a mapping that is in use by files you cannot write to.")
+        if mapping.in_use:
+            return error_response("Mapping is in use and cannot be deleted")
+        return super().destroy(request, *args, **kwargs)
+
+
+
 
 @extend_schema_view(
     file=extend_schema(

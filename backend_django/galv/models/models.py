@@ -1420,7 +1420,7 @@ class ValidationSchema(CustomPropertiesModel, ResourceModelPermissionsMixin):
         SchemaValidation.objects.filter(schema=self).update(status=ValidationStatus.UNCHECKED, detail=None)
 
     def __str__(self):
-        return f"{self.name} [ValidationSchema {self.uuid}]"
+        return f"{self.name} [ValidationSchema {self.id}]"
 
 
 class SchemaValidation(TimestampedModel):

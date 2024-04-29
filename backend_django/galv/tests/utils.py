@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
-
+from uuid import UUID
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
@@ -104,9 +104,8 @@ class GalvTestCase(APITestCaseWrapper):
         results = result.json().get("results", [])
         if not len(results):
             raise AssertionError(f"Empty result when looking for {resource}")
-        pk_field = 'id' if 'id' in results[0] else 'id'
-        pk = resource.pk if pk_field == 'id' else str(resource.pk)
-        matched_result = [r for r in results if r[pk_field] == pk]
+        pk = str(resource.pk) if isinstance(resource.pk, UUID) else resource.pk
+        matched_result = [r for r in results if r.get('id') == pk]
         if assert_single_result and len(matched_result) != 1:
             raise AssertionError(f"Expected single instance of {resource}, got {len(matched_result)} instances")
         if not assert_reachable:

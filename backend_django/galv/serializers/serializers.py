@@ -1364,7 +1364,7 @@ class ColumnMappingSerializer(serializers.HyperlinkedModelSerializer, WithTeamMi
                     for f in self.instance.observed_files.all()
                 ])
         ):
-            raise ValidationError("You cannot not modify a mapping that is in use by files you cannot write to.")
+            raise ValidationError("You cannot modify a mapping that is in use by files you cannot write to.")
         return super().validate(attrs)
 
     class Meta:
