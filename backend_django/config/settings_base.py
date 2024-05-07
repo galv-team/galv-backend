@@ -20,7 +20,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.1.27"
+API_VERSION = "2.1.28"
 
 try:
     USER_ACTIVATION_TOKEN_EXPIRY_S = int(os.environ.get("DJANGO_USER_ACTIVATION_TOKEN_EXPIRY_S"))
@@ -50,24 +50,30 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "corsheaders",
+    "debug_toolbar",
+    # "cachalot",
     'rest_framework',
     'dry_rest_permissions',
     'django_filters',
     'knox',
     'galv.apps.GalvConfig',
     'drf_spectacular',
+    # "django_snakeviz_profiling",
 ]
 
 MIDDLEWARE = [
+    # "django_snakeviz_profiling.SnakevizProfilingMiddleware",
     'django.middleware.security.SecurityMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+SNAKEVIZ_PROFILING = "PLEASE_PROFILE_REQUESTS"
 
 ROOT_URLCONF = 'config.urls'
 

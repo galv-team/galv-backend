@@ -76,6 +76,7 @@ urlpatterns = [
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
     path('schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path("__debug__/", include("debug_toolbar.urls")),
 ]
 
 if settings.DEBUG and settings.MEDIA_ROOT:
