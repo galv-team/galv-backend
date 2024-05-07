@@ -151,19 +151,19 @@ class UserProxy(User):
         Users can read their own details, or the details of any user in a lab they are a member of.
         Lab admins can read the details of any user.
         """
-        if self == request.user or user_is_lab_admin(request.user):
+        if self == request.user or request.user_auth_details.is_lab_admin:
             return True
-        request_labs = user_labs(request.user)
-        for lab in user_labs(self):
-            if lab in request_labs:
+        for g in self.groups.all():
+            t = g.owner
+            if t is not None and t.lab.pk in request.user_auth_details.lab_ids:
                 return True
         return False
 
     def has_object_destroy_permission(self, request):
         if self != request.user:
             return False
-        for lab in user_labs(self, True):
-            if len(lab.admin_group.user_set.all()) == 1:
+        for lab in request.user_auth_details.writeable_lab_ids:
+            if lab.admin_group.user_set.count() == 1:
                 return False
         return True
 
@@ -195,6 +195,10 @@ class GroupProxy(Group):
         if hasattr(self, 'readable_team'):
             return self.readable_team
         return None
+
+    @property
+    def owner(self):
+        return self.get_owner()
 
     #@allow_staff_or_superuser
     def has_object_write_permission(self, request):
@@ -270,12 +274,12 @@ class Lab(TimestampedModel):
     def has_object_read_permission(self, request):
         return request.user.is_staff or \
             request.user.is_superuser or \
-            self in user_labs(request.user)
+            self.pk in request.user_auth_details.lab_ids
 
     def has_object_write_permission(self, request):
         return request.user.is_staff or \
             request.user.is_superuser or \
-            self in user_labs(request.user, True)
+            self.pk in request.user_auth_details.writeable_lab_ids
 
     def __str__(self):
         return f"{self.name} [Lab {self.pk}]"
@@ -386,7 +390,7 @@ class Team(TimestampedModel):
 
     @staticmethod
     def has_create_permission(request):
-        return request.user.is_authenticated and len(user_labs(request.user, True)) > 0
+        return request.user_auth_details.is_lab_admin
 
     @staticmethod
     def has_read_permission(request):
@@ -397,12 +401,12 @@ class Team(TimestampedModel):
         return True
 
     def has_object_read_permission(self, request):
-        return self.lab in user_labs(request.user, True) or \
-            self in user_teams(request.user)
+        return self.lab.pk in request.user_auth_details.writeable_lab_ids or \
+            self.pk in request.user_auth_details.team_ids
 
     def has_object_write_permission(self, request):
-        return self.lab in user_labs(request.user, True) or \
-            self in user_teams(request.user, True)
+        return self.lab.pk in request.user_auth_details.writeable_lab_ids or \
+            self.pk in request.user_auth_details.writeable_team_ids
 
     def __str__(self):
         return f"{self.name} [Team {self.pk}]"
@@ -428,48 +432,6 @@ class Team(TimestampedModel):
     class Meta:
         unique_together = [['name', 'lab']]
 
-def user_teams(user, editable=False):
-    """
-    Return a list of all teams the user is a member of
-    """
-    teams = []
-    # Harvesters are part of any team that owns one of their monitored paths
-    if isinstance(user, HarvesterUser):
-        if editable:  # Harvesters don't have write access based on Team membership
-            return []
-        for mp in user.harvester.monitored_paths.all():
-            if mp.team not in teams:
-                teams.append(mp.team)
-        return teams
-    for g in user.groups.all():
-        if hasattr(g, 'editable_team'):
-            teams.append(g.editable_team)
-        if not editable and hasattr(g, 'readable_team'):
-            teams.append(g.readable_team)
-    return teams
-
-
-def user_labs(user, editable=False):
-    """
-    Return a list of all labs the user is a member of
-    """
-    labs = []
-    for g in user.groups.all():
-        if hasattr(g, 'editable_lab') and g.editable_lab is not None:
-            labs.append(g.editable_lab)
-    if editable:
-        return labs
-    for t in user_teams(user):
-        if t.lab not in labs:
-            labs.append(t.lab)
-    return labs
-
-def user_is_active(user):
-    return len(user_labs(user)) > 0
-
-def user_is_lab_admin(user):
-    return len(user_labs(user, True)) > 0
-
 
 class ResourceModelPermissionsMixin(TimestampedModel):
     team = models.ForeignKey(
@@ -492,15 +454,15 @@ class ResourceModelPermissionsMixin(TimestampedModel):
         choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_READ]
     )
 
-    def get_user_level(self, user):
+    def get_user_level(self, request):
         if self.team:
-            if self.team in user_teams(user, True):
+            if self.team.pk in request.user_auth_details.writeable_team_ids:
                 return UserLevel.TEAM_ADMIN.value
-            if self.team in user_teams(user):
+            if self.team.pk in request.user_auth_details.team_ids:
                 return UserLevel.TEAM_MEMBER.value
-            if self.team.lab in user_labs(user):
+            if self.team.lab.pk in request.user_auth_details.lab_ids:
                 return UserLevel.LAB_MEMBER.value
-        if user.is_authenticated:
+        if request.user_auth_details.is_authenticated:
             return UserLevel.REGISTERED_USER.value
         return UserLevel.ANONYMOUS.value
 
@@ -519,20 +481,20 @@ class ResourceModelPermissionsMixin(TimestampedModel):
 
 
     def has_object_read_permission(self, request):
-        return self.get_user_level(request.user) >= self.read_access_level
+        return self.get_user_level(request) >= self.read_access_level
 
     def has_object_write_permission(self, request):
-        return self.get_user_level(request.user) >= self.edit_access_level
+        return self.get_user_level(request) >= self.edit_access_level
 
     def has_object_destroy_permission(self, request):
-        return self.get_user_level(request.user) >= self.delete_access_level
+        return self.get_user_level(request) >= self.delete_access_level
 
     @staticmethod
     def has_create_permission(request):
         """
         Users must be in a team to create a resource
         """
-        return len(user_teams(request.user)) > 0
+        return len(request.user_auth_details.team_ids) > 0
 
     @staticmethod
     def has_read_permission(request):
@@ -583,7 +545,7 @@ class BibliographicInfo(TimestampedModel):
 
     @staticmethod
     def has_create_permission(request):
-        return request.user.is_authenticated and user_is_active(request.user)
+        return request.user_auth_details.is_authenticated and request.user_auth_details.is_approved
 
     @staticmethod
     def has_read_permission(request):
@@ -745,7 +707,7 @@ class Harvester(UUIDModel):
 
     @staticmethod
     def has_create_permission(request):
-        return request.user.is_authenticated and len(user_labs(request.user, True)) > 0
+        return request.user_auth_details.is_authenticated and len(request.user_auth_details.writeable_team_ids) > 0
 
     @staticmethod
     def has_read_permission(request):

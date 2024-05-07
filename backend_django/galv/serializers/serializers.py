@@ -3,8 +3,10 @@
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 import os.path
 import re
+from typing import Optional, Union
 
 import jsonschema
+from django.db import models
 from drf_spectacular.types import OpenApiTypes
 from rest_framework.reverse import reverse
 from drf_spectacular.utils import extend_schema_field, extend_schema_serializer, OpenApiExample
@@ -23,8 +25,8 @@ from ..models import Harvester, \
     DataColumn, \
     KnoxAuthToken, CellFamily, EquipmentTypes, CellFormFactors, CellChemistries, CellModels, CellManufacturers, \
     EquipmentManufacturers, EquipmentModels, EquipmentFamily, Schedule, ScheduleIdentifiers, CyclerTest, \
-    render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, user_labs, \
-    user_teams, SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
+    render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, \
+    SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
     ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, ColumnMapping
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
@@ -314,7 +316,7 @@ class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         Only lab admins can create teams in their lab
         """
         try:
-            assert value in user_labs(self.context['request'].user, True)
+            assert value.pk in self.context['request'].user_auth_details.writeable_lab_ids
         except:
             raise ValidationError("You may only create Teams in your own lab(s)")
         return value
@@ -496,7 +498,7 @@ class WithTeamMixin(serializers.Serializer):
         If a resource is being moved from one team to another, the user must be a member of both teams.
         """
         try:
-            teams = user_teams(self.context['request'].user)
+            teams = Team.objects.filter(pk__in=self.context['request'].user_auth_details.team_ids)
             if value is None:
                 if len(teams) == 1:
                     value = teams[0]
@@ -1218,7 +1220,7 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
         if self.instance is not None:
             return self.instance.harvester  # harvester cannot be changed
         request = self.context['request']
-        if value.lab not in user_labs(request.user):
+        if value.lab.pk not in request.user_auth_details.lab_ids:
             raise ValidationError("You may only create MonitoredPaths on Harvesters in your own lab(s)")
         return value
 
@@ -1230,8 +1232,7 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
         """
         if self.instance is not None:
             return self.instance.team
-        user = self.context['request'].user
-        if value not in user_teams(user, True):
+        if value.pk not in self.context['request'].user_auth_details.writeable_team_ids:
             raise ValidationError("You may only create MonitoredPaths in your own team(s)", code=HTTP_403_FORBIDDEN)
         return value
 
@@ -1529,8 +1530,14 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
     upload_info = serializers.SerializerMethodField(
         help_text="Metadata required for harvester program to resume file parsing"
     )
+    extra_metadata = serializers.SerializerMethodField(
+        help_text="Extra metadata about this File"
+    )
+    summary = serializers.SerializerMethodField(
+        help_text="First few rows of this file's data"
+    )
 
-    def get_upload_info(self, instance) -> dict | None:
+    def get_upload_info(self, instance) -> Optional[dict]:
         if not self.context.get('with_upload_info'):
             return None
         try:
@@ -1548,35 +1555,57 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
         except BaseException as e:
             return {'columns': [], 'last_record_number': None, 'error': str(e)}
 
-    def get_applicable_mappings(self, instance) -> list:
-        mappings = instance.applicable_mappings(self.context.get('request'))
-        if len(mappings):
-            return [
-                {**ColumnMappingSerializer(m['mapping'], context=self.context).data, 'missing': m['missing']}
-                for m in mappings
-            ]
-        return []
+    def get_applicable_mappings(self, instance) -> str:
+        return reverse(
+            'observedfile-applicable-mappings',
+            args=[instance.pk],
+            request=self.context.get('request')
+        )
+    #     mappings = instance.applicable_mappings(self.context.get('request'))
+    #     if len(mappings):
+    #         return [
+    #             # {**ColumnMappingSerializer(m['mapping'], context=self.context).data, 'missing': m['missing']}
+    #             {'mapping': m['mapping'].pk.__str__(), 'missing': m['missing']}
+    #             for m in mappings
+    #         ]
+    #     return []
+
+    def get_extra_metadata(self, instance) -> Union[dict, None]:
+        return reverse(
+            'observedfile-extra-metadata',
+            args=[instance.pk],
+            request=self.context.get('request')
+        )
+
+    def get_summary(self, instance) -> Union[dict, None]:
+        return reverse(
+            'observedfile-summary',
+            args=[instance.pk],
+            request=self.context.get('request')
+        )
 
     class Meta:
         model = ObservedFile
-        read_only_fields = [
-            'url', 'id', 'harvester', 'name', 'path',
+        fields = [
+            'url', 'id', 'name',
+            'path', 'harvester',
             'state',
             'parser',
+            'upload_errors',
             'num_rows',
             'first_sample_no',
             'last_sample_no',
-            'extra_metadata',
             'last_observed_time', 'last_observed_size',
+            'mapping',
             'has_required_columns',
-            'upload_errors',
+            'parquet_partitions',
+            'extra_metadata',
             'summary',
             'applicable_mappings',
-            'parquet_partitions',
             'upload_info',
             'permissions'
         ]
-        fields = [*read_only_fields, 'name', 'mapping']
+        read_only_fields = list(set(fields) - {'name', 'mapping'})
         extra_kwargs = augment_extra_kwargs({
             'upload_errors': {'help_text': "Errors associated with this File"}
         })
@@ -1997,7 +2026,7 @@ class HarvesterCreateSerializer(HarvesterSerializer, PermissionsMixin):
 
     def validate_lab(self, value):
         try:
-            if value in user_labs(self.context['request'].user, True):
+            if value.pk in self.context['request'].user_auth_details.writeable_lab_ids:
                 return value
         except:
             pass

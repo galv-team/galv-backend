@@ -8,7 +8,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from django.core.exceptions import ValidationError as DjangoValidationError
 
-from galv.models import ValidationSchema, GroupProxy, UserProxy, user_teams, VALIDATION_MOCK_ENDPOINT
+from galv.models import ValidationSchema, GroupProxy, UserProxy, VALIDATION_MOCK_ENDPOINT
 from rest_framework.fields import DictField
 
 

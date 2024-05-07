@@ -1,16 +1,10 @@
 # SPDX-License-Identifier: BSD-2-Clause
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
-from django.db import models
-from django.http import Http404
-from django.urls import resolve, Resolver404
-from urllib.parse import urlparse
+
 from django.db.models import Q
 from dry_rest_permissions.generics import DRYPermissionFiltersBase
-from rest_framework import permissions
-from .models import Harvester, MonitoredPath, user_labs, user_teams, ObservedFile, UserProxy, user_is_lab_admin, \
-    UserLevel
-from .utils import get_monitored_paths
+from .models import UserLevel, Lab, Team
 
 class HarvesterFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
@@ -19,7 +13,7 @@ class HarvesterFilterBackend(DRYPermissionFiltersBase):
         key = request.META.get('HTTP_AUTHORIZATION', '')
         if key.startswith('Harvester '):
             return queryset.filter(api_key=key.split(' ')[1])
-        labs = user_labs(request.user)
+        labs = Lab.objects.filter(pk__in=request.user_auth_details.lab_ids)
         if len(labs) == 0:
             return queryset.none()
         return queryset.filter(lab__in=labs)
@@ -27,37 +21,49 @@ class HarvesterFilterBackend(DRYPermissionFiltersBase):
 class LabFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):
-        labs = [l.pk for l in user_labs(request.user)]
-        if len(labs) == 0:
-            return queryset.none()
-        return queryset.filter(pk__in=labs)
+        return queryset.filter(pk__in=request.user_auth_details.lab_ids)
 
 class TeamFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):
-        teams = [t.pk for t in user_teams(request.user)]
-        return queryset.filter(Q(pk__in=teams)|Q(lab__in=user_labs(request.user, True)))
+        return queryset.filter(
+            Q(pk__in=request.user_auth_details.team_ids)|
+            Q(lab__pk__in=request.user_auth_details.writeable_lab_ids)
+        )
 
 class GroupFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):
         if request.user.is_superuser or request.user.is_staff:
             return queryset
-        teams = user_teams(request.user)
-        labs = user_labs(request.user)
-        return queryset.filter(Q(editable_lab__in=labs) | Q(editable_team__in=teams) | Q(readable_team__in=teams))
+        return queryset.filter(
+            Q(editable_lab__pk__in=request.user_auth_details.lab_ids) |
+            Q(editable_team__pk__in=request.user_auth_details.team_ids) |
+            Q(readable_team__pk__in=request.user_auth_details.team_ids)
+        )
 
 class UserFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
+
+    @staticmethod
+    def user_labs(user):
+        lab_ids = set()
+        for x in user.groups.all().values('owner'):
+            if isinstance(x, Lab):
+                lab_ids.add(x.pk)
+            elif isinstance(x, Team):
+                lab_ids.add(x.lab.pk)
+        return lab_ids
+
     def filter_list_queryset(self, request, queryset, view):
-        if request.user.is_superuser or request.user.is_staff or user_is_lab_admin(request.user):
+        if request.user.is_superuser or request.user.is_staff or request.user_auth_details.is_lab_admin:
             return queryset
-        labs = user_labs(request.user)
         all_users = queryset.all()
         users_to_return = []
         # see self and lab colleagues
         for user in all_users:
-            if user == request.user or any([lab in labs for lab in user_labs(user)]):
+            if user == request.user or any(
+                    [lab_id in request.user_auth_details.lab_ids for lab_id in UserFilterBackend.user_labs(user)]):
                 users_to_return.append(user)
         return queryset.filter(pk__in=[u.pk for u in users_to_return])
 
@@ -65,27 +71,24 @@ class UserFilterBackend(DRYPermissionFiltersBase):
 class ObservedFileFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):
-        paths = MonitoredPath.objects.filter(team__in=user_teams(request.user)).values('pk')
-        return queryset.filter(monitored_paths__pk__in=paths)
+        return queryset.filter(monitored_paths__team__pk__in=request.user_auth_details.team_ids)
 
 
 class ParquetPartitionFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):
-        files = ObservedFileFilterBackend().filter_list_queryset(request, ObservedFile.objects.all(), view).values('pk')
-        return queryset.filter(observed_file__pk__in=files)
+        return queryset.filter(observed_file__monitored_paths__team__pk__in=request.user_auth_details.team_ids)
 
 
 class ResourceFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):
-        labs = user_labs(request.user)
-        user_approved = len(labs) > 0
+        auth_details = request.user_auth_details
         return queryset.filter(
-            Q(team__in=user_teams(request.user)) |
-            (Q(read_access_level=UserLevel.LAB_MEMBER.value) & Q(team__lab__in=labs)) |
+            Q(team__pk__in=auth_details.team_ids) |
+            (Q(read_access_level=UserLevel.LAB_MEMBER.value) & Q(team__lab__pk__in=auth_details.lab_ids)) |
             # Bit of a hack to chain True/False with Q object
-            (Q(read_access_level=UserLevel.REGISTERED_USER.value) & Q(pk__isnull=not user_approved)) |
+            (Q(read_access_level=UserLevel.REGISTERED_USER.value) & Q(pk__isnull=not auth_details.is_approved)) |
             Q(read_access_level=UserLevel.ANONYMOUS.value)
         )
 
