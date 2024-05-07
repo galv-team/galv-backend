@@ -11,4 +11,4 @@ python manage.py makemigrations --no-input
 python manage.py migrate --no-input
 python manage.py create_superuser --no-input
 >&2 echo "... populating database"
-python manage.py loaddata galv/fixtures/* --no-input
+python manage.py loaddata galv/fixtures/*
