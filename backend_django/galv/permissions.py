@@ -4,7 +4,8 @@
 
 from django.db.models import Q
 from dry_rest_permissions.generics import DRYPermissionFiltersBase
-from .models import UserLevel, Lab, Team
+from .models import UserLevel, Lab, Team, GroupProxy
+
 
 class HarvesterFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
@@ -48,11 +49,11 @@ class UserFilterBackend(DRYPermissionFiltersBase):
     @staticmethod
     def user_labs(user):
         lab_ids = set()
-        for x in user.groups.all().values('owner'):
-            if isinstance(x, Lab):
-                lab_ids.add(x.pk)
-            elif isinstance(x, Team):
-                lab_ids.add(x.lab.pk)
+        for x in GroupProxy.objects.filter(user=user).all():
+            if isinstance(x.owner, Lab):
+                lab_ids.add(x.owner.pk)
+            elif isinstance(x.owner, Team):
+                lab_ids.add(x.owner.lab.pk)
         return lab_ids
 
     def filter_list_queryset(self, request, queryset, view):

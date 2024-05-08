@@ -153,9 +153,9 @@ class UserProxy(User):
         """
         if self == request.user or request.user_auth_details.is_lab_admin:
             return True
-        for g in self.groups.all():
+        for g in GroupProxy.objects.filter(user=self):
             t = g.owner
-            if t is not None and t.lab.pk in request.user_auth_details.lab_ids:
+            if isinstance(t, Team) and t.lab.pk in request.user_auth_details.lab_ids:
                 return True
         return False
 
@@ -163,7 +163,7 @@ class UserProxy(User):
         if self != request.user:
             return False
         for lab in request.user_auth_details.writeable_lab_ids:
-            if lab.admin_group.user_set.count() == 1:
+            if Lab.objects.get(pk=lab).admin_group.user_set.count() == 1:
                 return False
         return True
 
@@ -707,7 +707,7 @@ class Harvester(UUIDModel):
 
     @staticmethod
     def has_create_permission(request):
-        return request.user_auth_details.is_authenticated and len(request.user_auth_details.writeable_team_ids) > 0
+        return request.user_auth_details.is_authenticated and len(request.user_auth_details.writeable_lab_ids) > 0
 
     @staticmethod
     def has_read_permission(request):
