@@ -215,6 +215,10 @@ class LoginView(KnoxLoginView):
     authentication_classes = [BasicAuthentication]
     http_method_names = ['post', 'options']
 
+    def perform_authentication(self, request):
+        perform_authentication_with_side_effects(request)
+        return super().perform_authentication(request)
+
     def post(self, request, fmt=None):
         from django.contrib.auth.base_user import AbstractBaseUser
         if isinstance(request.user, AbstractBaseUser):
@@ -279,6 +283,10 @@ class CreateTokenView(KnoxLoginView):
     Create a new Knox Token.
     """
     http_method_names = ['post', 'options']
+
+    def perform_authentication(self, request):
+        perform_authentication_with_side_effects(request)
+        return super().perform_authentication(request)
 
     def get_queryset(self):
         return KnoxAuthToken.objects.none().order_by('-id')
@@ -1024,8 +1032,6 @@ class ObservedFileViewSet(CacheAuthMixin, viewsets.ModelViewSet):
     search_fields = ['@path', 'state']
     queryset = ObservedFile.objects.all().order_by('-last_observed_time', '-id')
     http_method_names = ['get', 'patch', 'options']
-    def perform_authentication(self, request):
-        perform_authentication_with_side_effects(request)
 
     @action(detail=True, methods=['GET'])
     def reimport(self, request, pk = None):
