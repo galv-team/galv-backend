@@ -21,7 +21,6 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.renderers import JSONRenderer
 from rest_framework.reverse import reverse
 
-from .auth import perform_authentication_with_side_effects
 from .serializers import HarvesterSerializer, \
     HarvesterCreateSerializer, \
     HarvesterConfigSerializer, \
@@ -79,11 +78,6 @@ logger.addHandler(logging.StreamHandler())
 GENERATE_HARVESTER_API_SCHEMA = os.getenv('GENERATE_HARVESTER_API_SCHEMA', "FALSE").upper()[0] != "F"
 
 
-class CacheAuthMixin:
-    def perform_authentication(self, request):
-        perform_authentication_with_side_effects(request)
-
-
 def checkpoint(msg: str, t: float, log_fun=logger.warning) -> float:
     t2 = time.time()
     log_fun(f"{msg} (in {round(t2 - t, 2)}s)")
@@ -112,7 +106,7 @@ def deserialize_datetime(serialized_value: str | float) -> timezone.datetime|Non
         '200': {'type': 'string'}
     }),
 )
-class _GetOrCreateTextStringViewSet(CacheAuthMixin, ListModelMixin, viewsets.GenericViewSet):
+class _GetOrCreateTextStringViewSet(ListModelMixin, viewsets.GenericViewSet):
     """
     Abstract base class for ViewSets that allow the creation of TextString objects.
 
@@ -215,10 +209,6 @@ class LoginView(KnoxLoginView):
     authentication_classes = [BasicAuthentication]
     http_method_names = ['post', 'options']
 
-    def perform_authentication(self, request):
-        perform_authentication_with_side_effects(request)
-        return super().perform_authentication(request)
-
     def post(self, request, fmt=None):
         from django.contrib.auth.base_user import AbstractBaseUser
         if isinstance(request.user, AbstractBaseUser):
@@ -283,10 +273,6 @@ class CreateTokenView(KnoxLoginView):
     Create a new Knox Token.
     """
     http_method_names = ['post', 'options']
-
-    def perform_authentication(self, request):
-        perform_authentication_with_side_effects(request)
-        return super().perform_authentication(request)
 
     def get_queryset(self):
         return KnoxAuthToken.objects.none().order_by('-id')
@@ -353,7 +339,7 @@ other people cannot use them to access the API under your credentials.
         """
     )
 )
-class TokenViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class TokenViewSet(viewsets.ModelViewSet):
     """
     View and edit tokens associated with your account.
     """
@@ -411,7 +397,7 @@ Labs are collections of Teams that provide for wider-scale access management and
 """
     )
 )
-class LabViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class LabViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [LabFilterBackend]
     filterset_fields = ['name']
@@ -447,7 +433,7 @@ Teams are groups of Users who share Resources.
 """
     )
 )
-class TeamViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class TeamViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [TeamFilterBackend]
     serializer_class = TeamSerializer
@@ -531,7 +517,7 @@ File parsing reports may contain metadata or data to store.
         }
     )
 )
-class HarvesterViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class HarvesterViewSet(viewsets.ModelViewSet):
     """
     Harvesters monitor a set of MonitoredPaths and send reports about ObservedFiles
     within those paths.
@@ -957,7 +943,7 @@ or the time for which files need to be stable before being imported.
         """
     )
 )
-class MonitoredPathViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class MonitoredPathViewSet(viewsets.ModelViewSet):
     """
     A MonitoredPath refers to a directory accessible by a Harvester in which
     data files will reside. Those files will be scanned periodically by the Harvester,
@@ -1015,7 +1001,7 @@ harvester program to rerun the import process when it next scans the file.
         """
     )
 )
-class ObservedFileViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class ObservedFileViewSet(viewsets.ModelViewSet):
     """
     ObservedFiles are files that exist (or have existed) in a MonitoredPath and have
     been reported to Galv by the Harvester.
@@ -1078,7 +1064,7 @@ class ObservedFileViewSet(CacheAuthMixin, viewsets.ModelViewSet):
         return Response(file.extra_metadata)
 
 
-class ColumnMappingViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class ColumnMappingViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     serializer_class = ColumnMappingSerializer
     queryset = ColumnMapping.objects.all().order_by('-id')
@@ -1113,7 +1099,7 @@ Download a file from the API.
         responses={200: OpenApiTypes.BINARY}
     )
 )
-class ParquetPartitionViewSet(CacheAuthMixin, viewsets.ReadOnlyModelViewSet):
+class ParquetPartitionViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [ParquetPartitionFilterBackend]
     serializer_class = ParquetPartitionSerializer
@@ -1169,7 +1155,7 @@ View an Error reported by a Harvester.
         """
     )
 )
-class HarvestErrorViewSet(CacheAuthMixin, viewsets.ReadOnlyModelViewSet):
+class HarvestErrorViewSet(viewsets.ReadOnlyModelViewSet):
     """
     HarvestErrors are problems encountered by Harvesters during the crawling of
     MonitoredPaths or the importing or inspection of ObservedFiles.
@@ -1293,7 +1279,7 @@ to prevent accidental updating.
         """
     )
 )
-class CellFamilyViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class CellFamilyViewSet(viewsets.ModelViewSet):
     """
     CellFamilies describe types of Cell.
     """
@@ -1351,7 +1337,7 @@ Dump the Cell in RDF (JSON-LD) format.
         """
     )
 )
-class CellViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class CellViewSet(viewsets.ModelViewSet):
     """
     Cells are specific cells which have generated data stored in Datasets/ObservedFiles.
     """
@@ -1417,7 +1403,7 @@ to prevent accidental updating.
         """
     )
 )
-class EquipmentFamilyViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class EquipmentFamilyViewSet(viewsets.ModelViewSet):
     """
     EquipmentFamilies describe types of Equipment.
     """
@@ -1470,7 +1456,7 @@ Equipment that _is_ used in a Cycler Tests is locked to prevent accidental updat
         """
     )
 )
-class EquipmentViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class EquipmentViewSet(viewsets.ModelViewSet):
     """
     Equipment can be attached to Datasets and used to view Datasets which
     have used similar equipment.
@@ -1528,7 +1514,7 @@ to prevent accidental updating.
         """
     )
 )
-class ScheduleFamilyViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class ScheduleFamilyViewSet(viewsets.ModelViewSet):
     """
     Schedules can be attached to Cycler Tests and used to view Cycler Tests which
     have used similar equipment.
@@ -1579,7 +1565,7 @@ Schedules that _is_ used in a Cycler Tests is locked to prevent accidental updat
         """
     )
 )
-class ScheduleViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class ScheduleViewSet(viewsets.ModelViewSet):
     """
     Schedules can be attached to Cycler Tests and used to view Cycler Tests which
     have used similar equipment.
@@ -1591,7 +1577,7 @@ class ScheduleViewSet(CacheAuthMixin, viewsets.ModelViewSet):
     search_fields = ['@family__identifier']
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
-class CyclerTestViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class CyclerTestViewSet(viewsets.ModelViewSet):
     """
     Cycler Tests are the primary object in the database.
     They represent a single test conducted on a specific cell using specific equipment,
@@ -1628,7 +1614,7 @@ Experiments are collections of Cycler Tests which are grouped together for analy
         """
     )
 )
-class ExperimentViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class ExperimentViewSet(viewsets.ModelViewSet):
     """
     Experiments are collections of Cycler Tests which are grouped together for analysis.
     """
@@ -1663,7 +1649,7 @@ while others can be defined in experimental data.
         """
     )
 )
-class DataUnitViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class DataUnitViewSet(viewsets.ModelViewSet):
     """
     DataUnits are units used to characterise data in a DataColumn.
     """
@@ -1706,7 +1692,7 @@ Searchable fields:
         """
     )
 )
-class DataColumnTypeViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class DataColumnTypeViewSet(viewsets.ModelViewSet):
     """
     DataColumnTypes support reuse of DataColumns over multiple DataSets
     by abstracting their information.
@@ -1743,7 +1729,7 @@ Searchable fields:
         """
     )
 )
-class DataColumnViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class DataColumnViewSet(viewsets.ModelViewSet):
     """
     DataColumns describe which columns are in a Dataset's data.
     """
@@ -1815,7 +1801,7 @@ All changes require your current password to be accepted.
         }
     )
 )
-class UserViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class UserViewSet(viewsets.ModelViewSet):
     """
     Users are Django User instances custom-serialized for convenience.
     """
@@ -1826,7 +1812,7 @@ class UserViewSet(CacheAuthMixin, viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'options']
 
 
-class GroupViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class GroupViewSet(viewsets.ModelViewSet):
     """
     Groups are Django Group instances custom-serialized for convenience.
     """
@@ -1901,7 +1887,7 @@ This endpoint provides the names and list URLs for each Galv object that can be 
         }
     )
 )
-class ValidationSchemaViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class ValidationSchemaViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [ResourceFilterBackend]
     serializer_class = ValidationSchemaSerializer
@@ -1926,7 +1912,7 @@ class ValidationSchemaViewSet(CacheAuthMixin, viewsets.ModelViewSet):
         )
 
 
-class SchemaValidationViewSet(CacheAuthMixin, viewsets.ReadOnlyModelViewSet):
+class SchemaValidationViewSet(viewsets.ReadOnlyModelViewSet):
     """
     SchemaValidations are the results of validating Galv objects against ValidationSchemas.
     """
@@ -1978,7 +1964,7 @@ You can change the visibility of a file and its metadata. Files themselves canno
         description="""Delete a file from the database and from the S3 bucket."""
     )
 )
-class ArbitraryFileViewSet(CacheAuthMixin, viewsets.ModelViewSet):
+class ArbitraryFileViewSet(viewsets.ModelViewSet):
     """
     ArbitraryFiles are files that are not observed by the harvester, and are not
     associated with any specific experiment or dataset. They are used to store

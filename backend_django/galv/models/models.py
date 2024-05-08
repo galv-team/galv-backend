@@ -54,6 +54,98 @@ DATA_TYPES = [
 VALIDATION_MOCK_ENDPOINT = "/validation_mock_request_target/"
 
 
+class UserAuthDetails:
+    """
+    A simple class to hold user authentication details.
+    """
+    def __init__(
+            self,
+            is_authenticated: bool = False,
+            is_approved: bool = False,
+            is_harvester: bool = False,
+            is_lab_admin: bool = False,
+            lab_ids=None,
+            writeable_lab_ids=None,
+            team_ids=None,
+            writeable_team_ids=None
+    ):
+        if lab_ids is None:
+            lab_ids = set()
+        if writeable_lab_ids is None:
+            writeable_lab_ids = set()
+        if team_ids is None:
+            team_ids = set()
+        if writeable_team_ids is None:
+            writeable_team_ids = set()
+
+        self.is_authenticated = is_authenticated
+        self.is_approved = is_approved
+        self.is_harvester = is_harvester
+        self.is_lab_admin = is_lab_admin
+        self.lab_ids = lab_ids|writeable_lab_ids
+        self.writeable_lab_ids = writeable_lab_ids
+        self.team_ids = team_ids|writeable_team_ids
+        self.writeable_team_ids = writeable_team_ids
+
+
+def get_user_auth_details(request):
+    """
+    Overwrite DRF ViewSet.perform_authentication to add user authentication details to the request object.
+
+    This saves us from having to query the database for this information in every view,
+    which was previously done in the `get_permissions` method of the viewsets.
+
+    This cannot be middleware because DRF doesn't authenticate users until after middleware is run.
+    """
+    # Code to be executed for each request before
+    # the view (and later middleware) are called.
+    if getattr(request, "user_auth_details", None) is not None:
+        return request.user_auth_details
+
+    is_harvester = isinstance(request.user, HarvesterUser)
+
+    # Team membership is always explicitly set
+    team_ids = set()
+    write_team_ids = set()
+    # Lab membership inherits from team membership,
+    # but lab admin rights are explicity declared.
+    lab_ids = set()
+    write_lab_ids = set()
+
+    if request.user is not None:
+        if is_harvester:
+            # Harvesters only ever have read access, and belong to any team that owns a monitored path
+            for values in request.user.harvester.monitored_paths.values('team__pk', 'team__lab__pk'):
+                team_ids.add(values['team__pk'])
+                lab_ids.add(values['team__lab__pk'])
+        else:
+            for g in request.user.groups.values(
+                'editable_team__pk', 'readable_team__pk', 'editable_lab__pk',
+                'editable_team__lab__pk', 'readable_team__lab__pk'
+            ):
+                if g['editable_team__pk'] is not None:
+                    write_team_ids.add(g['editable_team__pk'])
+                    lab_ids.add(g['editable_team__lab__pk'])
+                elif g['readable_team__pk'] is not None:
+                    team_ids.add(g['readable_team__pk'])
+                    lab_ids.add(g['readable_team__lab__pk'])
+                elif g['editable_lab__pk'] is not None:
+                    write_lab_ids.add(g['editable_lab__pk'])
+
+    request.user_auth_details = UserAuthDetails(
+        is_authenticated=request.user.is_authenticated,
+        is_approved=len(lab_ids|write_lab_ids) > 0,
+        is_harvester=is_harvester,
+        is_lab_admin=len(write_lab_ids) > 0,
+        lab_ids=lab_ids,
+        writeable_lab_ids=write_lab_ids,
+        team_ids=team_ids,
+        writeable_team_ids=write_team_ids,
+    )
+
+    return get_user_auth_details(request)
+
+
 class UserActivation(TimestampedModel):
     """
     Model to store activation tokens for users
@@ -151,18 +243,18 @@ class UserProxy(User):
         Users can read their own details, or the details of any user in a lab they are a member of.
         Lab admins can read the details of any user.
         """
-        if self == request.user or request.user_auth_details.is_lab_admin:
+        if self == request.user or get_user_auth_details(request).is_lab_admin:
             return True
         for g in GroupProxy.objects.filter(user=self):
             t = g.owner
-            if isinstance(t, Team) and t.lab.pk in request.user_auth_details.lab_ids:
+            if isinstance(t, Team) and t.lab.pk in get_user_auth_details(request).lab_ids:
                 return True
         return False
 
     def has_object_destroy_permission(self, request):
         if self != request.user:
             return False
-        for lab in request.user_auth_details.writeable_lab_ids:
+        for lab in get_user_auth_details(request).writeable_lab_ids:
             if Lab.objects.get(pk=lab).admin_group.user_set.count() == 1:
                 return False
         return True
@@ -274,12 +366,12 @@ class Lab(TimestampedModel):
     def has_object_read_permission(self, request):
         return request.user.is_staff or \
             request.user.is_superuser or \
-            self.pk in request.user_auth_details.lab_ids
+            self.pk in get_user_auth_details(request).lab_ids
 
     def has_object_write_permission(self, request):
         return request.user.is_staff or \
             request.user.is_superuser or \
-            self.pk in request.user_auth_details.writeable_lab_ids
+            self.pk in get_user_auth_details(request).writeable_lab_ids
 
     def __str__(self):
         return f"{self.name} [Lab {self.pk}]"
@@ -390,7 +482,7 @@ class Team(TimestampedModel):
 
     @staticmethod
     def has_create_permission(request):
-        return request.user_auth_details.is_lab_admin
+        return get_user_auth_details(request).is_lab_admin
 
     @staticmethod
     def has_read_permission(request):
@@ -401,12 +493,12 @@ class Team(TimestampedModel):
         return True
 
     def has_object_read_permission(self, request):
-        return self.lab.pk in request.user_auth_details.writeable_lab_ids or \
-            self.pk in request.user_auth_details.team_ids
+        return self.lab.pk in get_user_auth_details(request).writeable_lab_ids or \
+            self.pk in get_user_auth_details(request).team_ids
 
     def has_object_write_permission(self, request):
-        return self.lab.pk in request.user_auth_details.writeable_lab_ids or \
-            self.pk in request.user_auth_details.writeable_team_ids
+        return self.lab.pk in get_user_auth_details(request).writeable_lab_ids or \
+            self.pk in get_user_auth_details(request).writeable_team_ids
 
     def __str__(self):
         return f"{self.name} [Team {self.pk}]"
@@ -456,13 +548,13 @@ class ResourceModelPermissionsMixin(TimestampedModel):
 
     def get_user_level(self, request):
         if self.team:
-            if self.team.pk in request.user_auth_details.writeable_team_ids:
+            if self.team.pk in get_user_auth_details(request).writeable_team_ids:
                 return UserLevel.TEAM_ADMIN.value
-            if self.team.pk in request.user_auth_details.team_ids:
+            if self.team.pk in get_user_auth_details(request).team_ids:
                 return UserLevel.TEAM_MEMBER.value
-            if self.team.lab.pk in request.user_auth_details.lab_ids:
+            if self.team.lab.pk in get_user_auth_details(request).lab_ids:
                 return UserLevel.LAB_MEMBER.value
-        if request.user_auth_details.is_authenticated:
+        if get_user_auth_details(request).is_authenticated:
             return UserLevel.REGISTERED_USER.value
         return UserLevel.ANONYMOUS.value
 
@@ -494,7 +586,7 @@ class ResourceModelPermissionsMixin(TimestampedModel):
         """
         Users must be in a team to create a resource
         """
-        return len(request.user_auth_details.team_ids) > 0
+        return len(get_user_auth_details(request).team_ids) > 0
 
     @staticmethod
     def has_read_permission(request):
@@ -545,7 +637,7 @@ class BibliographicInfo(TimestampedModel):
 
     @staticmethod
     def has_create_permission(request):
-        return request.user_auth_details.is_authenticated and request.user_auth_details.is_approved
+        return get_user_auth_details(request).is_authenticated and get_user_auth_details(request).is_approved
 
     @staticmethod
     def has_read_permission(request):
@@ -707,7 +799,7 @@ class Harvester(UUIDModel):
 
     @staticmethod
     def has_create_permission(request):
-        return request.user_auth_details.is_authenticated and len(request.user_auth_details.writeable_lab_ids) > 0
+        return get_user_auth_details(request).is_authenticated and len(get_user_auth_details(request).writeable_lab_ids) > 0
 
     @staticmethod
     def has_read_permission(request):

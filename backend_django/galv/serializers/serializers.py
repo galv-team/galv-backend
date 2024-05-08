@@ -1220,7 +1220,7 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
         if self.instance is not None:
             return self.instance.harvester  # harvester cannot be changed
         request = self.context['request']
-        if value.lab.pk not in request.user_auth_details.lab_ids:
+        if value.lab.pk not in get_user_auth_details(request).lab_ids:
             raise ValidationError("You may only create MonitoredPaths on Harvesters in your own lab(s)")
         return value
 

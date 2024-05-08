@@ -14,7 +14,7 @@ class HarvesterFilterBackend(DRYPermissionFiltersBase):
         key = request.META.get('HTTP_AUTHORIZATION', '')
         if key.startswith('Harvester '):
             return queryset.filter(api_key=key.split(' ')[1])
-        labs = Lab.objects.filter(pk__in=request.user_auth_details.lab_ids)
+        labs = Lab.objects.filter(pk__in=get_user_auth_details(request).lab_ids)
         if len(labs) == 0:
             return queryset.none()
         return queryset.filter(lab__in=labs)
@@ -22,14 +22,14 @@ class HarvesterFilterBackend(DRYPermissionFiltersBase):
 class LabFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):
-        return queryset.filter(pk__in=request.user_auth_details.lab_ids)
+        return queryset.filter(pk__in=get_user_auth_details(request).lab_ids)
 
 class TeamFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):
         return queryset.filter(
-            Q(pk__in=request.user_auth_details.team_ids)|
-            Q(lab__pk__in=request.user_auth_details.writeable_lab_ids)
+            Q(pk__in=get_user_auth_details(request).team_ids)|
+            Q(lab__pk__in=get_user_auth_details(request).writeable_lab_ids)
         )
 
 class GroupFilterBackend(DRYPermissionFiltersBase):
@@ -38,9 +38,9 @@ class GroupFilterBackend(DRYPermissionFiltersBase):
         if request.user.is_superuser or request.user.is_staff:
             return queryset
         return queryset.filter(
-            Q(editable_lab__pk__in=request.user_auth_details.lab_ids) |
-            Q(editable_team__pk__in=request.user_auth_details.team_ids) |
-            Q(readable_team__pk__in=request.user_auth_details.team_ids)
+            Q(editable_lab__pk__in=get_user_auth_details(request).lab_ids) |
+            Q(editable_team__pk__in=get_user_auth_details(request).team_ids) |
+            Q(readable_team__pk__in=get_user_auth_details(request).team_ids)
         )
 
 class UserFilterBackend(DRYPermissionFiltersBase):
@@ -57,14 +57,14 @@ class UserFilterBackend(DRYPermissionFiltersBase):
         return lab_ids
 
     def filter_list_queryset(self, request, queryset, view):
-        if request.user.is_superuser or request.user.is_staff or request.user_auth_details.is_lab_admin:
+        if request.user.is_superuser or request.user.is_staff or get_user_auth_details(request).is_lab_admin:
             return queryset
         all_users = queryset.all()
         users_to_return = []
         # see self and lab colleagues
         for user in all_users:
             if user == request.user or any(
-                    [lab_id in request.user_auth_details.lab_ids for lab_id in UserFilterBackend.user_labs(user)]):
+                    [lab_id in get_user_auth_details(request).lab_ids for lab_id in UserFilterBackend.user_labs(user)]):
                 users_to_return.append(user)
         return queryset.filter(pk__in=[u.pk for u in users_to_return])
 
@@ -72,19 +72,19 @@ class UserFilterBackend(DRYPermissionFiltersBase):
 class ObservedFileFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):
-        return queryset.filter(monitored_paths__team__pk__in=request.user_auth_details.team_ids)
+        return queryset.filter(monitored_paths__team__pk__in=get_user_auth_details(request).team_ids)
 
 
 class ParquetPartitionFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):
-        return queryset.filter(observed_file__monitored_paths__team__pk__in=request.user_auth_details.team_ids)
+        return queryset.filter(observed_file__monitored_paths__team__pk__in=get_user_auth_details(request).team_ids)
 
 
 class ResourceFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):
-        auth_details = request.user_auth_details
+        auth_details = get_user_auth_details(request)
         return queryset.filter(
             Q(team__pk__in=auth_details.team_ids) |
             (Q(read_access_level=UserLevel.LAB_MEMBER.value) & Q(team__lab__pk__in=auth_details.lab_ids)) |
