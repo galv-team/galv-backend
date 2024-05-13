@@ -406,6 +406,7 @@ class HarvesterTests(GalvTestCase):
         self.client._credentials = {'HTTP_AUTHORIZATION': f'Harvester {self.harvester.api_key}'}
         url = reverse(f'{self.stub}-report', args=(self.harvester.id,))
         response = self.client.post(url, {
+            'format': 'flat',
             'status': settings.HARVESTER_STATUS_SUCCESS,
             'path': f.path,
             'monitored_path_id': mp.id,
