@@ -89,6 +89,7 @@ class ErrorSerializer(serializers.Serializer):
 
 
 def error_response(error: str, status: int = 400) -> Response:
+    print(f"Error: {error}")
     return Response({'error': error}, status=status)
 
 
@@ -784,6 +785,9 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                     pq.upload_errors.append(e)
                     pq.save()
 
+            def handle_upload_png(file, _, request):
+                file.png = request.FILES.get('png_file')
+
             def handle_completion(file, stage, content):
                 if stage == settings.HARVEST_STAGE_FAILED:
                     file.state = FileState.IMPORT_FAILED
@@ -816,6 +820,8 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                         return handle_upload_parquets(file, data, request)  # return because we return the ParquetPartition
                     elif stage == settings.HARVEST_STAGE_UPLOAD_COMPLETE:
                         handle_upload_complete(file, data)
+                    elif stage == settings.HARVEST_STAGE_UPLOAD_PNG:
+                        handle_upload_png(file, data, request)
                     else:
                         return error_response("Unknown stage")
 
@@ -837,18 +843,19 @@ class HarvesterViewSet(viewsets.ModelViewSet):
         harvester.last_check_in = timezone.now()
 
         content = request.data.get('content')
-        if request.data.get('content') is None and request.data.get('stage') == settings.HARVEST_STAGE_UPLOAD_PARQUET:
+        if request.data.get('content') is None and request.data.get('format') == 'flat':
             # Upload comes in a different format with the properties unnested.
             content = {
                 'task': request.data.get('task'),
                 'stage': request.data.get('stage'),
                 'data': {
-                    'total_row_count': int(float(request.data.get('total_row_count'))),
-                    'partition_number': int(float(request.data.get('partition_number'))),
-                    'partition_count': int(float(request.data.get('partition_count'))),
                     'filename': request.data.get('filename')
                 }
             }
+            if content['stage'] == settings.HARVEST_STAGE_UPLOAD_PARQUET:
+                content['data']['total_row_count'] = int(float(request.data.get('total_row_count')))
+                content['data']['partition_number'] = int(float(request.data.get('partition_number')))
+                content['data']['partition_count'] = int(float(request.data.get('partition_count')))
         else:
             content = content or {}
 

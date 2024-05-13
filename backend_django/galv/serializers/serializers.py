@@ -1562,14 +1562,6 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
             args=[instance.pk],
             request=self.context.get('request')
         )
-    #     mappings = instance.applicable_mappings(self.context.get('request'))
-    #     if len(mappings):
-    #         return [
-    #             # {**ColumnMappingSerializer(m['mapping'], context=self.context).data, 'missing': m['missing']}
-    #             {'mapping': m['mapping'].pk.__str__(), 'missing': m['missing']}
-    #             for m in mappings
-    #         ]
-    #     return []
 
     def get_extra_metadata(self, instance) -> Union[dict, None]:
         return reverse(
@@ -1602,6 +1594,7 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
             'parquet_partitions',
             'extra_metadata',
             'summary',
+            'png',
             'applicable_mappings',
             'upload_info',
             'permissions'

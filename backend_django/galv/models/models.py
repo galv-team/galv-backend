@@ -987,6 +987,11 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
         blank=True,
         related_name="observed_files"
     )
+    png = models.ImageField(
+        null=True,
+        blank=True,
+        help_text="Preview image of the file"
+    )
 
     @property
     def has_required_columns(self) -> bool:
