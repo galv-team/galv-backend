@@ -423,5 +423,24 @@ class HarvesterTests(GalvTestCase):
             response.json()['observed_file'].endswith(f"{ObservedFile.objects.get(path=f.path).id}/")
         )
 
+
+    def test_png_upload(self):
+        mp = MonitoredPathFactory.create(harvester=self.harvester)
+        f = ObservedFile.objects.create(path='/a/b/c/d.ext', harvester=self.harvester)
+        self.client._credentials = {'HTTP_AUTHORIZATION': f'Harvester {self.harvester.api_key}'}
+        url = reverse(f'{self.stub}-report', args=(self.harvester.id,))
+        response = self.client.post(url, {
+            'format': 'flat',
+            'status': settings.HARVESTER_STATUS_SUCCESS,
+            'path': f.path,
+            'monitored_path_id': mp.id,
+            'task': settings.HARVESTER_TASK_IMPORT,
+            'stage': settings.HARVEST_STAGE_UPLOAD_PNG,
+            'filename': 'test.png',
+            'png_file': tempfile.TemporaryFile()
+        }, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNotNone(response.json()['png'])
+
 if __name__ == '__main__':
     unittest.main()
