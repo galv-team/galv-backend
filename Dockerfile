@@ -12,11 +12,14 @@ ENV DJANGO_SETTINGS_MODULE config.settings
 
 # Install postgresql-client for healthchecking
 # install psycopg2 dependencies.
+# Install NGINX for file serving
+# We can't use WhiteNoise because we need to use xAccelRedirect to allow Django to verify permissions on files
 RUN apt-get update && apt-get install -y \
     postgresql-client \
     build-essential libssl-dev libffi-dev python3-dev python-dev \
     libpq-dev \
     gcc \
+    nginx \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /code
@@ -28,11 +31,17 @@ COPY requirements.txt /tmp/requirements.txt
 RUN set -ex && \
     pip install --upgrade pip && \
     pip install -r /tmp/requirements.txt && \
+    pip install supervisor && \
     rm -rf /root/.cache/
 COPY . /code
 RUN chmod +x /code/*.sh
 
-EXPOSE 8000
+# For NGINX
+COPY nginx.conf /etc/nginx/nginx.conf
+EXPOSE 80
+# This doesn't keep nginx running when container launches,
+# but it does let us check the config is valid
+RUN service nginx start
 
 WORKDIR /code/backend_django
 

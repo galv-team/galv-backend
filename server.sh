@@ -10,13 +10,19 @@ set -e
 
 if [ -z "$1" ]; then
     # No custom command provided, so run the default
-    COMMAND="gunicorn --bind 0.0.0.0:8000 --workers 2 config.wsgi"
+    # Determine the number of workers from number of cores * 4
+    WORKERS=$(nproc)
+    WORKERS=$((WORKERS * 4))
+    COMMAND="gunicorn --bind localhost:8000 --workers $WORKERS config.wsgi"
     MESSAGE="Starting server: $COMMAND"
 else
     COMMAND="$@"
     MESSAGE="Starting with custom command: $COMMAND"
 fi
 
+echo "Starting nginx proxy"
+service nginx start
+echo ""
 echo "Setting up database"
 (/code/setup_db.sh)
 echo "Starting validation monitor process"

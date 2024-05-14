@@ -16,9 +16,9 @@ services:
     depends_on:
       - postgres
       - mailhog
-      - nginx
     volumes:
       - ./.dev/.static_files:/static
+      - ./.dev/.media_files:/media
       - ./backend_django:/code/backend_django
       - ./.dev/spec:/spec
       # datafiles should be mounted to DATA_ROOT in the container
@@ -39,19 +39,9 @@ services:
       - ./.env.secret
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8001:80"
     # Replace the gnuicorn server with the Django development runserver
     command: "python manage.py runserver 0.0.0.0:8000"
-
-  nginx:
-    image: nginx:1.21.3
-    volumes:
-      - ./nginx-confs:/etc/nginx/conf.d
-      - ./.dev/.static_files:/static
-      - ./.dev/datafiles:/data
-    ports:
-      - "8001:80"
-    restart: unless-stopped
 
   mailhog:
     image: mailhog/mailhog
