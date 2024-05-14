@@ -28,6 +28,14 @@ ALLOWED_HOSTS = [*ALLOWED_HOSTS, "localhost", "host.docker.internal"]
 
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 
+# for django-debug-toolbar
+DEBUG_TOOLBAR_CONFIG = {
+    "SHOW_TOOLBAR_CALLBACK": lambda request: DEBUG,
+    "DEBUG_TOOLBAR_PANELS": [
+        'cachalot.panels.CachalotPanel',
+    ]
+}
+
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
@@ -42,7 +50,7 @@ if os.environ.get('DATABASE_URL'):
 else:
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'ENGINE': 'django.db.backends.postgresql',
             'NAME': os.environ.get("POSTGRES_DB", 'galv'),
             'HOST': os.environ.get('POSTGRES_HOST', 'postgres'),
             'PORT': os.environ.get('POSTGRES_PORT', 5432),
@@ -51,3 +59,10 @@ else:
             'TEST': {'NAME': f"galv_test"}
         }
     }
+
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+#         "LOCATION": "unique-snowflake",
+#     }
+# }

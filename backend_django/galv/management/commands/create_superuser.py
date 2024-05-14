@@ -15,6 +15,10 @@ class Command(BaseCommand):
     DJANGO_SUPERUSER_PASSWORD (required)
     """
 
+    def add_arguments(self, parser):
+        parser.add_argument('--no-input', action='store_true', help='Username for superuser')
+        parser.add_argument('--noinput', action='store_true', help='Password for superuser')
+
     def handle(self, *args, **options):
         password = os.getenv('DJANGO_SUPERUSER_PASSWORD', "")
         if not len(password):

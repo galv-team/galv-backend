@@ -35,4 +35,5 @@ RUN chmod +x /code/*.sh
 EXPOSE 8000
 
 WORKDIR /code/backend_django
-CMD ["bash", "-c", "(/code/setup_db.sh); (/code/validation_monitor.sh &); python manage.py collectstatic --noinput; gunicorn --bind 0.0.0.0:8000 --workers 2 config.wsgi"]
+
+ENTRYPOINT ["/code/server.sh"]

@@ -33,6 +33,8 @@ router.register(r'harvesters', views.HarvesterViewSet)
 router.register(r'harvest_errors', views.HarvestErrorViewSet)
 router.register(r'monitored_paths', views.MonitoredPathViewSet)
 router.register(r'files', views.ObservedFileViewSet)
+router.register(r'column_mappings', views.ColumnMappingViewSet)
+router.register(r'parquet_partitions', views.ParquetPartitionViewSet)
 router.register(r'columns', views.DataColumnViewSet)
 router.register(r'column_types', views.DataColumnTypeViewSet)
 router.register(r'units', views.DataUnitViewSet)
@@ -74,6 +76,8 @@ urlpatterns = [
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
     path('schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path("__debug__/", include("debug_toolbar.urls")),
 ]
+
 if settings.DEBUG and settings.MEDIA_ROOT:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,7 +1,8 @@
 from django.db import models
 from django.db.models.fields.files import FieldFile
+from rest_framework.reverse import reverse
 
-from .storages import MediaStorage
+from .storages import MediaStorage, LocalDataStorage
 
 
 class DynamicStorageFieldFile(FieldFile):
@@ -38,3 +39,43 @@ class DynamicStorageFileField(models.FileField):
             # in DynamicStorageFieldFile class above.
             file.update_acl()
         return file
+
+
+class ParquetPartitionFieldFile(FieldFile):
+    """
+    A custom FieldFile that allows the storage to be set dynamically based on the model instance.
+    """
+    def __init__(self, instance, field, name):
+        super().__init__(instance, field, name)
+        self.storage = instance.observed_file.harvester.lab.get_storage(instance)
+
+    def __iter__(self):
+        if self:
+            yield super().__iter__()
+
+    @property
+    def url(self):
+        if not self.instance:
+            return None
+        return reverse('parquetpartition-file', args=[self.instance.pk])
+
+    def backend_url(self):
+        """
+        Returns the backend URL for the file.
+
+        Not a property because it takes a long time to run.
+        """
+        return super().url
+
+
+class ParquetPartitionFileField(models.FileField):
+    """
+    A custom FileField that allows the storage to be set dynamically based on the model instance.
+    The storage argument should be a function that returns a dummy storage class instance
+     unless provided with a model instance.
+    """
+    attr_class = ParquetPartitionFieldFile
+
+    def pre_save(self, model_instance, add):
+        self.storage = model_instance.observed_file.harvester.lab.get_storage(model_instance)
+        return super().pre_save(model_instance, add)

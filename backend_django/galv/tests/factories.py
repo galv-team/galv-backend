@@ -21,7 +21,8 @@ from ..models import EquipmentFamily, Harvester, \
     Equipment, ScheduleFamily, Schedule, CyclerTest, \
     ScheduleIdentifiers, CellFormFactors, CellChemistries, CellManufacturers, \
     CellModels, EquipmentManufacturers, EquipmentModels, EquipmentTypes, Experiment, \
-    ValidationSchema, GroupProxy, UserProxy, Lab, Team, AutoCompleteEntry, DataUnit, DataColumnType
+    ValidationSchema, GroupProxy, UserProxy, Lab, Team, AutoCompleteEntry, DataUnit, DataColumnType, ParquetPartition, \
+    ColumnMapping
 from ..models.choices import UserLevel
 
 fake = faker.Faker(django.conf.global_settings.LANGUAGE_CODE)
@@ -180,6 +181,18 @@ class MonitoredPathFactory(factory.django.DjangoModelFactory):
     delete_access_level = UserLevel.TEAM_MEMBER.value
 
 
+class ColumnMappingFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = ColumnMapping
+        django_get_or_create = ('name',)
+
+    name = factory.Faker('word')
+    map = dict()
+    read_access_level = UserLevel.TEAM_MEMBER.value
+    edit_access_level = UserLevel.TEAM_MEMBER.value
+    delete_access_level = UserLevel.TEAM_MEMBER.value
+
+
 class ObservedFileFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = ObservedFile
@@ -193,6 +206,16 @@ class ObservedFileFactory(factory.django.DjangoModelFactory):
     path_root = factory.Faker('file_path', depth=1, absolute=True)
     path = factory.LazyAttribute(path_with_root)
     harvester = factory.SubFactory(HarvesterFactory)
+    mapping = factory.SubFactory(ColumnMappingFactory)
+
+
+class ParquetPartitionFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = ParquetPartition
+        django_get_or_create = ('observed_file', 'partition_number')
+
+    observed_file = factory.SubFactory(ObservedFileFactory)
+    partition_number = factory.Faker('random_int', min=1, max=1000000)
 
 
 class CellFamilyFactory(factory.django.DjangoModelFactory):

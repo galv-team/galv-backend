@@ -6,6 +6,8 @@
             "created": "2023-12-06T15:10:05+00:00",
             "modified": "2023-12-06T15:10:05+00:00",
             "name": "Unknown",
+            "unit": null,
+            "data_type": "float",
             "description": "unknown column type",
             "is_default": true,
             "read_access_level": 0
@@ -17,11 +19,11 @@
         "fields": {
             "created": "2023-12-06T15:10:05+00:00",
             "modified": "2023-12-06T15:10:05+00:00",
-            "name": "Sample Number",
+            "name": "SampleNumber",
             "description": "The sample or record number. Is increased by one each time a test machine records a reading. Usually counts from 1 at the start of a test",
             "unit": 1,
+            "data_type": "int",
             "is_default": true,
-            "override_child_name": "Sample_number",
             "read_access_level": 0
         }
     },
@@ -31,12 +33,12 @@
         "fields": {
             "created": "2023-12-06T15:10:05+00:00",
             "modified": "2023-12-06T15:10:05+00:00",
-            "name": "Time",
+            "name": "ElapsedTime_s",
             "description": "The time in seconds since the test run began.",
             "unit": 2,
+            "data_type": "float",
             "is_default": true,
             "is_required": true,
-            "override_child_name": "Elapsed_time_s",
             "read_access_level": 0
         }
     },
@@ -46,12 +48,12 @@
         "fields": {
             "created": "2023-12-06T15:10:05+00:00",
             "modified": "2023-12-06T15:10:05+00:00",
-            "name": "Volts",
+            "name": "Voltage_V",
             "description": "The voltage of the cell.",
             "unit": 3,
+            "data_type": "float",
             "is_default": true,
             "is_required": true,
-            "override_child_name": "Voltage_V",
             "read_access_level": 0
         }
     },
@@ -61,12 +63,12 @@
         "fields": {
             "created": "2023-12-06T15:10:05+00:00",
             "modified": "2023-12-06T15:10:05+00:00",
-            "name": "Amps",
+            "name": "Current_A",
             "description": "The current current.",
             "unit": 4,
+            "data_type": "float",
             "is_default": true,
             "is_required": true,
-            "override_child_name": "Current_A",
             "read_access_level": 0
         }
     },
@@ -76,9 +78,10 @@
         "fields": {
             "created": "2023-12-06T15:10:05+00:00",
             "modified": "2023-12-06T15:10:05+00:00",
-            "name": "Energy Capacity",
+            "name": "EnergyCapacity_W.h",
             "description": "The Energy Capacity.",
             "unit": 5,
+            "data_type": "float",
             "is_default": true,
             "read_access_level": 0
         }
@@ -89,9 +92,10 @@
         "fields": {
             "created": "2023-12-06T15:10:05+00:00",
             "modified": "2023-12-06T15:10:05+00:00",
-            "name": "Charge Capacity",
+            "name": "ChargeCapacity_A.h",
             "description": "The Charge Capacity.",
             "unit": 6,
+            "data_type": "float",
             "is_default": true,
             "read_access_level": 0
         }
@@ -102,9 +106,10 @@
         "fields": {
             "created": "2023-12-06T15:10:05+00:00",
             "modified": "2023-12-06T15:10:05+00:00",
-            "name": "Temperature",
+            "name": "Temperature_K",
             "description": "The temperature.",
             "unit": 7,
+            "data_type": "float",
             "is_default": true,
             "read_access_level": 0
         }
@@ -115,9 +120,10 @@
         "fields": {
             "created": "2023-12-06T15:10:05+00:00",
             "modified": "2023-12-06T15:10:05+00:00",
-            "name": "Step Time",
+            "name": "StepTime_s",
             "description": "The time in seconds since the current step began.",
             "unit": 8,
+            "data_type": "float",
             "is_default": true,
             "read_access_level": 0
         }
@@ -128,9 +134,10 @@
         "fields": {
             "created": "2023-12-06T15:10:05+00:00",
             "modified": "2023-12-06T15:10:05+00:00",
-            "name": "Impedence Magnitude",
+            "name": "ImpedenceMagnitude",
             "description": "The magnitude of the impedence (EIS).",
             "unit": 9,
+            "data_type": "float",
             "is_default": true,
             "read_access_level": 0
         }
@@ -141,9 +148,10 @@
         "fields": {
             "created": "2023-12-06T15:10:05+00:00",
             "modified": "2023-12-06T15:10:05+00:00",
-            "name": "Impedence Phase",
+            "name": "ImpedencePhase",
             "description": "The phase of the impedence (EIS).",
             "unit": 10,
+            "data_type": "float",
             "is_default": true,
             "read_access_level": 0
         }
@@ -154,11 +162,157 @@
         "fields": {
             "created": "2023-12-06T15:10:05+00:00",
             "modified": "2023-12-06T15:10:05+00:00",
-            "name": "Frequency",
+            "name": "Frequency_s-1",
             "description": "The frequency of the input EIS voltage signal.",
             "unit": 11,
+            "data_type": "float",
             "is_default": true,
             "read_access_level": 0
+        }
+    },
+    {
+        "pk": 13,
+        "model": "galv.DataColumnType",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "name": "StepNumber",
+            "description": "The step number.",
+            "unit": 1,
+            "data_type": "int",
+            "is_default": true,
+            "read_access_level": 0
+        }
+    },
+    {
+        "pk": 14,
+        "model": "galv.DataColumnType",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "name": "UnknownStr",
+            "description": "Unknown string datatype. DO NOT USE for columns with huge numbers of different values, e.g. dates/numbers. Use appropriate types for those columns.",
+            "unit": 1,
+            "data_type": "str",
+            "is_default": true,
+            "read_access_level": 0
+        }
+    },
+    {
+        "pk": 15,
+        "model": "galv.DataColumnType",
+        "fields": {
+            "created": "2023-12-06T15:10:05+00:00",
+            "modified": "2023-12-06T15:10:05+00:00",
+            "name": "DateTime",
+            "description": "A date/time value.",
+            "unit": 1,
+            "data_type": "datetime64[ns]",
+            "is_default": true,
+            "read_access_level": 0
+        }
+    },
+    {
+        "pk": "8ba73561-bf79-46f6-951a-ccb752acb7cc",
+        "model": "galv.ColumnMapping",
+        "fields": {
+            "created": "2024-04-10T15:39:53.581Z",
+            "modified": "2024-04-10T15:39:53.634Z",
+            "name": "import as float",
+            "map": {},
+            "read_access_level": 0,
+            "edit_access_level": 4
+        }
+    },
+    {
+        "pk": "fd64f179-ca0a-4549-80e3-8b07af10a6d2",
+        "model": "galv.ColumnMapping",
+        "fields": {
+            "created": "2024-04-10T15:39:53.581Z",
+            "modified": "2024-04-10T15:39:53.634Z",
+            "name": "Ivium .idf",
+            "map": {
+                "test_time": {
+                    "column_type": 3
+                },
+                "volts": {
+                    "column_type": 4
+                },
+                "amps": {
+                    "column_type": 5
+                }
+            },
+            "read_access_level": 0,
+            "edit_access_level": 4
+        }
+    },
+    {
+        "pk": "5e55cc2a-c088-4c09-b95b-8dc128549271",
+        "model": "galv.ColumnMapping",
+        "fields": {
+            "created": "2024-04-10T15:39:53.581Z",
+            "modified": "2024-04-10T15:39:53.634Z",
+            "name": "Biologic .mpr",
+            "map": {
+                "time/s": {
+                    "column_type": 3
+                },
+                "Ewe/V": {
+                    "column_type": 4
+                },
+                "I/mA": {
+                    "column_type": 5,
+                    "multiplier": 0.001
+                },
+                "|Energy|/W.h": {
+                    "column_type": 6
+                }
+            },
+            "read_access_level": 0,
+            "edit_access_level": 4
+        }
+    },
+    {
+        "pk": "589b482b-a1ba-478f-aa04-d6958caa252d",
+        "model": "galv.ColumnMapping",
+        "fields": {
+            "created": "2024-04-10T15:39:53.581Z",
+            "modified": "2024-04-10T15:39:53.634Z",
+            "name": "Maccor .txt",
+            "map": {
+                "TestTime": {
+                    "column_type": 3
+                },
+                "Volts": {
+                    "column_type": 4
+                },
+                "Amps": {
+                    "column_type": 5,
+                    "multiplier": 0.001
+                },
+                "StepTime": {
+                    "column_type": 9
+                },
+                "Rec#": {
+                    "column_type": 2
+                },
+                "Step": {
+                    "column_type": 13
+                },
+                "State": {
+                    "column_type": 14,
+                    "new_name": "State"
+                },
+                "DPt Time": {
+                    "column_type": 15
+                },
+                "Temp 1": {
+                    "column_type": 8,
+                    "addition": 273.15
+                }
+            },
+            "read_access_level": 0,
+            "edit_access_level": 4
         }
     }
 ]

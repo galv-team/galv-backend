@@ -8,7 +8,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from django.core.exceptions import ValidationError as DjangoValidationError
 
-from galv.models import ValidationSchema, GroupProxy, UserProxy, user_teams, VALIDATION_MOCK_ENDPOINT
+from galv.models import ValidationSchema, GroupProxy, UserProxy, VALIDATION_MOCK_ENDPOINT
 from rest_framework.fields import DictField
 
 
@@ -38,7 +38,8 @@ def serializer_class_from_string(class_name: str):
         'CyclerTestSerializer', 'ExperimentSerializer', 'ValidationSchemaSerializer', 'EquipmentTypesSerializer',
         'EquipmentModelsSerializer', 'EquipmentManufacturersSerializer', 'CellModelsSerializer',
         'CellManufacturersSerializer', 'CellChemistriesSerializer', 'CellFormFactorsSerializer',
-        'ScheduleIdentifiersSerializer'
+        'ScheduleIdentifiersSerializer', 'ParquetPartitionSerializer', 'ArbitraryFileSerializer',
+        'ColumnMappingSerializer'
     ]:
         raise ValueError(f"serializer_class_from_string will only retrieve custom Serializers, not {class_name}")
     s = __import__('galv.serializers', fromlist=[class_name])
@@ -65,7 +66,7 @@ def augment_extra_kwargs(extra_kwargs: dict[str, dict] = None):
     def _augment(name: str, content: dict):
         if name == 'url':
             return {'help_text': url_help_text, 'read_only': True, **content}
-        if name in ['id', 'uuid']:
+        if name == 'id':
             return {'help_text': "Auto-assigned object identifier", 'read_only': True, **content}
         return {**content}
 
@@ -214,7 +215,7 @@ class HyperlinkedRelatedIdField(serializers.HyperlinkedRelatedField):
     A HyperlinkedRelatedField that can be written to more flexibly.
     Lookup priority is, in order:
     A string or integer primary key value
-    An object with a 'pk', 'id', or 'uuid' property
+    An object with a 'pk' or 'id' property
     An object with a 'url' property
     A URL string
     """
@@ -224,12 +225,10 @@ class HyperlinkedRelatedIdField(serializers.HyperlinkedRelatedField):
                 data = data['pk']
             elif 'id' in data:
                 data = data['id']
-            elif 'uuid' in data:
-                data = data['uuid']
             elif 'url' in data:
                 data = data['url']
             else:
-                raise ValidationError("Object must have a 'pk', 'id', 'uuid', or 'url' property")
+                raise ValidationError("Object must have a 'pk', 'id', or 'url' property")
         elif isinstance(data, str):
             # Try to parse as an integer, but don't fail if it's not because uuids are stringy
             try:
@@ -255,7 +254,7 @@ class TruncatedHyperlinkedRelatedIdField(HyperlinkedRelatedIdField):
     A HyperlinkedRelatedField that reads as a truncated representation of the target object,
     and writes as the target object's URL.
 
-    The 'url' and '[id|uuid]' fields are always included.
+    The 'url' and 'id' fields are always included.
     Other fields are specified by the 'fields' argument to the constructor.
     """
     def __init__(self, child_serializer_class, fields, *args, **kwargs):
@@ -287,7 +286,7 @@ class TruncatedHyperlinkedRelatedIdField(HyperlinkedRelatedIdField):
         else:
             child = self.child_serializer_class
         fields = list({
-            *[f for f in self.child_serializer_class.Meta.fields if f in ['url', 'id', 'uuid']],# 'permissions']],
+            *[f for f in self.child_serializer_class.Meta.fields if f in ['url', 'id']],# 'permissions']],
             *self.child_fields
         })
 

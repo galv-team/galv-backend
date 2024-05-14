@@ -3,7 +3,6 @@
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 import os
 import re
-from typing import Type
 
 import jsonschema
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -21,13 +20,11 @@ from rest_framework import serializers
 
 from .choices import FileState, UserLevel, ValidationStatus
 
-#from dry_rest_permissions.generics import allow_staff_or_superuser
-
 from .utils import CustomPropertiesModel, JSONModel, LDSources, render_pybamm_schedule, UUIDModel, \
     combine_rdf_props, TimestampedModel
 from .autocomplete_entries import *
-from ..fields import DynamicStorageFileField
-
+from ..fields import DynamicStorageFileField, ParquetPartitionFileField
+from ..storages import LocalDataStorage, DataStorage, DummyDataStorage
 
 ALLOWED_USER_LEVELS_DELETE = [UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]]
 ALLOWED_USER_LEVELS_EDIT_PATH = [UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]]
@@ -45,8 +42,108 @@ ALLOWED_USER_LEVELS_READ = [UserLevel(v) for v in [
     UserLevel.ANONYMOUS
 ]]
 
+DATA_TYPES = [
+    "int",
+    "float",
+    "str",
+    "bool",
+    "datetime64[ns]",
+]
+
 
 VALIDATION_MOCK_ENDPOINT = "/validation_mock_request_target/"
+
+
+class UserAuthDetails:
+    """
+    A simple class to hold user authentication details.
+    """
+    def __init__(
+            self,
+            is_authenticated: bool = False,
+            is_approved: bool = False,
+            is_harvester: bool = False,
+            is_lab_admin: bool = False,
+            lab_ids=None,
+            writeable_lab_ids=None,
+            team_ids=None,
+            writeable_team_ids=None
+    ):
+        if lab_ids is None:
+            lab_ids = set()
+        if writeable_lab_ids is None:
+            writeable_lab_ids = set()
+        if team_ids is None:
+            team_ids = set()
+        if writeable_team_ids is None:
+            writeable_team_ids = set()
+
+        self.is_authenticated = is_authenticated
+        self.is_approved = is_approved
+        self.is_harvester = is_harvester
+        self.is_lab_admin = is_lab_admin
+        self.lab_ids = lab_ids|writeable_lab_ids
+        self.writeable_lab_ids = writeable_lab_ids
+        self.team_ids = team_ids|writeable_team_ids
+        self.writeable_team_ids = writeable_team_ids
+
+
+def get_user_auth_details(request):
+    """
+    Overwrite DRF ViewSet.perform_authentication to add user authentication details to the request object.
+
+    This saves us from having to query the database for this information in every view,
+    which was previously done in the `get_permissions` method of the viewsets.
+
+    This cannot be middleware because DRF doesn't authenticate users until after middleware is run.
+    """
+    # Code to be executed for each request before
+    # the view (and later middleware) are called.
+    if getattr(request, "user_auth_details", None) is not None:
+        return request.user_auth_details
+
+    is_harvester = isinstance(request.user, HarvesterUser)
+
+    # Team membership is always explicitly set
+    team_ids = set()
+    write_team_ids = set()
+    # Lab membership inherits from team membership,
+    # but lab admin rights are explicity declared.
+    lab_ids = set()
+    write_lab_ids = set()
+
+    if request.user is not None:
+        if is_harvester:
+            # Harvesters only ever have read access, and belong to any team that owns a monitored path
+            for values in request.user.harvester.monitored_paths.values('team__pk', 'team__lab__pk'):
+                team_ids.add(values['team__pk'])
+                lab_ids.add(values['team__lab__pk'])
+        else:
+            for g in request.user.groups.values(
+                'editable_team__pk', 'readable_team__pk', 'editable_lab__pk',
+                'editable_team__lab__pk', 'readable_team__lab__pk'
+            ):
+                if g['editable_team__pk'] is not None:
+                    write_team_ids.add(g['editable_team__pk'])
+                    lab_ids.add(g['editable_team__lab__pk'])
+                elif g['readable_team__pk'] is not None:
+                    team_ids.add(g['readable_team__pk'])
+                    lab_ids.add(g['readable_team__lab__pk'])
+                elif g['editable_lab__pk'] is not None:
+                    write_lab_ids.add(g['editable_lab__pk'])
+
+    request.user_auth_details = UserAuthDetails(
+        is_authenticated=request.user.is_authenticated,
+        is_approved=len(lab_ids|write_lab_ids) > 0,
+        is_harvester=is_harvester,
+        is_lab_admin=len(write_lab_ids) > 0,
+        lab_ids=lab_ids,
+        writeable_lab_ids=write_lab_ids,
+        team_ids=team_ids,
+        writeable_team_ids=write_team_ids,
+    )
+
+    return get_user_auth_details(request)
 
 
 class UserActivation(TimestampedModel):
@@ -105,7 +202,7 @@ class UserActivation(TimestampedModel):
 
     def get_is_expired(self) -> bool:
         return self.token_update_date is None or \
-                  (timezone.now() - self.token_update_date).total_seconds() > settings.USER_ACTIVATION_TOKEN_EXPIRY_S
+            (timezone.now() - self.token_update_date).total_seconds() > settings.USER_ACTIVATION_TOKEN_EXPIRY_S
 
     def activate_user(self):
         if self.get_is_expired():
@@ -146,19 +243,19 @@ class UserProxy(User):
         Users can read their own details, or the details of any user in a lab they are a member of.
         Lab admins can read the details of any user.
         """
-        if self == request.user or user_is_lab_admin(request.user):
+        if self == request.user or get_user_auth_details(request).is_lab_admin:
             return True
-        request_labs = user_labs(request.user)
-        for lab in user_labs(self):
-            if lab in request_labs:
+        for g in GroupProxy.objects.filter(user=self):
+            t = g.owner
+            if isinstance(t, Team) and t.lab.pk in get_user_auth_details(request).lab_ids:
                 return True
         return False
 
     def has_object_destroy_permission(self, request):
         if self != request.user:
             return False
-        for lab in user_labs(self, True):
-            if len(lab.admin_group.user_set.all()) == 1:
+        for lab in get_user_auth_details(request).writeable_lab_ids:
+            if Lab.objects.get(pk=lab).admin_group.user_set.count() == 1:
                 return False
         return True
 
@@ -191,6 +288,10 @@ class GroupProxy(Group):
             return self.readable_team
         return None
 
+    @property
+    def owner(self):
+        return self.get_owner()
+
     #@allow_staff_or_superuser
     def has_object_write_permission(self, request):
         owner = self.get_owner()
@@ -205,6 +306,19 @@ class GroupProxy(Group):
             return owner.has_object_read_permission(request) or self in request.user.groups.all()
         return self in request.user.groups.all()
 
+
+class S3Error(Exception):
+    pass
+
+class S3StorageConstructionError(S3Error):
+    pass
+
+class S3IncorrectlyConfiguredError(S3Error):
+    pass
+
+class S3NotConfiguredError(S3Error):
+    pass
+
 class Lab(TimestampedModel):
     name = models.TextField(
         unique=True,
@@ -214,6 +328,21 @@ class Lab(TimestampedModel):
         null=True,
         help_text="Description of the Lab"
     )
+    s3_bucket_name = models.TextField(null=True, blank=True, help_text="Name of the S3 bucket to store files in")
+    s3_location = models.TextField(null=True, blank=True, help_text="Directory within the S3 bucket to store files in")
+    s3_access_key = models.TextField(null=True, blank=True, help_text="Access key for the S3 bucket")
+    s3_secret_key = models.TextField(null=True, blank=True, help_text="Secret key for the S3 bucket")
+    # s3_region = models.TextField(
+    #     null=True,
+    #     blank=True,
+    #     help_text="Region for the S3 bucket. Only one of custom domain or region should be set."
+    # )
+    s3_custom_domain = models.TextField(
+        null=True,
+        blank=True,
+        help_text=("Custom domain for the S3 bucket.")
+    )
+
     admin_group = models.OneToOneField(
         to=GroupProxy,
         on_delete=models.CASCADE,
@@ -237,12 +366,12 @@ class Lab(TimestampedModel):
     def has_object_read_permission(self, request):
         return request.user.is_staff or \
             request.user.is_superuser or \
-            self in user_labs(request.user)
+            self.pk in get_user_auth_details(request).lab_ids
 
     def has_object_write_permission(self, request):
         return request.user.is_staff or \
             request.user.is_superuser or \
-            self in user_labs(request.user, True)
+            self.pk in get_user_auth_details(request).writeable_lab_ids
 
     def __str__(self):
         return f"{self.name} [Lab {self.pk}]"
@@ -259,6 +388,65 @@ class Lab(TimestampedModel):
     def delete(self, using=None, keep_parents=False):
         self.admin_group.delete()
         super(Lab, self).delete(using, keep_parents)
+
+    @property
+    def s3_configuration_status(self) -> dict:
+        s3_settings = [
+            's3_bucket_name',
+            's3_access_key',
+            's3_secret_key',
+            's3_custom_domain'
+        ]
+        enabled = any([getattr(self, s) is not None for s in s3_settings])
+        missing = []
+        s3_settings.pop(-1)  # custom domain is optional
+        for s in s3_settings:
+            if getattr(self, s) is None:
+                missing.append(s)
+        ok = len(missing) == 0
+        error = None
+        if ok:
+            try:
+                DataStorage(
+                    access_key=self.s3_access_key,
+                    secret_key=self.s3_secret_key,
+                    bucket_name=self.s3_bucket_name,
+                    location=self.s3_location,
+                    custom_domain=self.s3_custom_domain
+                )
+            except Exception as e:
+                ok = False
+                error = e
+        return {
+            'enabled': enabled,
+            'ok': ok,
+            'missing_properties': missing,
+            'initialization_error': error
+        }
+
+    def get_storage(self, instance):
+        if instance.storage_class_name == "LocalDataStorage":
+            return LocalDataStorage()
+        try:
+            s3_status = self.s3_configuration_status
+            if not s3_status.get('enabled'):
+                instance.storage_class_name = "LocalDataStorage"
+                if not settings.ALLOW_LOCAL_DATA_STORAGE:
+                    raise S3NotConfiguredError("Local data storage is disabled")
+                return LocalDataStorage()
+            elif not s3_status.get('ok'):
+                raise S3IncorrectlyConfiguredError(f"Missing properties: {s3_status.get('missing_properties')}")
+            storage = DataStorage(
+                access_key=self.s3_access_key,
+                secret_key=self.s3_secret_key,
+                bucket_name=self.s3_bucket_name,
+                location=self.s3_location,
+                custom_domain=self.s3_custom_domain or False
+            )
+            instance.storage_class_name = storage.__class__.__name__
+            return storage
+        except Exception as e:
+            raise S3StorageConstructionError from e
 
 
 class Team(TimestampedModel):
@@ -294,7 +482,7 @@ class Team(TimestampedModel):
 
     @staticmethod
     def has_create_permission(request):
-        return request.user.is_authenticated and len(user_labs(request.user, True)) > 0
+        return get_user_auth_details(request).is_lab_admin
 
     @staticmethod
     def has_read_permission(request):
@@ -305,12 +493,12 @@ class Team(TimestampedModel):
         return True
 
     def has_object_read_permission(self, request):
-        return self.lab in user_labs(request.user, True) or \
-            self in user_teams(request.user)
+        return self.lab.pk in get_user_auth_details(request).writeable_lab_ids or \
+            self.pk in get_user_auth_details(request).team_ids
 
     def has_object_write_permission(self, request):
-        return self.lab in user_labs(request.user, True) or \
-            self in user_teams(request.user, True)
+        return self.lab.pk in get_user_auth_details(request).writeable_lab_ids or \
+            self.pk in get_user_auth_details(request).writeable_team_ids
 
     def __str__(self):
         return f"{self.name} [Team {self.pk}]"
@@ -336,40 +524,6 @@ class Team(TimestampedModel):
     class Meta:
         unique_together = [['name', 'lab']]
 
-def user_teams(user, editable=False):
-    """
-    Return a list of all teams the user is a member of
-    """
-    teams = []
-    for g in user.groups.all():
-        if hasattr(g, 'editable_team'):
-            teams.append(g.editable_team)
-        if not editable and hasattr(g, 'readable_team'):
-            teams.append(g.readable_team)
-    return teams
-
-
-def user_labs(user, editable=False):
-    """
-    Return a list of all labs the user is a member of
-    """
-    labs = []
-    for g in user.groups.all():
-        if hasattr(g, 'editable_lab') and g.editable_lab is not None:
-            labs.append(g.editable_lab)
-    if editable:
-        return labs
-    for t in user_teams(user):
-        if t.lab not in labs:
-            labs.append(t.lab)
-    return labs
-
-def user_is_active(user):
-    return len(user_labs(user)) > 0
-
-def user_is_lab_admin(user):
-    return len(user_labs(user, True)) > 0
-
 
 class ResourceModelPermissionsMixin(TimestampedModel):
     team = models.ForeignKey(
@@ -392,20 +546,20 @@ class ResourceModelPermissionsMixin(TimestampedModel):
         choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_READ]
     )
 
-    def get_user_level(self, user):
+    def get_user_level(self, request):
         if self.team:
-            if self.team in user_teams(user, True):
+            if self.team.pk in get_user_auth_details(request).writeable_team_ids:
                 return UserLevel.TEAM_ADMIN.value
-            if self.team in user_teams(user):
+            if self.team.pk in get_user_auth_details(request).team_ids:
                 return UserLevel.TEAM_MEMBER.value
-            if self.team.lab in user_labs(user):
+            if self.team.lab.pk in get_user_auth_details(request).lab_ids:
                 return UserLevel.LAB_MEMBER.value
-        if user.is_authenticated:
+        if get_user_auth_details(request).is_authenticated:
             return UserLevel.REGISTERED_USER.value
         return UserLevel.ANONYMOUS.value
 
     def save(
-        self, force_insert=False, force_update=False, using=None, update_fields=None
+            self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
         """
         Ensure that access levels are valid.
@@ -419,20 +573,20 @@ class ResourceModelPermissionsMixin(TimestampedModel):
 
 
     def has_object_read_permission(self, request):
-        return self.get_user_level(request.user) >= self.read_access_level
+        return self.get_user_level(request) >= self.read_access_level
 
     def has_object_write_permission(self, request):
-        return self.get_user_level(request.user) >= self.edit_access_level
+        return self.get_user_level(request) >= self.edit_access_level
 
     def has_object_destroy_permission(self, request):
-        return self.get_user_level(request.user) >= self.delete_access_level
+        return self.get_user_level(request) >= self.delete_access_level
 
     @staticmethod
     def has_create_permission(request):
         """
         Users must be in a team to create a resource
         """
-        return len(user_teams(request.user)) > 0
+        return len(get_user_auth_details(request).team_ids) > 0
 
     @staticmethod
     def has_read_permission(request):
@@ -483,7 +637,7 @@ class BibliographicInfo(TimestampedModel):
 
     @staticmethod
     def has_create_permission(request):
-        return request.user.is_authenticated and user_is_active(request.user)
+        return get_user_auth_details(request).is_authenticated and get_user_auth_details(request).is_approved
 
     @staticmethod
     def has_read_permission(request):
@@ -606,7 +760,7 @@ class Schedule(JSONModel, ValidatableBySchemaMixin, ResourceModelPermissionsMixi
         return self.cycler_tests.count() > 0
 
     def __str__(self):
-        return f"{str(self.uuid)} [{str(self.family)}]"
+        return f"{str(self.id)} [{str(self.family)}]"
 
 class Harvester(UUIDModel):
     name = models.TextField(
@@ -645,7 +799,7 @@ class Harvester(UUIDModel):
 
     @staticmethod
     def has_create_permission(request):
-        return request.user.is_authenticated and len(user_labs(request.user, True)) > 0
+        return get_user_auth_details(request).is_authenticated and len(get_user_auth_details(request).writeable_lab_ids) > 0
 
     @staticmethod
     def has_read_permission(request):
@@ -671,7 +825,7 @@ class Harvester(UUIDModel):
         return self.is_valid_harvester(request)
 
     def __str__(self):
-        return f"{self.name} [Harvester {self.uuid}]"
+        return f"{self.name} [Harvester {self.id}]"
 
     def save(self, *args, **kwargs):
         if self.api_key is None:
@@ -682,6 +836,79 @@ class Harvester(UUIDModel):
                    '!£$%^&*-=+'
             self.api_key = f"galv_hrv_{''.join(random.choices(text, k=60))}"
         super(Harvester, self).save(*args, **kwargs)
+
+
+class ColumnMapping(UUIDModel, ResourceModelPermissionsMixin):
+    """
+    A mapping of DataColumn names to DataColumnType names.
+    Mapping has the structure:
+    {
+        "column_name_in_file": {
+            "column_type": "DataColumnType_id",
+            "new_name": "New name for the column",
+            "multiplier": 1.0,
+            "addition": 1.0
+        }
+    }
+    """
+    name = models.TextField(unique=True)
+    map = models.JSONField(
+        null=False,
+        help_text=(
+            "Mapping of column names to Column objects. "
+            "Each key is a column name in the file, and each value is a dictionary with the following keys: "
+            "`column_type` (required): the ID of the DataColumnType object to map to, "
+            "`new_name` (optional): a new name for the column (defaults to column_type's name) "
+            "and cannot be specified for required columns "
+            "(recommended to use a lowercase style with units in square brackets e.g. `speed_increase[m.s-1]`), "
+            "`multiplier` (optional): a multiplier to apply to the column, "
+            "`addition` (optional): a value to add to the column. "
+            "Multiplier and addition are only used for numerical (int/float) columns. "
+            "The new value is calculated as `new_value = (old_value + addition) * multiplier`. "
+            "Columns will be renamed to match the DataColumnType name. "
+            "**Columns not in the map will be coerced to float datatype.**"
+        )
+    )
+
+    @property
+    def in_use(self) -> bool:
+        return self.observed_files.count() > 0
+
+    @property
+    def missing_required_columns(self) -> list[str]:
+        """
+        Return a list of missing required columns.
+        """
+        ids = [col['column_type'] for col in self.map.values()]
+        missing = []
+        for col in DataColumnType.objects.filter(is_required=True):
+            if col.pk not in ids:
+                missing.append(col.name)
+        return missing
+
+    @property
+    def is_valid(self) -> bool:
+        """
+        A valid mapping contains all required columns.
+        """
+        return len(self.missing_required_columns) == 0
+
+    def save(
+            self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        try:
+            old_self = ColumnMapping.objects.get(pk=self.pk)
+        except ColumnMapping.DoesNotExist:
+            old_self = None
+        update_files = old_self is not None and self.pk and self.map != old_self.map
+        super(ColumnMapping, self).save(force_insert, force_update, using, update_fields)
+        if update_files:
+            for file in self.observed_files.all():
+                file.state = FileState.MAP_ASSIGNED
+                file.save()
+
+    def __str__(self):
+        return self.name
 
 
 class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
@@ -726,6 +953,10 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
         null=True,
         help_text="Number of rows in the file"
     )
+    num_partitions = models.PositiveIntegerField(
+        null=True,
+        help_text="Number of partitions in the file's parquet format"
+    )
     first_sample_no = models.PositiveIntegerField(
         null=True,
         help_text="Number of the first sample in the file"
@@ -734,10 +965,42 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
         null=True,
         help_text="Number of the last sample in the file"
     )
+    core_metadata = models.JSONField(
+        null=True,
+        help_text="Unparsed core metadata from the harvester"
+    )
     extra_metadata = models.JSONField(
         null=True,
         help_text="Extra metadata from the harvester"
     )
+    monitored_paths = models.ManyToManyField(
+        to='MonitoredPath',
+        help_text="Paths that this file is on",
+        related_name="files",
+        blank=True
+    )
+    summary = models.JSONField(null=True, blank=True)
+    mapping = models.ForeignKey(
+        ColumnMapping,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="observed_files"
+    )
+    png = models.ImageField(
+        null=True,
+        blank=True,
+        help_text="Preview image of the file"
+    )
+
+    @property
+    def has_required_columns(self) -> bool:
+        """
+        Return whether the file has all required columns.
+        """
+        if self.mapping is None:
+            return False
+        return self.mapping.is_valid
 
     @staticmethod
     def has_read_permission(request):
@@ -750,37 +1013,56 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
     def has_object_read_permission(self, request):
         if self.harvester.is_valid_harvester(request):
             return True
-        try:
-            teams = [t for t in user_teams(request.user) if t.lab == self.harvester.lab]
-            for team in teams:
-                for path in team.monitored_paths.all():
-                    if path.matches(self.path):
-                        return True
-        except AttributeError:
-            return False
-        return False
+        return any([path.has_object_read_permission(request) for path in self.monitored_paths.all()])
 
     def has_object_write_permission(self, request):
-        return self.has_object_read_permission(request)
+        if self.harvester.is_valid_harvester(request):
+            return True
+        return any([path.has_object_write_permission(request) for path in self.monitored_paths.all()])
 
-    def missing_required_columns(self):
-        errors = []
-        for required_column in DataColumnType.objects.filter(is_required=True):
-            if not self.columns.filter(type=required_column).count() == 1:
-                errors.append(f"Missing required column: {required_column.override_child_name or required_column.name}")
-        return errors
+    def applicable_mappings(self, request):
+        """
+        Return a list of applicable mappings for this file,
+        sorted by validity (whether the mapping has all key columns),
+        and applicability (number of file columns missed).
+        """
+        if not isinstance(self.summary, dict):
+            return []
+        col_names = self.summary.keys()
+        applicable_valid_mappings = []
+        applicable_invalid_mappings = []
+        for mapping in ColumnMapping.objects.all():
+            mapping.has_object_read_permission(request)
+            # A mapping is only applicable if all of its keys are in the column names
+            if any([m not in col_names for m in mapping.map.keys()]):
+                continue
+            # Applicability is scored by the number of column names it matches
+            matches = []
+            for col in col_names:
+                if col in mapping.map:
+                    matches.append(col)
+            missing = len(col_names) - len(matches)
+            if mapping.is_valid:
+                applicable_valid_mappings.append({'mapping': mapping, 'missing': missing})
+            else:
+                applicable_invalid_mappings.append({'mapping': mapping, 'missing': missing})
 
-    def has_required_columns(self):
-        return len(self.missing_required_columns()) == 0
+        applicable_valid_mappings = sorted(applicable_valid_mappings, key=lambda x: x['missing'])
+        applicable_invalid_mappings = sorted(applicable_invalid_mappings, key=lambda x: x['missing'])
+        return [*applicable_valid_mappings, *applicable_invalid_mappings]
 
-    def column_errors(self):
-        errors = []
-        names = []
-        for c in self.columns.all():
-            if c.get_name() in names:
-                errors.append(f"Duplicate column name: {c.get_name()}")
-            names.append(c.get_name())
-        return [*self.missing_required_columns(), *errors]
+    def save(
+            self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        # If the mapping is updated, set the state to MAP_ASSIGNED so the harvester reprocesses the data
+        if self.pk:
+            try:
+                prev_mapping = ObservedFile.objects.get(pk=self.pk).mapping
+            except ObservedFile.DoesNotExist:
+                prev_mapping = None
+            if prev_mapping != self.mapping:
+                self.state = FileState.MAP_ASSIGNED if self.mapping else FileState.AWAITING_MAP_ASSIGNMENT
+        super(ObservedFile, self).save(force_insert, force_update, using, update_fields)
 
     def __str__(self):
         return self.path
@@ -796,7 +1078,7 @@ class CyclerTest(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMi
     file = models.ManyToManyField(to=ObservedFile,  help_text="Columns of data in the test", related_name="cycler_tests")
 
     def __str__(self):
-        return f"{self.cell} [CyclerTest {self.uuid}]"
+        return f"{self.cell} [CyclerTest {self.id}]"
 
     def rendered_pybamm_schedule(self, validate = True):
         """
@@ -875,6 +1157,14 @@ class MonitoredPath(UUIDModel, ResourceModelPermissionsMixin):
     stable_time = models.PositiveSmallIntegerField(
         default=60,
         help_text="Number of seconds files must remain stable to be processed"
+    )
+    max_partition_line_count = models.PositiveIntegerField(
+        default=100_000,
+        help_text=(
+            "Maximum number of lines per parquet partition. "
+            "If your data are very wide, select a lower number. "
+            "For data with < 50 columns or so, 100,000 is a good starting point."
+        )
     )
     active = models.BooleanField(default=True, null=False)
     team = models.ForeignKey(
@@ -994,6 +1284,12 @@ class DataColumnType(ValidatableBySchemaMixin, ResourceModelPermissionsMixin):
     )
     name = models.TextField(null=False, help_text="Human-friendly identifier")
     description = models.TextField(help_text="Origins and purpose")
+    data_type = models.TextField(
+        null=False,
+        choices=[(v, v) for v in DATA_TYPES],
+        help_text="Type of the data in this column",
+        default="float"
+    )
     is_default = models.BooleanField(
         default=False,
         help_text="Whether the Column is included in the initial list of known Column Types"
@@ -1038,7 +1334,9 @@ class DataColumn(TimestampedModel):
         to=DataColumnType,
         on_delete=models.CASCADE,
         help_text="Column Type which this Column instantiates",
-        related_name='columns'
+        related_name='columns',
+        null=True,
+        blank=True
     )
     data_type = models.TextField(null=False, help_text="Type of the data in this column")
     name_in_file = models.TextField(null=False, help_text="Column title e.g. in .tsv file headers")
@@ -1065,70 +1363,13 @@ class DataColumn(TimestampedModel):
         return self.file.has_object_write_permission(request)
 
     def get_name(self):
-        return self.type.override_child_name or self.name_in_file
+        return (self.type is not None and self.type.override_child_name) or self.name_in_file
 
     def __str__(self):
         return f"{self.get_name()} ({self.type.unit.symbol})"
 
     class Meta:
         unique_together = [['file', 'name_in_file']]
-
-# Timeseries data comes in different types, so we need to store them separately.
-# These helper functions reduce redundancy in the code that creates the models.
-# TODO: could use Django's GenericColumn (GenericForeignKey?) here
-class TimeseriesBase(TimestampedModel):
-    column = models.OneToOneField(
-        to=DataColumn,
-        on_delete=models.CASCADE,
-        help_text="Column whose data are listed"
-    )
-    values = ArrayField(models.Field())
-    def __str__(self):
-        if not self.values:
-            return f"{self.column_id}: []"
-        if len(self.values) > 5:
-            return f"{self.column_id}: [{','.join(self.values[:5])}...]"
-        return f"{self.column_id}: [{','.join(self.values)}]"
-
-    def __repr__(self):
-        return str(self)
-
-    def has_object_read_permission(self, request):
-        return self.column.file.has_object_read_permission(request)
-
-    def has_object_write_permission(self, request):
-        return self.column.file.has_object_write_permission(request)
-
-    class Meta:
-        abstract = True
-
-class TimeseriesDataFloat(TimeseriesBase):
-    values = ArrayField(models.FloatField(null=True), null=True, help_text="Row values (floats) for Column")
-
-
-class TimeseriesDataInt(TimeseriesBase):
-    values = ArrayField(models.IntegerField(null=True), null=True, help_text="Row values (integers) for Column")
-
-
-class TimeseriesDataStr(TimeseriesBase):
-    values = ArrayField(models.TextField(null=True), null=True, help_text="Row values (str) for Column")
-
-
-class UnsupportedTimeseriesDataTypeError(TypeError):
-    pass
-
-
-def get_timeseries_handler_by_type(data_type: str) -> Type[TimeseriesDataFloat | TimeseriesDataStr | TimeseriesDataInt]:
-    """
-    Returns the appropriate TimeseriesData model for the given data type.
-    """
-    if data_type == "float":
-        return TimeseriesDataFloat
-    if data_type == "str":
-        return TimeseriesDataStr
-    if data_type == "int":
-        return TimeseriesDataInt
-    raise UnsupportedTimeseriesDataTypeError
 
 
 class TimeseriesRangeLabel(TimestampedModel):
@@ -1169,15 +1410,15 @@ class KnoxAuthToken(TimestampedModel):
 
     def __str__(self):
         return f"{self.knox_token_key}:{self.name}"
-    
+
     @staticmethod
     def has_create_permission(request):
         return request.user.is_active
-    
+
     @staticmethod
     def has_read_permission(request):
         return True
-    
+
     @staticmethod
     def has_write_permission(request):
         return False
@@ -1185,7 +1426,7 @@ class KnoxAuthToken(TimestampedModel):
     @staticmethod
     def has_destroy_permission(request):
         return True
-    
+
     def has_object_read_permission(self, request):
         if not request.user.is_active:
             return False
@@ -1238,7 +1479,7 @@ class ValidationSchema(CustomPropertiesModel, ResourceModelPermissionsMixin):
         SchemaValidation.objects.filter(schema=self).update(status=ValidationStatus.UNCHECKED, detail=None)
 
     def __str__(self):
-        return f"{self.name} [ValidationSchema {self.uuid}]"
+        return f"{self.name} [ValidationSchema {self.id}]"
 
 
 class SchemaValidation(TimestampedModel):
@@ -1349,3 +1590,55 @@ class ArbitraryFile(JSONModel, ResourceModelPermissionsMixin):
 
     def __str__(self):
         return self.name
+
+
+class ParquetPartition(UUIDModel):
+    """
+    A datafile partition in .parquet format.
+    Part of an ObservedFile's source datafile.
+    Either saved locally as a LocalParquetPartition, or saved in S3 as an S3ParquetPartition.
+    """
+    observed_file = models.ForeignKey(
+        to=ObservedFile,
+        on_delete=models.CASCADE,
+        null=False,
+        help_text="ObservedFile containing this partition",
+        related_name="parquet_partitions"
+    )
+    parquet_file = ParquetPartitionFileField(
+        null=True,
+        blank=True,
+        help_text="Parquet file"
+    )
+    partition_number = models.PositiveIntegerField(
+        null=False,
+        help_text="Partition number"
+    )
+    upload_errors = models.JSONField(
+        null=False,
+        default=list,
+        help_text="Upload errors"
+    )
+    storage_class_name = models.TextField(null=True, blank=True)
+
+    @staticmethod
+    def has_read_permission(request):
+        return True
+
+    @staticmethod
+    def has_write_permission(request):
+        return True
+
+    @staticmethod
+    def has_create_permission(request):
+        return False
+
+    def has_object_read_permission(self, request):
+        return self.observed_file.has_object_read_permission(request)
+
+    def has_object_write_permission(self, request):
+        return self.observed_file.has_object_write_permission(request)
+
+    @property
+    def uploaded(self) -> bool:
+        return self.parquet_file is not None

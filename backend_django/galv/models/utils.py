@@ -9,7 +9,7 @@ import json
 from django_json_field_schema_validator.validators import JSONFieldSchemaValidator
 from django.db import models
 
-with open("galv/schemas/typedObjectStrict.json") as f:
+with open(f"{os.path.dirname(__file__)}/../schemas/typedObjectStrict.json") as f:
     TYPED_OBJECT_SCHEMA = json.load(f)
 
 LD_SOURCE_MAP = {
@@ -52,7 +52,7 @@ class UUIDFieldLD(models.UUIDField):
 
 
 class UUIDModel(TimestampedModel):
-    uuid = UUIDFieldLD()
+    id = UUIDFieldLD()
 
     class Meta:
         abstract = True
@@ -109,7 +109,7 @@ class JSONModel(CustomPropertiesModel):
         # Unpack any RDF properties from the additional properties
         custom_properties = self.custom_properties.copy()
         return combine_rdf_props(
-            {'@id': f"{get_namespace()}{str(self.uuid)}"},
+            {'@id': f"{get_namespace()}{str(self.id)}"},
             unpack_rdf(custom_properties)
         )
 

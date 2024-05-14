@@ -26,6 +26,11 @@ from .settings_base import *
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
+# for django-debug-toolbar
+DEBUG_TOOLBAR_CONFIG = {
+    "SHOW_TOOLBAR_CALLBACK": lambda request: DEBUG,
+}
+
 CSRF_TRUSTED_ORIGINS = [
     *CORS_ALLOWED_ORIGINS,
     f'https://{os.environ.get("VIRTUAL_HOST")}'

@@ -3,8 +3,10 @@
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 import os.path
 import re
+from typing import Optional, Union
 
 import jsonschema
+from django.db import models
 from drf_spectacular.types import OpenApiTypes
 from rest_framework.reverse import reverse
 from drf_spectacular.utils import extend_schema_field, extend_schema_serializer, OpenApiExample
@@ -21,12 +23,12 @@ from ..models import Harvester, \
     DataUnit, \
     DataColumnType, \
     DataColumn, \
-    TimeseriesRangeLabel, \
     KnoxAuthToken, CellFamily, EquipmentTypes, CellFormFactors, CellChemistries, CellModels, CellManufacturers, \
     EquipmentManufacturers, EquipmentModels, EquipmentFamily, Schedule, ScheduleIdentifiers, CyclerTest, \
-    render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, user_labs, \
-    user_teams, SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
-    ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile
+    render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, \
+    SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
+    ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, ColumnMapping, \
+    get_user_auth_details
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
 from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
@@ -34,8 +36,8 @@ from rest_framework import serializers
 from knox.models import AuthToken
 
 from .utils import CustomPropertiesModelSerializer, GetOrCreateTextField, augment_extra_kwargs, url_help_text, \
-    get_model_field, PermissionsMixin, TruncatedUserHyperlinkedRelatedIdField, \
-    TruncatedGroupHyperlinkedRelatedIdField, TruncatedHyperlinkedRelatedIdField, \
+    PermissionsMixin, TruncatedUserHyperlinkedRelatedIdField, \
+    TruncatedHyperlinkedRelatedIdField, \
     CreateOnlyMixin, ValidationPresentationMixin
 
 @extend_schema_serializer(examples = [
@@ -151,7 +153,9 @@ class TransparentGroupSerializer(serializers.HyperlinkedModelSerializer, Permiss
         return ret['users']
 
     def to_internal_value(self, data):
-        return super().to_internal_value({'users': data})
+        if isinstance(data, list):
+            return super().to_internal_value({'users': data})
+        return super().to_internal_value(data)
 
     class Meta:
         model = GroupProxy
@@ -313,10 +317,24 @@ class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         Only lab admins can create teams in their lab
         """
         try:
-            assert value in user_labs(self.context['request'].user, True)
+            assert value.pk in self.context['request'].user_auth_details.writeable_lab_ids
         except:
             raise ValidationError("You may only create Teams in your own lab(s)")
         return value
+
+    def create(self, validated_data):
+        admin_group = validated_data.pop('admin_group', [])
+        member_group = validated_data.pop('member_group', [])
+        if len(admin_group) == 0:
+            try:
+                admin_group = [self.context['request'].user.id]
+            except KeyError:
+                raise ValidationError("No admins specified and no request context available to determine user.")
+        team = super().create(validated_data)
+        TransparentGroupSerializer().update(team.admin_group, admin_group)
+        TransparentGroupSerializer().update(team.member_group, member_group)
+        team.save()
+        return team
 
     def update(self, instance, validated_data):
         """
@@ -391,6 +409,15 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         many=True,
         help_text="Teams in this Lab"
     )
+    s3_secret_key = serializers.SerializerMethodField()
+    s3_access_key = serializers.SerializerMethodField()
+
+    def create(self, validated_data):
+        admin_group = validated_data.pop('admin_group')
+        lab = super().create(validated_data)
+        TransparentGroupSerializer().update(lab.admin_group, admin_group)
+        lab.save()
+        return lab
 
     def update(self, instance, validated_data):
         """
@@ -401,10 +428,41 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             TransparentGroupSerializer().update(instance.admin_group, admin_group)
         return super().update(instance, validated_data)
 
+    def get_s3_access_key(self, instance) -> str|None:
+        if instance.s3_access_key:
+            return f"{instance.s3_access_key[:4]}********"
+        return instance.s3_access_key
+
+    def get_s3_secret_key(self, instance) -> str|None:
+        return instance.s3_secret_key if not instance.s3_secret_key else "********"
+
+    def validate_s3_access_key(self, value):
+        if self.instance is not None and value is None:
+            return self.instance.s3_access_key
+        return value
+
+    def validate_s3_secret_key(self, value):
+        if self.instance is not None and value is None:
+            return self.instance.s3_secret_key
+        return value
+
     class Meta:
         model = Lab
-        fields = ['url', 'id', 'name', 'description', 'admin_group', 'harvesters', 'teams', 'permissions']
-        read_only_fields = ['url', 'id', 'teams', 'admin_group', 'harvesters', 'permissions']
+        fields = [
+            'url', 'id',
+            'name', 'description',
+            'admin_group',
+            'harvesters',
+            's3_bucket_name',
+            's3_location',
+            's3_access_key',
+            's3_secret_key',
+            's3_custom_domain',
+            's3_configuration_status',
+            'teams',
+            'permissions'
+        ]
+        read_only_fields = ['url', 'id', 'teams', 'harvesters', 's3_configuration_status', 'permissions']
 
 class WithTeamMixin(serializers.Serializer):
     team = TruncatedHyperlinkedRelatedIdField(
@@ -441,7 +499,7 @@ class WithTeamMixin(serializers.Serializer):
         If a resource is being moved from one team to another, the user must be a member of both teams.
         """
         try:
-            teams = user_teams(self.context['request'].user)
+            teams = Team.objects.filter(pk__in=self.context['request'].user_auth_details.team_ids)
             if value is None:
                 if len(teams) == 1:
                     value = teams[0]
@@ -503,7 +561,7 @@ class WithTeamMixin(serializers.Serializer):
             for level in ['read_access_level', 'edit_access_level', 'delete_access_level']:
                 if level in attrs and getattr(self.instance, level) == attrs[level]:
                     del attrs[level]
-            user_access_level = self.instance.get_user_level(self.context['request'].user)
+            user_access_level = self.instance.get_user_level(self.context['request'])
             if 'read_access_level' in attrs or 'edit_access_level' in attrs:
                 if user_access_level < UserLevel.TEAM_MEMBER.value:
                     raise ValidationError("You may only change access levels if you are a team member")
@@ -537,7 +595,7 @@ class WithTeamMixin(serializers.Serializer):
         description='Cells are the electrical energy storage devices used in cycler tests. They are grouped into families.',
         value={
             "url": "http://localhost:8001/cells/6a3a910b-d42e-46f6-9604-6fb3c2f3d059/",
-            "uuid": "6a3a910b-d42e-46f6-9604-6fb3c2f3d059",
+            "id": "6a3a910b-d42e-46f6-9604-6fb3c2f3d059",
             "identifier": "sny-vtc-1234-xx94",
             "family": "http://localhost:8001/cell_families/42fc4c44-efbb-4457-a734-f68ee28de617/",
             "cycler_tests": [
@@ -576,10 +634,10 @@ class CellSerializer(CustomPropertiesModelSerializer, PermissionsMixin, WithTeam
     class Meta:
         model = Cell
         fields = [
-            'url', 'uuid', 'identifier', 'family', 'cycler_tests', 'in_use', 'team',
+            'url', 'id', 'identifier', 'family', 'cycler_tests', 'in_use', 'team',
             'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level', 'custom_properties'
         ]
-        read_only_fields = ['url', 'uuid', 'cycler_tests', 'in_use', 'permissions']
+        read_only_fields = ['url', 'id', 'cycler_tests', 'in_use', 'permissions']
 
 
 @extend_schema_serializer(examples = [
@@ -589,7 +647,7 @@ class CellSerializer(CustomPropertiesModelSerializer, PermissionsMixin, WithTeam
         description='Cell Families group together properties shared by multiple Cells of the same make and model.',
         value={
             "url": "http://localhost:8001/cell_families/5d19c8d6-a976-423d-ab5d-a624a0606d30/",
-            "uuid": "5d19c8d6-a976-423d-ab5d-a624a0606d30",
+            "id": "5d19c8d6-a976-423d-ab5d-a624a0606d30",
             "manufacturer": "LG",
             "model": "HG2",
             "datasheet": None,
@@ -637,7 +695,7 @@ class CellFamilySerializer(CustomPropertiesModelSerializer, PermissionsMixin, Wi
         model = CellFamily
         fields = [
             'url',
-            'uuid',
+            'id',
             'manufacturer',
             'model',
             'datasheet',
@@ -658,7 +716,7 @@ class CellFamilySerializer(CustomPropertiesModelSerializer, PermissionsMixin, Wi
             'delete_access_level',
             'custom_properties'
         ]
-        read_only_fields = ['url', 'uuid', 'cells', 'in_use', 'permissions']
+        read_only_fields = ['url', 'id', 'cells', 'in_use', 'permissions']
 
 
 @extend_schema_serializer(examples = [
@@ -668,7 +726,7 @@ class CellFamilySerializer(CustomPropertiesModelSerializer, PermissionsMixin, Wi
         description='Equipment Families group together properties shared by multiple pieces of Equipment of the same make and model.',
         value={
             "url": "http://localhost:8001/equipment_families/947e1f7c-c5b9-47b8-a121-d1e519a7154c/",
-            "uuid": "947e1f7c-c5b9-47b8-a121-d1e519a7154c",
+            "id": "947e1f7c-c5b9-47b8-a121-d1e519a7154c",
             "type": "Thermal Chamber",
             "manufacturer": "Binder",
             "model": "KB115",
@@ -705,7 +763,7 @@ class EquipmentFamilySerializer(CustomPropertiesModelSerializer, PermissionsMixi
         model = EquipmentFamily
         fields = [
             'url',
-            'uuid',
+            'id',
             'type',
             'manufacturer',
             'model',
@@ -718,7 +776,7 @@ class EquipmentFamilySerializer(CustomPropertiesModelSerializer, PermissionsMixi
             'delete_access_level',
             'custom_properties'
         ]
-        read_only_fields = ['url', 'uuid', 'in_use', 'equipment', 'permissions']
+        read_only_fields = ['url', 'id', 'in_use', 'equipment', 'permissions']
 
 
 @extend_schema_serializer(examples = [
@@ -728,7 +786,7 @@ class EquipmentFamilySerializer(CustomPropertiesModelSerializer, PermissionsMixi
         description='Equipment is used to perform cycler tests. It includes cyclers themselves, as well as temperature chambers. It is grouped into families.',
         value={
             "url": "http://localhost:8001/equipment/a7bd4c43-29c7-40f1-bcf7-a2924ed474c2/",
-            "uuid": "a7bd4c43-29c7-40f1-bcf7-a2924ed474c2",
+            "id": "a7bd4c43-29c7-40f1-bcf7-a2924ed474c2",
             "identifier": "1234567890",
             "family": "http://localhost:8001/equipment_families/947e1f7c-c5b9-47b8-a121-d1e519a7154c/",
             "calibration_date": "2019-01-01",
@@ -767,10 +825,10 @@ class EquipmentSerializer(CustomPropertiesModelSerializer, PermissionsMixin, Wit
     class Meta:
         model = Equipment
         fields = [
-            'url', 'uuid', 'identifier', 'family', 'calibration_date', 'in_use', 'team', 'cycler_tests',
+            'url', 'id', 'identifier', 'family', 'calibration_date', 'in_use', 'team', 'cycler_tests',
             'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level', 'custom_properties'
         ]
-        read_only_fields = ['url', 'uuid', 'datasets', 'in_use', 'cycler_tests', 'permissions']
+        read_only_fields = ['url', 'id', 'datasets', 'in_use', 'cycler_tests', 'permissions']
 
 
 @extend_schema_serializer(examples = [
@@ -780,7 +838,7 @@ class EquipmentSerializer(CustomPropertiesModelSerializer, PermissionsMixin, Wit
         description='Schedule Families group together properties shared by multiple Schedules.',
         value={
             "url": "http://localhost:8001/schedule_families/e25f7c94-ca32-4f47-b95a-3b0e7ae4a47f/",
-            "uuid": "e25f7c94-ca32-4f47-b95a-3b0e7ae4a47f",
+            "id": "e25f7c94-ca32-4f47-b95a-3b0e7ae4a47f",
             "identifier": "Cell Conditioning",
             "description": "Each cell is cycled five times at 1C discharge and the standard charge. This test is completed at 25◦C.",
             "ambient_temperature": 25.0,
@@ -830,13 +888,13 @@ class ScheduleFamilySerializer(CustomPropertiesModelSerializer, PermissionsMixin
     class Meta:
         model = ScheduleFamily
         fields = [
-            'url', 'uuid', 'identifier', 'description',
+            'url', 'id', 'identifier', 'description',
             'ambient_temperature', 'pybamm_template',
             'in_use', 'team', 'schedules', 'permissions',
             'read_access_level', 'edit_access_level', 'delete_access_level',
             'custom_properties'
         ]
-        read_only_fields = ['url', 'uuid', 'in_use', 'schedules', 'permissions']
+        read_only_fields = ['url', 'id', 'in_use', 'schedules', 'permissions']
 
 
 @extend_schema_serializer(examples = [
@@ -846,7 +904,7 @@ class ScheduleFamilySerializer(CustomPropertiesModelSerializer, PermissionsMixin
         description='Schedules are used to define the current profile used in a cycler test. They are grouped into families.',
         value={
             "url": "http://localhost:8001/schedules/5a2d7da9-393c-44ee-827a-5d15133c48d6/",
-            "uuid": "5a2d7da9-393c-44ee-827a-5d15133c48d6",
+            "id": "5a2d7da9-393c-44ee-827a-5d15133c48d6",
             "family": "http://localhost:8001/schedule_families/e25f7c94-ca32-4f47-b95a-3b0e7ae4a47f/",
             "schedule_file": None,
             "pybamm_schedule_variables": {
@@ -914,13 +972,13 @@ class ScheduleSerializer(CustomPropertiesModelSerializer, PermissionsMixin, With
     class Meta:
         model = Schedule
         fields = [
-            'url', 'uuid', 'family',
+            'url', 'id', 'family',
             'schedule_file', 'pybamm_schedule_variables',
             'in_use', 'team', 'cycler_tests', 'permissions',
             'read_access_level', 'edit_access_level', 'delete_access_level',
             'custom_properties'
         ]
-        read_only_fields = ['url', 'uuid', 'in_use', 'cycler_tests', 'permissions']
+        read_only_fields = ['url', 'id', 'in_use', 'cycler_tests', 'permissions']
 
 
 @extend_schema_serializer(examples = [
@@ -930,7 +988,7 @@ class ScheduleSerializer(CustomPropertiesModelSerializer, PermissionsMixin, With
         description='Cycler Tests are the core of the system. They define the cell, equipment, and schedule used in a test, and are used to store the raw data produced by the test.',
         value={
             "url": "http://localhost:8001/cycler_tests/2b7313c9-94c2-4276-a4ee-e9d58d8a641b/",
-            "uuid": "2b7313c9-94c2-4276-a4ee-e9d58d8a641b",
+            "id": "2b7313c9-94c2-4276-a4ee-e9d58d8a641b",
             "cell": "http://localhost:8001/cells/6a3a910b-d42e-46f6-9604-6fb3c2f3d059/",
             "equipment": [
                 "http://localhost:8001/equipment/a7bd4c43-29c7-40f1-bcf7-a2924ed474c2/",
@@ -1001,11 +1059,11 @@ class CyclerTestSerializer(CustomPropertiesModelSerializer, PermissionsMixin, Wi
     class Meta:
         model = CyclerTest
         fields = [
-            'url', 'uuid', 'cell', 'equipment', 'schedule', 'rendered_schedule', 'team', 'permissions',
+            'url', 'id', 'cell', 'equipment', 'schedule', 'rendered_schedule', 'team', 'permissions',
             'read_access_level', 'edit_access_level', 'delete_access_level',
             'custom_properties'
         ]
-        read_only_fields = ['url', 'uuid', 'rendered_schedule', 'permissions']
+        read_only_fields = ['url', 'id', 'rendered_schedule', 'permissions']
 
 
 @extend_schema_serializer(examples = [
@@ -1015,7 +1073,7 @@ class CyclerTestSerializer(CustomPropertiesModelSerializer, PermissionsMixin, Wi
         description='Harvesters are the interface between the system and the raw data produced by cycler tests. They are responsible for uploading data to the system.',
         value={
             "url": "http://localhost:8001/harvesters/d8290e68-bfbb-3bc8-b621-5a9590aa29fd/",
-            "uuid": "d8290e68-bfbb-3bc8-b621-5a9590aa29fd",
+            "id": "d8290e68-bfbb-3bc8-b621-5a9590aa29fd",
             "name": "Example Harvester",
             "sleep_time": 60,
             "environment_variables": {
@@ -1078,7 +1136,7 @@ class HarvesterSerializer(serializers.HyperlinkedModelSerializer, PermissionsMix
     def validate_name(self, value):
         harvesters = Harvester.objects.filter(name=value)
         if self.instance is not None:
-            harvesters = harvesters.exclude(uuid=self.instance.uuid)
+            harvesters = harvesters.exclude(id=self.instance.id)
             harvesters = harvesters.filter(lab=self.instance.lab)
         if harvesters.exists():
             raise ValidationError('Harvester with that name already exists')
@@ -1094,7 +1152,7 @@ class HarvesterSerializer(serializers.HyperlinkedModelSerializer, PermissionsMix
 
     class Meta:
         model = Harvester
-        read_only_fields = ['url', 'uuid', 'last_check_in', 'last_check_in_job', 'lab', 'permissions']
+        read_only_fields = ['url', 'id', 'last_check_in', 'last_check_in_job', 'lab', 'permissions']
         fields = [*read_only_fields, 'name', 'sleep_time', 'environment_variables', 'active']
         extra_kwargs = augment_extra_kwargs()
 
@@ -1105,7 +1163,7 @@ class HarvesterSerializer(serializers.HyperlinkedModelSerializer, PermissionsMix
         description='Monitored Paths are subdirectories on Harvesters that are monitored for new files. When a new file is detected, it is uploaded to the system.',
         value={
             "url": "http://localhost:8001/monitored_paths/172f2460-9528-11ee-8454-eb9d381d3cc4/",
-            "uuid": "172f2460-9528-11ee-8454-eb9d381d3cc4",
+            "id": "172f2460-9528-11ee-8454-eb9d381d3cc4",
             "files": ["http://localhost:8001/files/c690ddf0-9527-11ee-8454-eb9d381d3cc4/"],
             "path": "/home/example_user/example_data.csv",
             "regex": ".*\\.csv",
@@ -1134,11 +1192,11 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
 
     def get_files(self, instance) -> list[OpenApiTypes.URI]:
         """Return only URLs because otherwise it takes _forever_."""
-        files = ObservedFile.objects.filter(harvester__lab=instance.team.lab).values("path", "uuid")
+        files = ObservedFile.objects.filter(harvester__lab=instance.team.lab).values("path", "id")
         file_urls = []
         for file in files:
             if instance.matches(file.get('path')):
-                file_urls.append(reverse('observedfile-detail', (file.get('uuid'),)))
+                file_urls.append(reverse('observedfile-detail', (file.get('id'),)))
         return file_urls
 
     harvester = TruncatedHyperlinkedRelatedIdField(
@@ -1163,7 +1221,7 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
         if self.instance is not None:
             return self.instance.harvester  # harvester cannot be changed
         request = self.context['request']
-        if value.lab not in user_labs(request.user):
+        if value.lab.pk not in get_user_auth_details(request).lab_ids:
             raise ValidationError("You may only create MonitoredPaths on Harvesters in your own lab(s)")
         return value
 
@@ -1175,8 +1233,7 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
         """
         if self.instance is not None:
             return self.instance.team
-        user = self.context['request'].user
-        if value not in user_teams(user, True):
+        if value.pk not in self.context['request'].user_auth_details.writeable_team_ids:
             raise ValidationError("You may only create MonitoredPaths in your own team(s)", code=HTTP_403_FORBIDDEN)
         return value
 
@@ -1206,14 +1263,141 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
     class Meta:
         model = MonitoredPath
         fields = [
-            'url', 'uuid', 'path', 'regex', 'stable_time', 'active', 'files', 'harvester', 'team',
+            'url', 'id', 'path', 'regex', 'stable_time', 'active', 'max_partition_line_count',
+            'files', 'harvester', 'team',
             'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
         ]
-        read_only_fields = ['url', 'uuid', 'files', 'harvester', 'permissions']
+        read_only_fields = ['url', 'id', 'files', 'harvester', 'permissions']
         extra_kwargs = augment_extra_kwargs({
             'harvester': {'create_only': True},
             'team': {'create_only': True}
         })
+
+
+class ColumnMappingSerializer(serializers.HyperlinkedModelSerializer, WithTeamMixin, PermissionsMixin):
+    rendered_map = serializers.SerializerMethodField()
+
+    def get_rendered_map(self, instance) -> dict:
+        out = {}
+        for key, value in instance.map.items():
+            data_column_type = DataColumnType.objects.get(pk=value['column_type'])
+            out[key] = {
+                'new_name': value.get('new_name', data_column_type.name),
+                'data_type': data_column_type.data_type
+            }
+            if data_column_type.data_type in ['int', 'float']:
+                out[key]['multiplier'] = value.get('multiplier', 1)
+                out[key]['addition'] = value.get('addition', 0)
+        return out
+
+    def validate_map(self, value):
+        """
+        Expect a dictionary with the structure:
+        ```
+        {
+            "column_name_in_file": {
+                "column_type": "DataColumnType uuid",
+                "new_name": "str",
+                "multiplier": "float",
+                "addition": "float"
+            },
+            ...
+        }
+        ```
+        `new_name` is optional and defaults to the name of the DataColumnType.
+        `addition` and `multiplier` are optional.
+        If they are not provided, they default to 0 and 1 respectively.
+        They are only used for numerical columns.
+        New column values = (old column value + addition) * multiplier.
+        E.g. to convert from degrees C to K, you would set multiplier to 1 and addition to 273.15.
+        """
+        if not isinstance(value, dict):
+            raise ValidationError("Map must be a dictionary")
+        required_column_ids = [c.pk for c in DataColumnType.objects.filter(is_required=True)]
+        required_columns_supplied = {}
+        new_value = {}
+        for k, v in value.items():
+            new_value[k] = v
+            if not isinstance(k, str):
+                raise ValidationError("Keys must be strings representing the names of columns in the file")
+            if not isinstance(v, dict):
+                raise ValidationError("Values must be dictionaries")
+            try:
+                column_type = DataColumnType.objects.get(pk=v.get('column_type'))
+            except DataColumnType.DoesNotExist:
+                if v.get('column_type') is None:
+                    raise ValidationError(
+                        f"No column_type specified for column '{k}' - perhaps you should use Unknown"
+                    )
+                raise ValidationError(f"Invalid column_type id '{v.get('column_type')}' for column '{k}'")
+            if column_type.pk in required_column_ids:
+                if column_type.pk in required_columns_supplied.keys():
+                    raise ValidationError(
+                        f"Cannot assign column '{k}' to required column {column_type.name}. "
+                        f"Column {column_type.name} is already assigned to column '{required_columns_supplied[column_type.pk]}'"
+                    )
+                required_columns_supplied[column_type.pk] = k
+            if 'new_name' in v:
+                if column_type.is_required:
+                    raise ValidationError(f"Column '{k}' is one of the core required columns and cannot be renamed")
+                if not isinstance(v['new_name'], str):
+                    raise ValidationError(f"new_name for column '{k}' must be a string")
+            if column_type.data_type in ['int', 'float']:
+                type_fn = int if column_type.data_type == 'int' else float
+                try:
+                    new_value[k]['multiplier'] = type_fn(v.get('multiplier', 1))
+                    new_value[k]['addition'] = type_fn(v.get('addition', 0))
+                except (ValueError, TypeError) as e:
+                    raise ValidationError(
+                        f"Multiplier and addition for column '{k}' must be {column_type.data_type}"
+                    ) from e
+            elif 'multiplier' in v:
+                raise ValidationError(f"Column '{k}' is not numerical, so it cannot have a multiplier")
+            elif 'addition' in v:
+                raise ValidationError(f"Column '{k}' is not numerical, so it cannot have an addition")
+        return new_value
+
+    def validate(self, attrs):
+        if (self.instance and
+                self.instance.map != attrs['map'] and
+                self.instance.in_use and
+                not all([
+                    f.has_object_write_permission(request=self.context['request'])
+                    for f in self.instance.observed_files.all()
+                ])
+        ):
+            raise ValidationError("You cannot modify a mapping that is in use by files you cannot write to.")
+        return super().validate(attrs)
+
+    class Meta:
+        model = ColumnMapping
+        fields = [
+            'url', 'id',
+            'name', 'map',
+            'rendered_map', 'is_valid', 'missing_required_columns', 'in_use',
+            'team', 'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
+        ]
+        read_only_fields = ['url', 'id', 'rendered_map', 'is_valid', 'missing_required_columns', 'permissions']
+
+
+class ParquetPartitionSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+    observed_file = TruncatedHyperlinkedRelatedIdField(
+        'ObservedFileSerializer',
+        ['name', 'state', 'parser', 'num_rows'],
+        'observedfile-detail',
+        read_only=True,
+        help_text="Observed File this Parquet Partition belongs to"
+    )
+
+    class Meta:
+        model = ParquetPartition
+        read_only_fields = [
+            'url', 'id',
+            'parquet_file', 'observed_file',
+            'partition_number', 'uploaded', 'upload_errors',
+            'permissions'
+        ]
+        fields = read_only_fields
 
 
 @extend_schema_serializer(examples = [
@@ -1222,32 +1406,95 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
         summary='Observed File details',
         description='Observed Files are the raw data produced by cycler tests. They are uploaded to the system by Harvesters.',
         value={
-            "url": "http://localhost:8001/observed_files/1/",
-            "uuid": "c690ddf0-9527-11ee-8454-eb9d381d3cc4",
-            "path": "/home/example_user/example_data.csv",
-            "name": "example_data.csv",
+            "url": "http://localhost:8001/files/19b16096-737f-4d94-8cc6-802dbf129704/",
+            "id": "19b16096-737f-4d94-8cc6-802dbf129704",
+            "harvester": {
+                "id": "340efe2d-1040-4992-ae38-87d7e06b8054",
+                "name": "Harvey",
+                "url": "http://localhost:8001/harvesters/340efe2d-1040-4992-ae38-87d7e06b8054/"
+            },
+            "name": None,
+            "path": "/usr/harvester/.test-data/test-suite-small/headerless.csv",
             "state": "IMPORTED",
-            "parser": "Biologic",
-            "num_rows": 100,
-            "first_sample_no": 1,
-            "last_sample_no": 100,
-            "extra_metadata": {},
-            "has_required_columns": True,
-            "last_observed_time": "2021-08-18T15:23:45.123456Z",
-            "last_observed_size": 123456,
-            "upload_errors": [],
-            "upload_info": {},
-            "harvester": "http://localhost:8001/harvesters/d8290e68-bfbb-3bc8-b621-5a9590aa29fd/",
-            "columns": [
-                "http://localhost:8001/columns/1/",
-                "http://localhost:8001/columns/2/",
-                "http://localhost:8001/columns/3/"
+            "parser": "DelimitedInputFile",
+            "num_rows": 4,
+            "first_sample_no": None,
+            "last_sample_no": None,
+            "extra_metadata": {
+                "column_0": {
+                    "has_data": True
+                },
+                "column_1": {
+                    "has_data": True
+                },
+                "column_2": {
+                    "has_data": True
+                },
+                "column_3": {
+                    "has_data": True
+                },
+                "column_4": {
+                    "has_data": True
+                }
+            },
+            "has_required_columns": False,
+            "last_observed_time": "2024-04-10T14:35:44.467420Z",
+            "last_observed_size": 225,
+            "column_errors": [
+                "Missing required column: Elapsed_time_s",
+                "Missing required column: Voltage_V",
+                "Missing required column: Current_A"
             ],
-            "column_errors": [],
-            "team": "http://localhost:8001/teams/1/",
+            "upload_errors": [],
+            "parquet_partitions": [
+                {
+                    "upload_errors": [],
+                    "url": "http://localhost:8001/parquet_partitions/359e1a24-6d7f-4aaa-adc2-2a9d8a8c7c48/",
+                    "partition_number": 0,
+                    "id": "359e1a24-6d7f-4aaa-adc2-2a9d8a8c7c48",
+                    "parquet_file": "http://localhost:8001/parquet_partitions/359e1a24-6d7f-4aaa-adc2-2a9d8a8c7c48/file/",
+                    "uploaded": True
+                }
+            ],
+            "upload_info": None,
+            "columns": [
+                {
+                    "name": "column_0",
+                    "url": "http://localhost:8001/columns/30/",
+                    "name_in_file": "column_0",
+                    "id": 30,
+                    "type": None
+                },
+                {
+                    "name": "column_1",
+                    "url": "http://localhost:8001/columns/31/",
+                    "name_in_file": "column_1",
+                    "id": 31,
+                    "type": None
+                },
+                {
+                    "name": "column_2",
+                    "url": "http://localhost:8001/columns/32/",
+                    "name_in_file": "column_2",
+                    "id": 32,
+                    "type": None
+                },
+                {
+                    "name": "column_3",
+                    "url": "http://localhost:8001/columns/33/",
+                    "name_in_file": "column_3",
+                    "id": 33,
+                    "type": None
+                },
+                {
+                    "name": "column_4",
+                    "url": "http://localhost:8001/columns/34/",
+                    "name_in_file": "column_4",
+                    "id": 34,
+                    "type": None
+                }
+            ],
             "permissions": {
-                "create": False,
-                "destroy": False,
                 "write": True,
                 "read": True
             }
@@ -1256,6 +1503,21 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
     ),
 ])
 class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+    parquet_partitions = TruncatedHyperlinkedRelatedIdField(
+        'ParquetPartitionSerializer',
+        ['parquet_file', 'partition_number', 'uploaded', 'upload_errors'],
+        'parquetpartition-detail',
+        read_only=True,
+        many=True,
+        help_text="Parquet partitions of this File"
+    )
+    mapping = TruncatedHyperlinkedRelatedIdField(
+        'ColumnMappingSerializer',
+        ['name', 'is_valid'],
+        'columnmapping-detail',
+        queryset=ColumnMapping.objects.all(),
+        help_text="ColumnMapping applied to this File"
+    )
     harvester = TruncatedHyperlinkedRelatedIdField(
         'HarvesterSerializer',
         ['name'],
@@ -1263,25 +1525,20 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
         read_only=True,
         help_text="Harvester this File belongs to"
     )
+    applicable_mappings = serializers.SerializerMethodField(
+        help_text="Mappings that can be applied to this File"
+    )
     upload_info = serializers.SerializerMethodField(
         help_text="Metadata required for harvester program to resume file parsing"
     )
-    has_required_columns = serializers.SerializerMethodField(
-        help_text="Whether the file has all required columns"
+    extra_metadata = serializers.SerializerMethodField(
+        help_text="Extra metadata about this File"
     )
-    columns = TruncatedHyperlinkedRelatedIdField(
-        'DataColumnSerializer',
-        ['name', 'name_in_file', 'type', 'values'],
-        view_name='datacolumn-detail',
-        read_only=True,
-        many=True,
-        help_text="Columns extracted from this File"
-    )
-    column_errors = serializers.SerializerMethodField(
-        help_text="Errors in uploaded columns"
+    summary = serializers.SerializerMethodField(
+        help_text="First few rows of this file's data"
     )
 
-    def get_upload_info(self, instance) -> dict | None:
+    def get_upload_info(self, instance) -> Optional[dict]:
         if not self.context.get('with_upload_info'):
             return None
         try:
@@ -1299,28 +1556,50 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
         except BaseException as e:
             return {'columns': [], 'last_record_number': None, 'error': str(e)}
 
-    def get_has_required_columns(self, instance) -> bool:
-        return instance.has_required_columns()
+    def get_applicable_mappings(self, instance) -> str:
+        return reverse(
+            'observedfile-applicable-mappings',
+            args=[instance.pk],
+            request=self.context.get('request')
+        )
 
-    def get_column_errors(self, instance) -> list:
-        return instance.column_errors()
+    def get_extra_metadata(self, instance) -> Union[dict, None]:
+        return reverse(
+            'observedfile-extra-metadata',
+            args=[instance.pk],
+            request=self.context.get('request')
+        )
+
+    def get_summary(self, instance) -> Union[dict, None]:
+        return reverse(
+            'observedfile-summary',
+            args=[instance.pk],
+            request=self.context.get('request')
+        )
 
     class Meta:
         model = ObservedFile
-        read_only_fields = [
-            'url', 'uuid', 'harvester', 'name', 'path',
+        fields = [
+            'url', 'id', 'name',
+            'path', 'harvester',
             'state',
             'parser',
+            'upload_errors',
             'num_rows',
             'first_sample_no',
             'last_sample_no',
-            'extra_metadata',
+            'last_observed_time', 'last_observed_size',
+            'mapping',
             'has_required_columns',
-            'last_observed_time', 'last_observed_size', 'upload_errors',
-            'column_errors',
-            'upload_info', 'columns', 'permissions'
+            'parquet_partitions',
+            'extra_metadata',
+            'summary',
+            'png',
+            'applicable_mappings',
+            'upload_info',
+            'permissions'
         ]
-        fields = [*read_only_fields, 'name']
+        read_only_fields = list(set(fields) - {'name', 'mapping'})
         extra_kwargs = augment_extra_kwargs({
             'upload_errors': {'help_text': "Errors associated with this File"}
         })
@@ -1378,15 +1657,6 @@ class DataUnitSerializer(serializers.ModelSerializer, WithTeamMixin, Permissions
         extra_kwargs = augment_extra_kwargs()
 
 
-class TimeseriesRangeLabelSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
-    data = serializers.SerializerMethodField()
-
-    class Meta:
-        model = TimeseriesRangeLabel
-        fields = '__all__'
-        extra_kwargs = augment_extra_kwargs()
-
-
 class DataColumnTypeSerializer(serializers.HyperlinkedModelSerializer, WithTeamMixin, PermissionsMixin):
     unit = TruncatedHyperlinkedRelatedIdField(
         'DataUnitSerializer',
@@ -1397,9 +1667,13 @@ class DataColumnTypeSerializer(serializers.HyperlinkedModelSerializer, WithTeamM
 
     class Meta:
         model = DataColumnType
-        fields = ['url', 'id', 'name', 'description', 'is_default', 'unit', 'team', 'columns',
-                  'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level']
-        read_only_fields = ['url', 'id', 'is_default', 'columns', 'permissions']
+        fields = [
+            'url', 'id',
+            'name', 'description', 'is_default', 'is_required', 'unit', 'data_type',
+            'team', 'columns',
+            'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
+        ]
+        read_only_fields = ['url', 'id', 'is_default', 'is_required', 'columns', 'permissions']
         extra_kwargs = augment_extra_kwargs()
 
 
@@ -1408,7 +1682,6 @@ class DataColumnSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
     A column contains metadata and data. Data are an ordered list of values.
     """
     name = serializers.SerializerMethodField(help_text="Column name (assigned by harvester but overridden by Galv for core fields)")
-    values = serializers.SerializerMethodField(help_text="Column values")
     file = TruncatedHyperlinkedRelatedIdField(
         'ObservedFileSerializer',
         ['harvester', 'path'],
@@ -1427,9 +1700,6 @@ class DataColumnSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
     def get_name(self, instance) -> str:
         return instance.get_name()
 
-    def get_values(self, instance) -> str:
-        return reverse('datacolumn-values', args=(instance.id,), request=self.context['request'])
-
     class Meta:
         model = DataColumn
         read_only_fields = [
@@ -1439,7 +1709,6 @@ class DataColumnSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
             'name_in_file',
             'file',
             'type',
-            'values',
             'permissions'
         ]
         fields = [*read_only_fields, 'type']
@@ -1452,7 +1721,7 @@ class DataColumnSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
         description='Experiments are the highest level of abstraction in the system. They are used to group cycler tests and define the protocol used in those tests.',
         value={
             "url": "http://localhost:8001/experiments/1/",
-            "uuid": "d8290e68-bfbb-3bc8-b621-5a9590aa29fd",
+            "id": "d8290e68-bfbb-3bc8-b621-5a9590aa29fd",
             "title": "Example Experiment",
             "description": "Example description",
             "authors": [
@@ -1498,7 +1767,7 @@ class ExperimentSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
         model = Experiment
         fields = [
             'url',
-            'uuid',
+            'id',
             'title',
             'description',
             'authors',
@@ -1508,7 +1777,7 @@ class ExperimentSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
             'team',
             'permissions'
         ]
-        read_only_fields = ['url', 'uuid', 'permissions']
+        read_only_fields = ['url', 'id', 'permissions']
         extra_kwargs = augment_extra_kwargs()
 
 @extend_schema_serializer(examples = [
@@ -1518,7 +1787,7 @@ class ExperimentSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
         description='Validation Schemas are used to define the expected format of data.',
         value={
             "url": "http://localhost:8001/validation_schemas/1/",
-            "uuid": "df383510-9527-11ee-8454-eb9d381d3cc4",
+            "id": "df383510-9527-11ee-8454-eb9d381d3cc4",
             "name": "Example Validation Schema",
             "schema": {
                 "type": "object",
@@ -1555,7 +1824,7 @@ class ValidationSchemaSerializer(serializers.HyperlinkedModelSerializer, Permiss
     class Meta:
         model = ValidationSchema
         fields = [
-            'url', 'uuid', 'team', 'name', 'schema',
+            'url', 'id', 'team', 'name', 'schema',
             'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
         ]
 
@@ -1648,7 +1917,7 @@ class KnoxTokenFullSerializer(KnoxTokenSerializer):
         description='When Harvesters contact the system, they are given a configuration containing information about the system and the Harvester.',
         value={
             "url": "http://localhost:8001/harvesters/d8290e68-bfbb-3bc8-b621-5a9590aa29fd/",
-            "uuid": "d8290e68-bfbb-3bc8-b621-5a9590aa29fd",
+            "id": "d8290e68-bfbb-3bc8-b621-5a9590aa29fd",
             "api_key": "example_api_key",
             "name": "Example Harvester",
             "sleep_time": 60,
@@ -1728,7 +1997,7 @@ class HarvesterConfigSerializer(HarvesterSerializer, PermissionsMixin):
     class Meta:
         model = Harvester
         fields = [
-            'url', 'uuid', 'api_key', 'name', 'sleep_time', 'monitored_paths',
+            'url', 'id', 'api_key', 'name', 'sleep_time', 'monitored_paths',
             'standard_units', 'standard_columns', 'max_upload_bytes',
             'environment_variables', 'deleted_environment_variables', 'permissions'
         ]
@@ -1751,7 +2020,7 @@ class HarvesterCreateSerializer(HarvesterSerializer, PermissionsMixin):
 
     def validate_lab(self, value):
         try:
-            if value in user_labs(self.context['request'].user, True):
+            if value.pk in self.context['request'].user_auth_details.writeable_lab_ids:
                 return value
         except:
             pass
@@ -1797,13 +2066,13 @@ class ArbitraryFileSerializer(serializers.HyperlinkedModelSerializer, Permission
     class Meta:
         model = ArbitraryFile
         fields = [
-            'url', 'uuid', 'name', 'description', 'file', 'team', 'is_public', 'custom_properties',
+            'url', 'id', 'name', 'description', 'file', 'team', 'is_public', 'custom_properties',
             'read_access_level', 'edit_access_level', 'delete_access_level', 'permissions'
         ]
-        read_only_fields = ['url', 'uuid', 'file', 'permissions']
+        read_only_fields = ['url', 'id', 'file', 'permissions']
         extra_kwargs = augment_extra_kwargs()
 
 
 class ArbitraryFileCreateSerializer(ArbitraryFileSerializer):
     class Meta(ArbitraryFileSerializer.Meta):
-        read_only_fields = ['url', 'uuid', 'permissions']
+        read_only_fields = ['url', 'id', 'permissions']

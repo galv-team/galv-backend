@@ -20,7 +20,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.1.23"
+API_VERSION = "2.1.29"
 
 try:
     USER_ACTIVATION_TOKEN_EXPIRY_S = int(os.environ.get("DJANGO_USER_ACTIVATION_TOKEN_EXPIRY_S"))
@@ -50,24 +50,30 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "corsheaders",
+    "debug_toolbar",
+    # "cachalot",
     'rest_framework',
     'dry_rest_permissions',
     'django_filters',
     'knox',
     'galv.apps.GalvConfig',
     'drf_spectacular',
+    # "django_snakeviz_profiling",
 ]
 
 MIDDLEWARE = [
+    # "django_snakeviz_profiling.SnakevizProfilingMiddleware",
     'django.middleware.security.SecurityMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+SNAKEVIZ_PROFILING = "PLEASE_PROFILE_REQUESTS"
 
 ROOT_URLCONF = 'config.urls'
 
@@ -184,6 +190,8 @@ DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_DEFAULT_FROM_EMAIL", "admin@galv")
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 # Amazon Web Services S3 storage settings
+# These apply for static files and media files only.
+# Data files may be uploaded to S3, but Labs have to configure their own S3 access settings.
 AWS_S3_REGION_NAME = os.environ.get("DJANGO_AWS_S3_REGION_NAME")
 AWS_STORAGE_BUCKET_NAME = os.environ.get("DJANGO_AWS_STORAGE_BUCKET_NAME")
 AWS_DEFAULT_ACL = os.environ.get("DJANGO_AWS_DEFAULT_ACL")
@@ -191,17 +199,27 @@ AWS_S3_OBJECT_PARAMETERS = {
     "CacheControl": "max-age=2592000",
 }
 AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+DATA_STORAGE_UPLOAD_URL_EXPIRY_S = int(os.environ.get("DJANGO_DATA_STORAGE_UPLOAD_URL_EXPIRY_S", 60 * 60))  # 1 hour
 
+# If ALLOW_LOCAL_DATA_STORAGE is set, data files may be stored locally.
+# Labs can still define their own S3 storage settings to save to the S3 cloud.
+ALLOW_LOCAL_DATA_STORAGE = os.environ.get("DJANGO_ALLOW_LOCAL_DATA_STORAGE")
 
-# Static and media files are served from S3 if S3 is configured
+# Static, media, and data files are served from S3 if S3 is configured
 # Otherwise, they are served from the local filesystem
 STATICFILES_LOCATION = "static"
 MEDIAFILES_LOCATION = "media"
+DATAFILES_LOCATION = "data"
 
-if os.environ.get("AWS_SECRET_ACCESS_KEY") is not None:
+S3_ENABLED = AWS_S3_REGION_NAME and AWS_STORAGE_BUCKET_NAME and AWS_DEFAULT_ACL
+if S3_ENABLED and not os.environ.get("AWS_SECRET_ACCESS_KEY"):
+    print(os.system('env'))
+    raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")
+
+if S3_ENABLED:
     STORAGES = {
         "default": {"BACKEND": "galv.storages.MediaStorage"},  # for media
-        "staticfiles": {"BACKEND": "galv.storages.StaticStorage"},
+        "staticfiles": {"BACKEND": "galv.storages.StaticStorage"}
     }
     STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/"
     MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIAFILES_LOCATION}/"
@@ -209,14 +227,29 @@ if os.environ.get("AWS_SECRET_ACCESS_KEY") is not None:
         f"/{STATICFILES_LOCATION}",
     ]
 else:
-    if AWS_S3_REGION_NAME or AWS_STORAGE_BUCKET_NAME or AWS_DEFAULT_ACL:
-        print(os.system('env'))
-        raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")
     STORAGES = {
-        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": "/media"},
-        "staticfiles": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": "/static"},
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": f"/{MEDIAFILES_LOCATION}"},
+        "staticfiles": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": f"/{STATICFILES_LOCATION}"},
     }
     STATIC_ROOT = f"/{STATICFILES_LOCATION}"
     STATIC_URL = f"/{STATICFILES_LOCATION}/"
     MEDIA_ROOT = f"/{MEDIAFILES_LOCATION}"
     MEDIA_URL = f"/{MEDIAFILES_LOCATION}/"
+
+# DATA_* settings are only used if ALLOW_LOCAL_DATA_STORAGE is set
+DATA_ROOT = f"/{DATAFILES_LOCATION}"
+DATA_URL = f"/{DATAFILES_LOCATION}/"
+
+# Harvester report constants
+# These definitions should be kept in sync with the definitions in the harvester program
+HARVESTER_TASK_FILE_SIZE = 'file_size'
+HARVESTER_TASK_IMPORT = 'import'
+HARVESTER_STATUS_SUCCESS = 'success'
+HARVESTER_STATUS_ERROR = 'error'
+HARVEST_STAGE_FILE_METADATA = 'file metadata'
+HARVEST_STAGE_DATA_SUMMARY = 'data summary'
+HARVEST_STAGE_UPLOAD_PARQUET = 'upload parquet partitions'
+HARVEST_STAGE_UPLOAD_COMPLETE = 'upload complete'
+HARVEST_STAGE_UPLOAD_PNG = 'upload png'
+HARVEST_STAGE_COMPLETE = 'harvest complete'
+HARVEST_STAGE_FAILED = 'harvest failed'
