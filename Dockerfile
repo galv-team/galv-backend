@@ -33,7 +33,6 @@ COPY requirements.txt /tmp/requirements.txt
 RUN set -ex && \
     pip install --upgrade pip && \
     pip install -r /tmp/requirements.txt && \
-    pip install supervisor && \
     rm -rf /root/.cache/
 COPY . /code
 RUN chmod +x /code/*.sh
@@ -42,9 +41,6 @@ RUN chmod +x /code/*.sh
 COPY nginx.conf /etc/nginx/nginx.conf
 RUN nginx -t
 EXPOSE 80
-
-# For Supervisor
-COPY supervisord.conf /etc/supervisord.conf
 
 WORKDIR /code/backend_django
 
