@@ -43,7 +43,6 @@ DEBUG_TOOLBAR_CONFIG = {
 # This means we can support fly.io's postgresql service
 
 if os.environ.get('DATABASE_URL'):
-    print("Setting DATABASES from DATABASE_URL")
     DATABASES = {
         'default': dj_database_url.config(test_options={'NAME': 'galv_test'})
     }

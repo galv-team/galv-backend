@@ -48,7 +48,6 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # This means we can support fly.io's postgresql service
 
 if os.environ.get('DATABASE_URL'):
-    print("Setting DATABASES from DATABASE_URL")
     DATABASES = {
         'default': dj_database_url.config()
     }
