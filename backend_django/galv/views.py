@@ -102,6 +102,27 @@ def deserialize_datetime(serialized_value: str | float) -> timezone.datetime|Non
         return timezone.make_aware(timezone.datetime.fromtimestamp(serialized_value))
     raise TypeError
 
+
+def lab_dependent_file_fetcher(parent_object, file_field_name: str):
+    """
+    Check a user is allowed to access a file, and redirect them to its actual location if they are.
+    """
+    try:
+        file = getattr(parent_object, file_field_name)
+        if file:
+            if parent_object.storage_class_name == "LocalDataStorage":
+                # Send the file directly via the upstream nginx proxy
+                response = HttpResponse()
+                response["Content-Disposition"] = f"attachment; filename={file.name}"
+                response['X-Accel-Redirect'] = file.backend_url()
+            else:
+                # Redirect to S3
+                response = HttpResponseRedirect(file.backend_url())
+            return response
+    except Exception as e:
+        logger.error(f"Error fetching file: {e}")
+    return error_response("File not uploaded")
+
 @extend_schema_view(
     list=extend_schema(responses={
         '200': {'type': 'string'}
@@ -1070,6 +1091,15 @@ class ObservedFileViewSet(viewsets.ModelViewSet):
             return error_response('Requested file not found')
         return Response(file.extra_metadata)
 
+    @action(detail=True, methods=['GET'])
+    def png(self, request, pk = None):
+        try:
+            file = self.queryset.get(id=pk)
+        except ObservedFile.DoesNotExist:
+            return error_response('Requested file not found')
+        self.check_object_permissions(self.request, file)
+        return lab_dependent_file_fetcher(file, 'png')
+
 
 class ColumnMappingViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
@@ -1112,15 +1142,6 @@ class ParquetPartitionViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ParquetPartitionSerializer
     queryset = ParquetPartition.objects.all().order_by('-observed_file__id', 'partition_number')
 
-    # def list(self, request, *args, **kwargs):
-    #     if not kwargs.get('skiprecur'):
-    #         cProfile.runctx('self.list(request, skiprecur=True, *args, **kwargs)', locals(), globals(), filename='stats')
-    #         p = pstats.Stats('stats')
-    #         p.strip_dirs().sort_stats('cumulative').print_stats(30)
-    #         os.unlink('stats')
-    #     response = super().list(request, *args, **kwargs)
-    #     return response
-
     @action(detail=True, methods=['GET'])
     def file(self, request, pk = None):
         try:
@@ -1128,18 +1149,7 @@ class ParquetPartitionViewSet(viewsets.ReadOnlyModelViewSet):
         except ParquetPartition.DoesNotExist:
             return error_response('Requested partition not found')
         self.check_object_permissions(self.request, partition)
-        parquet_file = partition.parquet_file
-        if parquet_file:
-            if partition.storage_class_name == "LocalDataStorage":
-                # Send the file directly via the upstream nginx proxy
-                response = HttpResponse()
-                response["Content-Disposition"] = f"attachment; filename={parquet_file.name}"
-                response['X-Accel-Redirect'] = parquet_file.backend_url()
-            else:
-                # Redirect to S3
-                response = HttpResponseRedirect(parquet_file.backend_url())
-            return response
-        return error_response("File not uploaded")
+        return lab_dependent_file_fetcher(partition, 'parquet_file')
 
 
 @extend_schema_view(

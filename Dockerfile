@@ -23,7 +23,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /code
-RUN mkdir /static
+RUN mkdir -p /galv_files/static
+RUN mkdir -p /galv_files/media
+RUN mkdir -p /galv_files/data
 
 WORKDIR /code
 
@@ -38,10 +40,11 @@ RUN chmod +x /code/*.sh
 
 # For NGINX
 COPY nginx.conf /etc/nginx/nginx.conf
+RUN nginx -t
 EXPOSE 80
-# This doesn't keep nginx running when container launches,
-# but it does let us check the config is valid
-RUN service nginx start
+
+# For Supervisor
+COPY supervisord.conf /etc/supervisord.conf
 
 WORKDIR /code/backend_django
 

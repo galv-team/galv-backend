@@ -64,7 +64,7 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('uuid', galv.models.utils.UUIDFieldLD(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('parquet_file', galv.fields.ParquetPartitionFileField(blank=True, help_text='Parquet file', null=True, storage=galv.storages.LocalDataStorage(), upload_to='')),
+                ('parquet_file', galv.fields.LabDependentStorageFileField(blank=True, help_text='Parquet file', null=True, storage=galv.storages.LocalDataStorage(), upload_to='')),
                 ('partition_number', models.PositiveIntegerField(help_text='Partition number')),
                 ('upload_errors', models.JSONField(default=list, help_text='Upload errors')),
                 ('auth_key', models.TextField(blank=True, null=True, unique=True)),

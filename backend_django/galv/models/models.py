@@ -23,7 +23,7 @@ from .choices import FileState, UserLevel, ValidationStatus
 from .utils import CustomPropertiesModel, JSONModel, LDSources, render_pybamm_schedule, UUIDModel, \
     combine_rdf_props, TimestampedModel
 from .autocomplete_entries import *
-from ..fields import DynamicStorageFileField, ParquetPartitionFileField
+from ..fields import DynamicStorageFileField, LabDependentStorageFileField
 from ..storages import LocalDataStorage, DataStorage, DummyDataStorage
 
 ALLOWED_USER_LEVELS_DELETE = [UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]]
@@ -987,11 +987,15 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
         blank=True,
         related_name="observed_files"
     )
-    png = models.ImageField(
+    png = LabDependentStorageFileField(
         null=True,
         blank=True,
         help_text="Preview image of the file"
     )
+    storage_class_name = models.TextField(null=True, blank=True)
+
+    def get_storage(self):
+        return self.harvester.lab.get_storage(self)
 
     @property
     def has_required_columns(self) -> bool:
@@ -1605,7 +1609,7 @@ class ParquetPartition(UUIDModel):
         help_text="ObservedFile containing this partition",
         related_name="parquet_partitions"
     )
-    parquet_file = ParquetPartitionFileField(
+    parquet_file = LabDependentStorageFileField(
         null=True,
         blank=True,
         help_text="Parquet file"
@@ -1620,6 +1624,9 @@ class ParquetPartition(UUIDModel):
         help_text="Upload errors"
     )
     storage_class_name = models.TextField(null=True, blank=True)
+
+    def get_storage(self):
+        return self.observed_file.harvester.lab.get_storage(self)
 
     @staticmethod
     def has_read_permission(request):

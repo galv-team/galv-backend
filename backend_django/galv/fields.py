@@ -41,13 +41,13 @@ class DynamicStorageFileField(models.FileField):
         return file
 
 
-class ParquetPartitionFieldFile(FieldFile):
+class LabDependentStorageFieldFile(FieldFile):
     """
     A custom FieldFile that allows the storage to be set dynamically based on the model instance.
     """
     def __init__(self, instance, field, name):
         super().__init__(instance, field, name)
-        self.storage = instance.observed_file.harvester.lab.get_storage(instance)
+        self.storage = instance.get_storage()
 
     def __iter__(self):
         if self:
@@ -68,14 +68,14 @@ class ParquetPartitionFieldFile(FieldFile):
         return super().url
 
 
-class ParquetPartitionFileField(models.FileField):
+class LabDependentStorageFileField(models.FileField):
     """
     A custom FileField that allows the storage to be set dynamically based on the model instance.
     The storage argument should be a function that returns a dummy storage class instance
      unless provided with a model instance.
     """
-    attr_class = ParquetPartitionFieldFile
+    attr_class = LabDependentStorageFieldFile
 
     def pre_save(self, model_instance, add):
-        self.storage = model_instance.observed_file.harvester.lab.get_storage(model_instance)
+        self.storage = model_instance.get_storage()
         return super().pre_save(model_instance, add)

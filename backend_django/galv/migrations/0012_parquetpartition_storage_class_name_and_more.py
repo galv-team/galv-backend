@@ -20,6 +20,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='parquetpartition',
             name='parquet_file',
-            field=galv.fields.ParquetPartitionFileField(blank=True, help_text='Parquet file', null=True, upload_to=''),
+            field=galv.fields.LabDependentStorageFileField(blank=True, help_text='Parquet file', null=True, upload_to=''),
         ),
     ]

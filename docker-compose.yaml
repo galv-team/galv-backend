@@ -17,13 +17,13 @@ services:
       - postgres
       - mailhog
     volumes:
-      - ./.dev/.static_files:/static
-      - ./.dev/.media_files:/media
+      - ./.dev/.static_files:/galv_files/static
+      - ./.dev/.media_files:/galv_files/media
       - ./backend_django:/code/backend_django
       - ./.dev/spec:/spec
       # datafiles should be mounted to DATA_ROOT in the container
       # only matters when ALLOW_LOCAL_DATA_STORAGE is enabled
-      - ./.dev/datafiles:/data
+      - ./.dev/datafiles:/galv_files/data
     environment:
       VIRTUAL_HOST: "localhost"
       FRONTEND_VIRTUAL_HOST: "http://${VIRTUAL_HOST_ROOT},https://${VIRTUAL_HOST_ROOT}"
@@ -70,7 +70,7 @@ services:
     depends_on:
       - postgres
     volumes:
-      - ./.test/.static_files:/static
+      - ./.test/.static_files:/galv_files/static
       - ./backend_django:/code/backend_django
     environment:
       FRONTEND_VIRTUAL_HOST: "http://localhost"

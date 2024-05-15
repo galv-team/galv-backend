@@ -229,15 +229,18 @@ if S3_ENABLED:
 else:
     STORAGES = {
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": f"/{MEDIAFILES_LOCATION}"},
-        "staticfiles": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": f"/{STATICFILES_LOCATION}"},
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+            # "LOCATION": f"/{STATICFILES_LOCATION}"
+        },
     }
-    STATIC_ROOT = f"/{STATICFILES_LOCATION}"
+    STATIC_ROOT = f"/galv_files/{STATICFILES_LOCATION}"
     STATIC_URL = f"/{STATICFILES_LOCATION}/"
-    MEDIA_ROOT = f"/{MEDIAFILES_LOCATION}"
+    MEDIA_ROOT = f"/galv_files/{MEDIAFILES_LOCATION}"
     MEDIA_URL = f"/{MEDIAFILES_LOCATION}/"
 
 # DATA_* settings are only used if ALLOW_LOCAL_DATA_STORAGE is set
-DATA_ROOT = f"/{DATAFILES_LOCATION}"
+DATA_ROOT = f"/galv_files/{DATAFILES_LOCATION}"
 DATA_URL = f"/{DATAFILES_LOCATION}/"
 
 # Harvester report constants
