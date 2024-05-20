@@ -9,7 +9,7 @@
       "name": "Galv Minimal Schema",
       "schema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://github.com/Battery-Intelligence-Lab/galv/blob/main/backend/backend_django/galv/fixtures/cycler_data_schema.json",
+        "$id": "https://github.com/galv-team/galv/blob/main/backend/backend_django/galv/fixtures/cycler_data_schema.json",
         "$comment": "This schema defines the minimum requirements for data in the Galv system. It uses Linked Data definitions from the EMMO/BattINFO projects where possible.",
         "$defs": {
           "GalvUUID": {

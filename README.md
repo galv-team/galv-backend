@@ -1,16 +1,16 @@
 # Galv backend (REST API)
 > A metadata secretary for battery science
 
-[![CI tests](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/test.yml/badge.svg)](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/test.yml)
-[![Build docs](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/docs.yml/badge.svg)](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/docs.yml)
-[![Release](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/issue-release.yml/badge.svg)](https://github.com/Battery-Intelligence-Lab/galv-backend/actions/workflows/issue-release.yml)
+[![CI tests](https://github.com/galv-team/galv-backend/actions/workflows/test.yml/badge.svg)](https://github.com/galv-team/galv-backend/actions/workflows/test.yml)
+[![Build docs](https://github.com/galv-team/galv-backend/actions/workflows/docs.yml/badge.svg)](https://github.com/galv-team/galv-backend/actions/workflows/docs.yml)
+[![Release](https://github.com/galv-team/galv-backend/actions/workflows/issue-release.yml/badge.svg)](https://github.com/galv-team/galv-backend/actions/workflows/issue-release.yml)
 
 The Galv backend provides a REST API powered by [Django](https://www.djangoproject.com/) and [Django REST Framework](https://www.django-rest-framework.org/).
 
 ## Galv Project
-- [**Backend**](https://github.com/Battery-Intelligence-Lab/galv-backend)
-- [Frontend](https://github.com/Battery-Intelligence-Lab/galv-frontend)
-- [Harvester](https://github.com/Battery-Intelligence-Lab/galv-harvester)
+- [**Backend**](https://github.com/galv-team/galv-backend)
+- [Frontend](https://github.com/galv-team/galv-frontend)
+- [Harvester](https://github.com/galv-team/galv-harvester)
 
 ## Deploying
 
@@ -19,7 +19,7 @@ You can deploy the Galv backend in a number of ways.
 
 ### Docker image
 
-Each [release](/Battery-Intelligence-Lab/galv-backend/releases) is accompanied by a [Docker image](/Battery-Intelligence-Lab/packages?repo_name=galv-backend).
+Each [release](/galv-team/galv-backend/releases) is accompanied by a [Docker image](/galv-team/packages?repo_name=galv-backend).
 You can acquire the image by pulling it from GitHub Packages:
 
 ```bash
@@ -38,7 +38,7 @@ You will also need to add environment variables as detailed [below](#Envvars).
 ### Docker Compose
 
 Galv can be deployed using the Dockerfile provided in this repository.
-Example usage is provided in the [docker-compose.yml](/Battery-Intelligence-Lab/galv-backend/blob/main/docker-compose.yml) file.
+Example usage is provided in the [docker-compose.yml](/galv-team/galv-backend/blob/main/docker-compose.yml) file.
 This is generally for development, however, so you will need to add a database and set the [environment variables](#Envvars) appropriately.
 
 ## Envvars

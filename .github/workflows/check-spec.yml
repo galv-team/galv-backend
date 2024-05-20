@@ -85,7 +85,7 @@ jobs:
         if: ${{ needs.version.outputs.prev-version-tag != '' }}
         run: |
           sudo chmod 777 .dev/spec/*
-          wget -O .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json https://github.com/Battery-Intelligence-Lab/galv-backend/releases/download/${{ needs.version.outputs.prev-version-tag }}/openapi-${{ needs.version.outputs.prev-version-tag }}.json
+          wget -O .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json https://github.com/galv-team/galv-backend/releases/download/${{ needs.version.outputs.prev-version-tag }}/openapi-${{ needs.version.outputs.prev-version-tag }}.json
           echo "Downloaded spec for previous version: ${{ needs.version.outputs.prev-version-tag }}. First 10 lines:"
           head -n 10 .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json
           echo "---------"
