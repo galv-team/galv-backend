@@ -2,6 +2,8 @@
 > A metadata secretary for battery science
 
 [![GitHub Releases](https://img.shields.io/github/v/release/galv-team/galv-backend)](https://github.com/galv-team/galv-backend/releases/latest)
+[![Docker image](https://ghcr-badge.egpl.dev/galv-team/galv-backend/latest_tag?color=%2344cc11&ignore=latest&label=image&trim=0)](https://github.com/galv-team/galv-backend/pkgs/container/galv-backend)
+
 [![CI tests](https://github.com/galv-team/galv-backend/actions/workflows/test.yml/badge.svg)](https://github.com/galv-team/galv-backend/actions/workflows/test.yml)
 [![Build docs](https://github.com/galv-team/galv-backend/actions/workflows/docs.yml/badge.svg)](https://github.com/galv-team/galv-backend/actions/workflows/docs.yml)
 
