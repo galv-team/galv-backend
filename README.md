@@ -9,7 +9,7 @@
 
 > API client libraries:
 > 
-> [![NPM Downloads](https://img.shields.io/npm/dm/%40galv-team%2Fgalv)](https://www.npmjs.com/package/@galv-team/galv)
+> [![NPM Downloads](https://img.shields.io/npm/dm/%40galv-team%2Fgalv)](https://www.npmjs.com/package/@galv/galv)
 > [![PyPI - Downloads](https://img.shields.io/pypi/dm/galv)](https://pypi.org/project/galv/)
 
 
