@@ -7,7 +7,7 @@
 
 > API client libraries:
 > 
-> [![NPM Downloads](https://img.shields.io/npm/dm/%40battery-intelligence-lab%2Fgalv)](https://www.npmjs.com/package/@battery-intelligence-lab/galv)
+> [![NPM Downloads](https://img.shields.io/npm/dm/%40galv-team%2Fgalv)](https://www.npmjs.com/package/@galv-team/galv)
 > [![PyPI - Downloads](https://img.shields.io/pypi/dm/galv)](https://pypi.org/project/galv/)
 
 
@@ -29,13 +29,13 @@ Each [release](/galv-team/galv-backend/releases) is accompanied by a [Docker ima
 You can acquire the image by pulling it from GitHub Packages:
 
 ```bash
-docker pull ghcr.io/battery-intelligence-lab/galv-backend:latest
+docker pull ghcr.io/galv-team/galv-backend:latest
 ```
 
 You can then run the image using the following command:
 
 ```bash
-docker run -p 8001:80 ghcr.io/battery-intelligence-lab/galv-backend:latest
+docker run -p 8001:80 ghcr.io/galv-team/galv-backend:latest
 ```
 
 You will need to add in a database and set the environment variables appropriately.
