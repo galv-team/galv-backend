@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from django.core.files.uploadedfile import TemporaryUploadedFile
 from django.urls import reverse
 from rest_framework import status
 import logging
@@ -13,7 +14,7 @@ from django.conf import settings
 
 from .utils import assert_response_property, GalvTestCase
 from .factories import HarvesterFactory, \
-    MonitoredPathFactory, ParquetPartitionFactory
+    MonitoredPathFactory, ParquetPartitionFactory, fake
 from ..models import HarvestError, \
     ObservedFile, \
     FileState
@@ -422,6 +423,30 @@ class HarvesterTests(GalvTestCase):
         self.assertTrue(
             response.json()['observed_file'].endswith(f"{ObservedFile.objects.get(path=f.path).id}/")
         )
+
+        # We should get an error if storage is full
+        with self.subTest("Cannot save when storage is over quota"):
+            self.lab.local_storage_quota.quota = 0
+            self.lab.local_storage_quota.save()
+            response = self.client.post(url, {
+                'format': 'flat',
+                'status': settings.HARVESTER_STATUS_SUCCESS,
+                'path': f.path,
+                'monitored_path_id': mp.id,
+                'task': settings.HARVESTER_TASK_IMPORT,
+                'stage': settings.HARVEST_STAGE_UPLOAD_PARQUET,
+                'total_row_count': 500,
+                'partition_number': 0,
+                'partition_count': 1,
+                'filename': 'filename.part0.parquet',
+                'parquet_file': TemporaryUploadedFile(
+                    name=fake.file_name(),
+                    content_type='application/octet-stream',
+                    size=100_000,
+                    charset='utf-8'
+                )
+            }, format='multipart')
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
     def test_png_upload(self):

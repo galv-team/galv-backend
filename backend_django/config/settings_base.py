@@ -204,6 +204,7 @@ DATA_STORAGE_UPLOAD_URL_EXPIRY_S = int(os.environ.get("DJANGO_DATA_STORAGE_UPLOA
 # If ALLOW_LOCAL_DATA_STORAGE is set, data files may be stored locally.
 # Labs can still define their own S3 storage settings to save to the S3 cloud.
 ALLOW_LOCAL_DATA_STORAGE = os.environ.get("DJANGO_ALLOW_LOCAL_DATA_STORAGE")
+DEFAULT_LAB_STORAGE_QUOTA_BYTES = int(os.environ.get("DJANGO_DEFAULT_LAB_STORAGE_QUOTA_BYTES", 10 ** 8))  # 100 MB
 
 # Static, media, and data files are served from S3 if S3 is configured
 # Otherwise, they are served from the local filesystem

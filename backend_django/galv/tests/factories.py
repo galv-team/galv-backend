@@ -22,7 +22,7 @@ from ..models import EquipmentFamily, Harvester, \
     ScheduleIdentifiers, CellFormFactors, CellChemistries, CellManufacturers, \
     CellModels, EquipmentManufacturers, EquipmentModels, EquipmentTypes, Experiment, \
     ValidationSchema, GroupProxy, UserProxy, Lab, Team, AutoCompleteEntry, DataUnit, DataColumnType, ParquetPartition, \
-    ColumnMapping
+    ColumnMapping, LocalStorageQuota
 from ..models.choices import UserLevel
 
 fake = faker.Faker(django.conf.global_settings.LANGUAGE_CODE)
@@ -140,12 +140,24 @@ class GroupFactory(factory.django.DjangoModelFactory):
     name = factory.LazyAttribute(lambda x: f"group_{x.n}")
 
 
+class LocalStorageQuotaFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = LocalStorageQuota
+
+
 class LabFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Lab
         django_get_or_create = ('name',)
 
     name = factory.Faker('company')
+
+    @factory.post_generation
+    def local_storage_quota(self, create, *_args, **_kwargs):
+        if not create:
+            return
+        if LocalStorageQuota.objects.filter(lab=self).count() == 0:
+            LocalStorageQuotaFactory.create(lab=self)
 
 
 class TeamFactory(factory.django.DjangoModelFactory):

@@ -49,6 +49,10 @@ class ParquetPartitionTests(GalvTestCase):
             )
         )
         self.other_partition = ParquetPartitionFactory.create(observed_file=self.other_file)
+        # We should still be able to read even if we reduce the quota for the Lab's storage
+        self.lab.local_storage_quota.quota = 0
+        self.lab.local_storage_quota.save()
+
 
     def test_create_rejected(self):
         for user, login in {
@@ -103,7 +107,7 @@ class ParquetPartitionTests(GalvTestCase):
                         "Parquet file URL should be included in the response"
                     )
 
-    def test_update(self):
+    def test_update_rejected(self):
         for user, details in {
             'user': {'login': lambda: self.client.force_authenticate(self.user)},
             'admin': {'login': lambda: self.client.force_authenticate(self.admin)},

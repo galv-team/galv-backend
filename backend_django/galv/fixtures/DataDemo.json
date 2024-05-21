@@ -18,6 +18,14 @@
     }
   },
   {
+    "pk": 1,
+    "model": "galv.LocalStorageQuota",
+    "fields": {
+      "lab": 1,
+      "quota": 5000000
+    }
+  },
+  {
     "pk": 2,
     "model": "auth.Group",
     "fields": {

@@ -6,6 +6,7 @@ import re
 from typing import Optional, Union
 
 import jsonschema
+from django.conf import settings
 from django.db import models
 from drf_spectacular.types import OpenApiTypes
 from rest_framework.reverse import reverse
@@ -28,7 +29,7 @@ from ..models import Harvester, \
     render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, \
     SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
     ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, ColumnMapping, \
-    get_user_auth_details
+    get_user_auth_details, LocalStorageQuota
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
 from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
@@ -411,11 +412,14 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     )
     s3_secret_key = serializers.SerializerMethodField()
     s3_access_key = serializers.SerializerMethodField()
+    local_storage_quota = serializers.SerializerMethodField()
 
     def create(self, validated_data):
         admin_group = validated_data.pop('admin_group')
         lab = super().create(validated_data)
         TransparentGroupSerializer().update(lab.admin_group, admin_group)
+        if settings.LOCALE_STORAGE_ALLOWED and settings.DEFAULT_LAB_STORAGE_QUOTA_BYTES > 0:
+            LocalStorageQuota.objects.create(lab=lab, quota=settings.DEFAULT_LAB_STORAGE_QUOTA_BYTES)
         lab.save()
         return lab
 
@@ -446,6 +450,12 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             return self.instance.s3_secret_key
         return value
 
+    def get_local_storage_quota(self, instance) -> int:
+        try:
+            return instance.local_storage_quota.quota
+        except:
+            return 0
+
     class Meta:
         model = Lab
         fields = [
@@ -459,10 +469,15 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             's3_secret_key',
             's3_custom_domain',
             's3_configuration_status',
+            'local_storage_allowed',
+            'local_storage_quota',
             'teams',
             'permissions'
         ]
-        read_only_fields = ['url', 'id', 'teams', 'harvesters', 's3_configuration_status', 'permissions']
+        read_only_fields = [
+            'url', 'id', 'teams', 'harvesters',
+            's3_configuration_status', 'local_storage_allowed', 'local_storage_quota', 'permissions'
+        ]
 
 class WithTeamMixin(serializers.Serializer):
     team = TruncatedHyperlinkedRelatedIdField(

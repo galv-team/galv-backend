@@ -51,7 +51,7 @@ from .models import Harvester, \
     CellChemistries, CellFormFactors, ScheduleIdentifiers, EquipmentFamily, Schedule, CyclerTest, ScheduleFamily, \
     ValidationSchema, Experiment, Lab, Team, UserProxy, GroupProxy, ValidatableBySchemaMixin, SchemaValidation, \
     UserActivation, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, ALLOWED_USER_LEVELS_DELETE, \
-    ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, S3Error, ColumnMapping
+    ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, StorageError, ColumnMapping
 from .permissions import HarvesterFilterBackend, TeamFilterBackend, LabFilterBackend, GroupFilterBackend, \
     ResourceFilterBackend, ObservedFileFilterBackend, UserFilterBackend, SchemaValidationFilterBackend, \
     ParquetPartitionFilterBackend
@@ -781,11 +781,11 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                 file.state = FileState.AWAITING_MAP_ASSIGNMENT
 
             def handle_upload_parquets(file, data, request):
-                file.num_rows = data['total_row_count']
-                file.num_partitions = data['partition_count']
-                file.state = FileState.IMPORTING
-                file.save()
                 try:
+                    file.num_rows = data['total_row_count']
+                    file.num_partitions = data['partition_count']
+                    file.state = FileState.IMPORTING
+                    file.save()
                     partition, _ = ParquetPartition.objects.get_or_create(
                         observed_file=file,
                         partition_number=data['partition_number']
@@ -794,7 +794,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                     partition.parquet_file = request.FILES.get('parquet_file')
                     # partition.parquet_file.save()
                     partition.save()
-                except S3Error as e:
+                except StorageError as e:
                     return error_response(f"Error uploading file to storage: {e}")
                 return Response(ParquetPartitionSerializer(partition, context={'request': request}).data)
 

@@ -9,7 +9,7 @@ from rest_framework.test import APITestCase
 from openapi_tester import SchemaTester
 from openapi_tester.clients import OpenAPIClient
 
-from .factories import LabFactory, TeamFactory, UserFactory, generate_create_dict
+from .factories import LabFactory, TeamFactory, UserFactory, generate_create_dict, LocalStorageQuotaFactory
 from ..models import UserLevel
 
 

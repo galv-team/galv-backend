@@ -3,6 +3,7 @@
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 import os
 import re
+from pathlib import Path
 
 import jsonschema
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -307,16 +308,24 @@ class GroupProxy(Group):
         return self in request.user.groups.all()
 
 
-class S3Error(Exception):
+class LocalStorageQuota(models.Model):
+    lab = models.OneToOneField('Lab', related_name="local_storage_quota", on_delete=models.CASCADE)
+    quota = models.BigIntegerField(
+        default=settings.DEFAULT_LAB_STORAGE_QUOTA_BYTES,
+        help_text="Maximum storage capacity in bytes"
+    )
+
+
+class StorageError(Exception):
     pass
 
-class S3StorageConstructionError(S3Error):
+class StorageConstructionError(StorageError):
     pass
 
-class S3IncorrectlyConfiguredError(S3Error):
+class StorageIncorrectlyConfiguredError(StorageError):
     pass
 
-class S3NotConfiguredError(S3Error):
+class StorageNotConfiguredError(StorageError):
     pass
 
 class Lab(TimestampedModel):
@@ -351,17 +360,21 @@ class Lab(TimestampedModel):
         help_text="Users authorised to make changes to the Lab"
     )
 
+    @property
+    def local_storage_allowed(self):
+        return settings.ALLOW_LOCAL_DATA_STORAGE and LocalStorageQuota.objects.filter(lab=self).exists()
+
     @staticmethod
-    def has_read_permission(request):
+    def has_read_permission(_):
         return True
 
     @staticmethod
-    def has_write_permission(request):
+    def has_write_permission(_):
         return True
 
     @staticmethod
     def has_create_permission(request):
-        return request.user.is_staff or request.user.is_superuser
+        return get_user_auth_details(request).is_authenticated
 
     def has_object_read_permission(self, request):
         return request.user.is_staff or \
@@ -424,18 +437,35 @@ class Lab(TimestampedModel):
             'initialization_error': error
         }
 
-    def get_storage(self, instance):
+    def get_used_local_storage_quota(self):
+        location = os.path.join(settings.DATA_ROOT, f"lab_{self.pk}")
+        return sum([p.lstat().st_size for p in Path(location).glob('**/*') if p.is_file()])
+
+    def get_local_storage(self, saving=False):
+        """
+        Return a LocalDataStorage() instance if local storage is enabled for this Lab.
+        Raise a StorageNotConfiguredError if local storage is disabled.
+        """
+        if not settings.ALLOW_LOCAL_DATA_STORAGE:
+            raise StorageNotConfiguredError("Cannot access locally stored data: local data storage is disabled")
+        if not self.local_storage_allowed:
+            raise StorageNotConfiguredError(f"Cannot access locally stored data: permission denied to {self}")
+        if saving:
+            current_usage = self.get_used_local_storage_quota()
+            # TODO: This is a rough check, and will double-count an object that is being updated.
+            if current_usage >= LocalStorageQuota.objects.get(lab=self).quota:
+                raise StorageNotConfiguredError(f"Cannot save data: local storage quota exceeded for {self}")
+        return LocalDataStorage(location=os.path.join(settings.DATA_ROOT, f"lab_{self.pk}"))
+
+    def get_storage(self, instance, saving=False):
         if instance.storage_class_name == "LocalDataStorage":
-            return LocalDataStorage()
+            return self.get_local_storage(saving)
         try:
             s3_status = self.s3_configuration_status
             if not s3_status.get('enabled'):
-                instance.storage_class_name = "LocalDataStorage"
-                if not settings.ALLOW_LOCAL_DATA_STORAGE:
-                    raise S3NotConfiguredError("Local data storage is disabled")
-                return LocalDataStorage()
+                return self.get_local_storage(saving)
             elif not s3_status.get('ok'):
-                raise S3IncorrectlyConfiguredError(f"Missing properties: {s3_status.get('missing_properties')}")
+                raise StorageIncorrectlyConfiguredError(f"Missing properties: {s3_status.get('missing_properties')}")
             storage = DataStorage(
                 access_key=self.s3_access_key,
                 secret_key=self.s3_secret_key,
@@ -446,7 +476,7 @@ class Lab(TimestampedModel):
             instance.storage_class_name = storage.__class__.__name__
             return storage
         except Exception as e:
-            raise S3StorageConstructionError from e
+            raise StorageConstructionError from e
 
 
 class Team(TimestampedModel):
@@ -994,8 +1024,8 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
     )
     storage_class_name = models.TextField(null=True, blank=True)
 
-    def get_storage(self):
-        return self.harvester.lab.get_storage(self)
+    def get_storage(self, saving=False):
+        return self.harvester.lab.get_storage(self, saving)
 
     @property
     def has_required_columns(self) -> bool:
@@ -1625,8 +1655,8 @@ class ParquetPartition(UUIDModel):
     )
     storage_class_name = models.TextField(null=True, blank=True)
 
-    def get_storage(self):
-        return self.observed_file.harvester.lab.get_storage(self)
+    def get_storage(self, saving=False):
+        return self.observed_file.harvester.lab.get_storage(self, saving)
 
     @staticmethod
     def has_read_permission(request):
