@@ -20,6 +20,9 @@ The Galv backend provides a REST API powered by [Django](https://www.djangoproje
 - [Frontend](https://github.com/galv-team/galv-frontend)
 - [Harvester](https://github.com/galv-team/galv-harvester)
 
+For more complete documentation, see the 
+[Galv Server documentation](https://galv-team.github.io/galv-backend/).
+
 ## Deploying
 
 The Galv backend is deployed using [Docker](https://www.docker.com/).
