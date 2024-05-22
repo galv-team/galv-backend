@@ -3,12 +3,10 @@
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 
 import os
-import tempfile
 from functools import partial
 
 import factory
-from django.core.files.storage import Storage
-from django.core.files.uploadedfile import TemporaryUploadedFile, InMemoryUploadedFile, SimpleUploadedFile
+from django.core.files.uploadedfile import SimpleUploadedFile
 from factory.base import StubObject
 import faker
 import django.conf.global_settings
@@ -22,7 +20,7 @@ from ..models import EquipmentFamily, Harvester, \
     ScheduleIdentifiers, CellFormFactors, CellChemistries, CellManufacturers, \
     CellModels, EquipmentManufacturers, EquipmentModels, EquipmentTypes, Experiment, \
     ValidationSchema, GroupProxy, UserProxy, Lab, Team, AutoCompleteEntry, DataUnit, DataColumnType, ParquetPartition, \
-    ColumnMapping, LocalStorageQuota
+    ColumnMapping, GalvStorageType
 from ..models.choices import UserLevel
 
 fake = faker.Faker(django.conf.global_settings.LANGUAGE_CODE)
@@ -140,9 +138,14 @@ class GroupFactory(factory.django.DjangoModelFactory):
     name = factory.LazyAttribute(lambda x: f"group_{x.n}")
 
 
-class LocalStorageQuotaFactory(factory.django.DjangoModelFactory):
+class GalvStorageTypeFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = LocalStorageQuota
+        model = GalvStorageType
+
+
+class AdditionalS3StorageTypeFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = GalvStorageType
 
 
 class LabFactory(factory.django.DjangoModelFactory):
@@ -156,8 +159,8 @@ class LabFactory(factory.django.DjangoModelFactory):
     def local_storage_quota(self, create, *_args, **_kwargs):
         if not create:
             return
-        if LocalStorageQuota.objects.filter(lab=self).count() == 0:
-            LocalStorageQuotaFactory.create(lab=self)
+        if GalvStorageType.objects.filter(lab=self).count() == 0:
+            GalvStorageTypeFactory.create(lab=self, quota=1000000)
 
 
 class TeamFactory(factory.django.DjangoModelFactory):

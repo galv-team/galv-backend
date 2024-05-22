@@ -17,23 +17,19 @@ services:
       - postgres
       - mailhog
     volumes:
-      - ./.dev/.static_files:/galv_files/static
-      - ./.dev/.media_files:/galv_files/media
       - ./backend_django:/code/backend_django
       - ./.dev/spec:/spec
       # datafiles should be mounted to DATA_ROOT in the container
-      # only matters when ALLOW_LOCAL_DATA_STORAGE is enabled
       - ./.dev/datafiles:/galv_files/data
+      # staticfiles to STATIC_ROOT
+      - ./.dev/.static_files:/galv_files/static
+      # and media files to MEDIA_ROOT
+      - ./.dev/.media_files:/galv_files/media
     environment:
       VIRTUAL_HOST: "localhost"
-      FRONTEND_VIRTUAL_HOST: "http://${VIRTUAL_HOST_ROOT},https://${VIRTUAL_HOST_ROOT}"
+      FRONTEND_VIRTUAL_HOST: "http://${VIRTUAL_HOST_ROOT},https://${VIRTUAL_HOST_ROOT},http://localhost:8002"
       DJANGO_SETTINGS: "dev"
       DJANGO_SUPERUSER_PASSWORD: "admin"
-      AWS_ACCESS_KEY_ID: "AKIAZQ3DU5GQ7Y5V7TFJ"
-      DJANGO_AWS_STORAGE_BUCKET_NAME: "galv"
-      DJANGO_AWS_S3_REGION_NAME: "eu-west-2"
-      # Test local data storage mode by enabling DJANGO_ALLOW_LOCAL_DATA_STORAGE (will override AWS settings for data files)
-      DJANGO_ALLOW_LOCAL_DATA_STORAGE: "True"
     env_file:
       - ./.env
       - ./.env.secret
@@ -77,7 +73,6 @@ services:
       VIRTUAL_HOST: "localhost"
       VIRTUAL_HOST_ROOT: "localhost"
       DJANGO_SETTINGS: "dev"
-      DJANGO_ALLOW_LOCAL_DATA_STORAGE: "True"
     env_file:
       - ./.env
     restart: "no"

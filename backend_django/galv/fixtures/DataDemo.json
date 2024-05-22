@@ -19,10 +19,19 @@
   },
   {
     "pk": 1,
-    "model": "galv.LocalStorageQuota",
+    "model": "galv.StorageType",
     "fields": {
+      "created": "2023-12-06T15:10:05+00:00",
+      "modified": "2023-12-06T15:10:05+00:00",
       "lab": 1,
       "quota": 5000000
+    }
+  },
+  {
+    "pk": 1,
+    "model": "galv.GalvStorageType",
+    "fields": {
+      "storagetype_ptr_id": 1
     }
   },
   {
@@ -2147,7 +2156,7 @@
       "parquet_file": "Jie_OCV1_C01.part_0.parquet",
       "partition_number": 0,
       "upload_errors": [],
-      "storage_class_name": "LocalDataStorage"
+      "storage_type_id": 1
     }
   },
   {
@@ -2160,7 +2169,7 @@
       "parquet_file": "TPG1-Cell15-002.part_2.parquet",
       "partition_number": 2,
       "upload_errors": [],
-      "storage_class_name": "LocalDataStorage"
+      "storage_type_id": 1
     }
   },
   {
@@ -2173,7 +2182,7 @@
       "parquet_file": "headerless.part_0.parquet",
       "partition_number": 0,
       "upload_errors": [],
-      "storage_class_name": "LocalDataStorage"
+      "storage_type_id": 1
     }
   },
   {
@@ -2186,7 +2195,7 @@
       "parquet_file": "preamble.part_0.parquet",
       "partition_number": 0,
       "upload_errors": [],
-      "storage_class_name": "LocalDataStorage"
+      "storage_type_id": 1
     }
   },
   {
@@ -2199,7 +2208,7 @@
       "parquet_file": "TPG1-Cell15-002.part_1.parquet",
       "partition_number": 1,
       "upload_errors": [],
-      "storage_class_name": "LocalDataStorage"
+      "storage_type_id": 1
     }
   },
   {
@@ -2212,7 +2221,7 @@
       "parquet_file": "adam_3_C05.part_0.parquet",
       "partition_number": 0,
       "upload_errors": [],
-      "storage_class_name": "LocalDataStorage"
+      "storage_type_id": 1
     }
   },
   {
@@ -2225,7 +2234,7 @@
       "parquet_file": "headered.part_0.parquet",
       "partition_number": 0,
       "upload_errors": [],
-      "storage_class_name": "LocalDataStorage"
+      "storage_type_id": 1
     }
   },
   {
@@ -2238,7 +2247,7 @@
       "parquet_file": "TPG1-Cell15-002.part_3.parquet",
       "partition_number": 3,
       "upload_errors": [],
-      "storage_class_name": "LocalDataStorage"
+      "storage_type_id": 1
     }
   },
   {
@@ -2251,7 +2260,7 @@
       "parquet_file": "TPG1-Cell15-002.part_0.parquet",
       "partition_number": 0,
       "upload_errors": [],
-      "storage_class_name": "LocalDataStorage"
+      "storage_type_id": 1
     }
   },
   {
@@ -2264,7 +2273,7 @@
       "parquet_file": "Ivium_Cell1.part_0.parquet",
       "partition_number": 0,
       "upload_errors": [],
-      "storage_class_name": "LocalDataStorage"
+      "storage_type_id": 1
     }
   },
   {
@@ -2277,7 +2286,7 @@
       "parquet_file": "Ivium_Cell1.part_1.parquet",
       "partition_number": 1,
       "upload_errors": [],
-      "storage_class_name": "LocalDataStorage"
+      "storage_type_id": 1
     }
   },
   {
@@ -2290,7 +2299,7 @@
       "parquet_file": "CCCV_-exp1_C01.part_0.parquet",
       "partition_number": 0,
       "upload_errors": [],
-      "storage_class_name": "LocalDataStorage"
+      "storage_type_id": 1
     }
   },
   {
@@ -2303,7 +2312,7 @@
       "parquet_file": "TPG1-Cell15-002.part_4.parquet",
       "partition_number": 4,
       "upload_errors": [],
-      "storage_class_name": "LocalDataStorage"
+      "storage_type_id": 1
     }
   }
 ]

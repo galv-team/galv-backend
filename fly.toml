@@ -18,7 +18,6 @@ console_command = "/code/backend_django/manage.py shell"
   VIRTUAL_HOST = "galv-backend-dev.fly.dev"
   FRONTEND_VIRTUAL_HOST = "http://galv-frontend-dev.fly.dev,https://galv-frontend-dev.fly.dev"
   DJANGO_SETTINGS_MODULE = "config.settings"
-  DJANGO_ALLOW_LOCAL_DATA_STORAGE = "True"
 #  DJANGO_SETTINGS = "dev"
   DJANGO_EMAIL_HOST = 'smtp.gmail.com'
   DJANGO_EMAIL_USE_TLS = "False"

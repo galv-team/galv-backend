@@ -7,7 +7,6 @@ from typing import Optional, Union
 
 import jsonschema
 from django.conf import settings
-from django.db import models
 from drf_spectacular.types import OpenApiTypes
 from rest_framework.reverse import reverse
 from drf_spectacular.utils import extend_schema_field, extend_schema_serializer, OpenApiExample
@@ -29,7 +28,7 @@ from ..models import Harvester, \
     render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, \
     SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
     ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, ColumnMapping, \
-    get_user_auth_details, LocalStorageQuota
+    get_user_auth_details, GalvStorageType, AdditionalS3StorageType
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
 from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
@@ -418,8 +417,7 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         admin_group = validated_data.pop('admin_group')
         lab = super().create(validated_data)
         TransparentGroupSerializer().update(lab.admin_group, admin_group)
-        if settings.LOCALE_STORAGE_ALLOWED and settings.DEFAULT_LAB_STORAGE_QUOTA_BYTES > 0:
-            LocalStorageQuota.objects.create(lab=lab, quota=settings.DEFAULT_LAB_STORAGE_QUOTA_BYTES)
+        GalvStorageType.objects.create(lab=lab, quota=settings.LAB_STORAGE_QUOTA_BYTES)
         lab.save()
         return lab
 
@@ -469,15 +467,15 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             's3_secret_key',
             's3_custom_domain',
             's3_configuration_status',
-            'local_storage_allowed',
             'local_storage_quota',
             'teams',
             'permissions'
         ]
         read_only_fields = [
             'url', 'id', 'teams', 'harvesters',
-            's3_configuration_status', 'local_storage_allowed', 'local_storage_quota', 'permissions'
+            's3_configuration_status', 'local_storage_quota', 'permissions'
         ]
+
 
 class WithTeamMixin(serializers.Serializer):
     team = TruncatedHyperlinkedRelatedIdField(
@@ -2091,3 +2089,37 @@ class ArbitraryFileSerializer(serializers.HyperlinkedModelSerializer, Permission
 class ArbitraryFileCreateSerializer(ArbitraryFileSerializer):
     class Meta(ArbitraryFileSerializer.Meta):
         read_only_fields = ['url', 'id', 'permissions']
+
+
+class GalvStorageTypeSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+    bytes_used = serializers.SerializerMethodField()
+
+    def get_bytes_used(self, instance) -> int:
+        return instance.get_bytes_used()
+
+    class Meta:
+        model = GalvStorageType
+        read_only_fields = ['url', 'id', 'permissions', 'quota']
+        fields = [
+            'url', 'id', 'name', 'lab', 'enabled',
+            'quota', 'bytes_used', 'priority', 'permissions'
+        ]
+        extra_kwargs = augment_extra_kwargs()
+
+
+class AdditionalS3StorageTypeSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+    bytes_used = serializers.SerializerMethodField()
+
+    def get_bytes_used(self, instance) -> int:
+        return instance.get_bytes_used()
+
+    class Meta:
+        model = AdditionalS3StorageType
+        read_only_fields = ['url', 'id', 'permissions']
+        write_only_fields = ['access_key', 'secret_key']
+        fields = [
+            'url', 'id', 'name', 'lab', 'enabled', 'quota', 'bytes_used', 'priority',
+            'bucket_name', 'location', 'access_key', 'secret_key', 'custom_domain',
+            'permissions',
+        ]
+        extra_kwargs = augment_extra_kwargs()

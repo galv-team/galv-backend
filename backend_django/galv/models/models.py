@@ -3,19 +3,19 @@
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 import os
 import re
-from pathlib import Path
 
 import jsonschema
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.postgres.fields import ArrayField
-from django.contrib.auth.models import User, Group, AnonymousUser
-import random
 from django.conf import settings
+from django.core.files.storage import Storage
 from django.db import models
 from django.test import RequestFactory
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.contrib.postgres.fields import ArrayField
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import User, Group, AnonymousUser
+import random
 from jsonschema.exceptions import _WrappedReferencingError
 from rest_framework import serializers
 
@@ -25,7 +25,7 @@ from .utils import CustomPropertiesModel, JSONModel, LDSources, render_pybamm_sc
     combine_rdf_props, TimestampedModel
 from .autocomplete_entries import *
 from ..fields import DynamicStorageFileField, LabDependentStorageFileField
-from ..storages import LocalDataStorage, DataStorage, DummyDataStorage
+from ..storages import LocalDataStorage, S3DataStorage
 
 ALLOWED_USER_LEVELS_DELETE = [UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]]
 ALLOWED_USER_LEVELS_EDIT_PATH = [UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]]
@@ -308,25 +308,180 @@ class GroupProxy(Group):
         return self in request.user.groups.all()
 
 
-class LocalStorageQuota(models.Model):
-    lab = models.OneToOneField('Lab', related_name="local_storage_quota", on_delete=models.CASCADE)
-    quota = models.BigIntegerField(
-        default=settings.DEFAULT_LAB_STORAGE_QUOTA_BYTES,
-        help_text="Maximum storage capacity in bytes"
-    )
-
-
 class StorageError(Exception):
     pass
 
-class StorageConstructionError(StorageError):
+class StorageLockedError(StorageError):
     pass
 
-class StorageIncorrectlyConfiguredError(StorageError):
+class StorageFullError(StorageError):
     pass
 
-class StorageNotConfiguredError(StorageError):
+class StorageReconstructionError(StorageError):
     pass
+
+class StorageConfigurationError(StorageError):
+    pass
+
+
+class StorageType(TimestampedModel):
+    """
+    TODO:
+        This is causing a deadlock.
+        We WANT to have an abstract model that provides a shared interface for GalvStorageType and AdditionalS3StorageType.
+        What we get is either an abstract model we can't easily link to (perhaps we can using GenericForeignKey),
+        or a concrete model that we can't easily overwrite the methods for.
+    """
+    name = models.TextField(null=True, blank=True)
+    lab = models.OneToOneField('Lab', related_name="storage_%(class)s", on_delete=models.CASCADE)
+    enabled = models.BooleanField(default=True, help_text="Whether this storage type is enabled for writing to")
+    quota = models.BigIntegerField(help_text="Maximum storage capacity in bytes")
+    priority = models.SmallIntegerField(
+        default=0,
+        help_text="Priority for storage allocation. Higher values are higher priority."
+    )
+
+    def get_bytes_used(self) -> int:
+        """
+        Estimate storage used by summing the size of each ParquetPartition belonging to this lab and using the storage.
+        """
+        total = 0
+        for p in self.parquet_partitions.all():
+            try:
+                total += p.parquet_file.size
+            except FileNotFoundError:
+                pass
+        return total
+
+    def get_storage(self, instance, saving=False) -> Storage:
+        """
+        Return a *Storage() instance.
+
+        Args:
+            - instance: the thing that is being written to or read from storage
+            - saving: whether the storage will be used for saving (True) or reading (False)
+
+        Raises:
+            - StorageConfigurationError if the storage is misconfigured
+            - StorageFullError if the storage is full and saving=True
+        """
+        raise StorageConfigurationError("Subclasses must implement this method") from NotImplementedError
+
+    @staticmethod
+    def has_create_permission(request):
+        return get_user_auth_details(request).is_lab_admin
+
+    @staticmethod
+    def has_read_permission(_):
+        return True
+
+    @staticmethod
+    def has_write_permission(_):
+        return True
+
+    def has_object_read_permission(self, request):
+        return self.lab.has_object_read_permission(request)
+
+    def has_object_write_permission(self, request):
+        return self.lab.has_object_write_permission(request)
+
+    def __str__(self):
+        if self.name is None:
+            return f"{self.__class__.__name__} for {self.lab.name}"
+        return f"{self.name} [{self.__class__.__name__}]"
+
+    class Meta:
+        unique_together = [['lab', 'priority']]
+
+
+class GalvStorageType(StorageType):
+    """
+    GalvStorageType is storage that the Galv server provides to Labs.
+    This has a quota set by the LAB_STORAGE_QUOTA_BYTES setting.
+
+    It _must not_ be updatable by Lab admins because it is a system resource.
+
+    Galv systems may offer GalvStorageType as a LocalStorage (i.e. stored on the server's filesystem),
+    or as an S3DataStorage (i.e. stored in an S3 bucket that the Galv host pays for).
+
+    If LAB_STORAGE_QUOTA_BYTES is set to 0, then GalvStorageType is disabled.
+    """
+    @property
+    def location(self):
+        return os.path.join(settings.DATA_ROOT, f"lab_{self.lab.pk}")
+
+    def get_storage(self, instance, saving=False) -> Storage:
+        if saving:
+            if not self.enabled:
+                raise StorageLockedError(f"Cannot save data: storage is locked for {self}")
+            # TODO: This is a rough check, and will double-count an object that is being updated.
+            if self.get_bytes_used() >= self.quota:
+                raise StorageFullError(f"Cannot save data: local storage quota exceeded for {self}")
+        try:
+            if settings.S3_ENABLED and settings.LABS_USE_OUR_S3_STORAGE:
+                return S3DataStorage(
+                    access_key=settings.AWS_ACCESS_KEY_ID,
+                    secret_key=settings.AWS_SECRET_ACCESS_KEY,
+                    bucket_name=settings.AWS_STORAGE_BUCKET_NAME,
+                    location=self.location,
+                    custom_domain=settings.AWS_S3_CUSTOM_DOMAIN
+                )
+            return LocalDataStorage(location=self.location)
+        except Exception as e:
+            raise StorageConfigurationError(f"Could not configure storage for {self}") from e
+
+    @staticmethod
+    def has_create_permission(_):
+        return False
+
+
+class AdditionalS3StorageType(StorageType):
+    """
+    AdditionalS3StorageType is storage that the Lab can use for its own purposes.
+    This has a quota set by the Lab admin.
+
+    AdditionalS3StorageType is always an S3DataStorage (i.e. stored in an S3 bucket that the Lab pays for).
+
+    In future, we may offer other storage options with other cloud providers or linking in with
+    the lab's own storage solutions.
+    """
+    bucket_name = models.TextField(null=True, blank=True, help_text="Name of the S3 bucket to store files in")
+    location = models.TextField(null=True, blank=True, help_text="Directory within the S3 bucket to store files in")
+    access_key = models.TextField(null=True, blank=True, help_text="Access key for the S3 bucket")
+    secret_key = models.TextField(null=True, blank=True, help_text="Secret key for the S3 bucket")
+    # s3_region = models.TextField(
+    #     null=True,
+    #     blank=True,
+    #     help_text="Region for the S3 bucket. Only one of custom domain or region should be set."
+    # )
+    custom_domain = models.TextField(
+        null=True,
+        blank=True,
+        help_text=("Custom domain for the S3 bucket.")
+    )
+
+    def get_storage(self, instance, saving=False) -> Storage:
+        if saving:
+            # TODO: This is a rough check, and will double-count an object that is being updated.
+            if self.get_bytes_used() >= self.quota:
+                raise StorageFullError(f"Cannot save data: local storage quota exceeded for {self}")
+        try:
+            return S3DataStorage(
+                access_key=self.access_key,
+                secret_key=self.secret_key,
+                bucket_name=self.bucket_name,
+                location=self.location,
+                custom_domain=self.custom_domain
+            )
+        except Exception as e:
+            raise StorageConfigurationError(f"Could not configure storage for {self}") from e
+
+    def has_object_write_permission(self, request):
+        return self.lab.has_object_write_permission(request)
+
+    def has_object_read_permission(self, request):
+        return self.lab.has_object_read_permission(request)
+
 
 class Lab(TimestampedModel):
     name = models.TextField(
@@ -337,20 +492,6 @@ class Lab(TimestampedModel):
         null=True,
         help_text="Description of the Lab"
     )
-    s3_bucket_name = models.TextField(null=True, blank=True, help_text="Name of the S3 bucket to store files in")
-    s3_location = models.TextField(null=True, blank=True, help_text="Directory within the S3 bucket to store files in")
-    s3_access_key = models.TextField(null=True, blank=True, help_text="Access key for the S3 bucket")
-    s3_secret_key = models.TextField(null=True, blank=True, help_text="Secret key for the S3 bucket")
-    # s3_region = models.TextField(
-    #     null=True,
-    #     blank=True,
-    #     help_text="Region for the S3 bucket. Only one of custom domain or region should be set."
-    # )
-    s3_custom_domain = models.TextField(
-        null=True,
-        blank=True,
-        help_text=("Custom domain for the S3 bucket.")
-    )
 
     admin_group = models.OneToOneField(
         to=GroupProxy,
@@ -359,10 +500,6 @@ class Lab(TimestampedModel):
         related_name='editable_lab',
         help_text="Users authorised to make changes to the Lab"
     )
-
-    @property
-    def local_storage_allowed(self):
-        return settings.ALLOW_LOCAL_DATA_STORAGE and LocalStorageQuota.objects.filter(lab=self).exists()
 
     @staticmethod
     def has_read_permission(_):
@@ -402,81 +539,26 @@ class Lab(TimestampedModel):
         self.admin_group.delete()
         super(Lab, self).delete(using, keep_parents)
 
-    @property
-    def s3_configuration_status(self) -> dict:
-        s3_settings = [
-            's3_bucket_name',
-            's3_access_key',
-            's3_secret_key',
-            's3_custom_domain'
-        ]
-        enabled = any([getattr(self, s) is not None for s in s3_settings])
-        missing = []
-        s3_settings.pop(-1)  # custom domain is optional
-        for s in s3_settings:
-            if getattr(self, s) is None:
-                missing.append(s)
-        ok = len(missing) == 0
-        error = None
-        if ok:
-            try:
-                DataStorage(
-                    access_key=self.s3_access_key,
-                    secret_key=self.s3_secret_key,
-                    bucket_name=self.s3_bucket_name,
-                    location=self.s3_location,
-                    custom_domain=self.s3_custom_domain
-                )
-            except Exception as e:
-                ok = False
-                error = e
-        return {
-            'enabled': enabled,
-            'ok': ok,
-            'missing_properties': missing,
-            'initialization_error': error
-        }
-
-    def get_used_local_storage_quota(self):
-        location = os.path.join(settings.DATA_ROOT, f"lab_{self.pk}")
-        return sum([p.lstat().st_size for p in Path(location).glob('**/*') if p.is_file()])
-
-    def get_local_storage(self, saving=False):
-        """
-        Return a LocalDataStorage() instance if local storage is enabled for this Lab.
-        Raise a StorageNotConfiguredError if local storage is disabled.
-        """
-        if not settings.ALLOW_LOCAL_DATA_STORAGE:
-            raise StorageNotConfiguredError("Cannot access locally stored data: local data storage is disabled")
-        if not self.local_storage_allowed:
-            raise StorageNotConfiguredError(f"Cannot access locally stored data: permission denied to {self}")
-        if saving:
-            current_usage = self.get_used_local_storage_quota()
-            # TODO: This is a rough check, and will double-count an object that is being updated.
-            if current_usage >= LocalStorageQuota.objects.get(lab=self).quota:
-                raise StorageNotConfiguredError(f"Cannot save data: local storage quota exceeded for {self}")
-        return LocalDataStorage(location=os.path.join(settings.DATA_ROOT, f"lab_{self.pk}"))
-
     def get_storage(self, instance, saving=False):
-        if instance.storage_class_name == "LocalDataStorage":
-            return self.get_local_storage(saving)
-        try:
-            s3_status = self.s3_configuration_status
-            if not s3_status.get('enabled'):
-                return self.get_local_storage(saving)
-            elif not s3_status.get('ok'):
-                raise StorageIncorrectlyConfiguredError(f"Missing properties: {s3_status.get('missing_properties')}")
-            storage = DataStorage(
-                access_key=self.s3_access_key,
-                secret_key=self.s3_secret_key,
-                bucket_name=self.s3_bucket_name,
-                location=self.s3_location,
-                custom_domain=self.s3_custom_domain or False
-            )
-            instance.storage_class_name = storage.__class__.__name__
-            return storage
-        except Exception as e:
-            raise StorageConstructionError from e
+        if instance.storage_type is not None:
+            return instance.storage_type.get_storage(instance, saving)
+
+        storage_types = list(StorageType.objects.filter(lab=self).order_by('priority'))
+        if len(storage_types) == 0:
+            raise StorageError(f"No storage available for {self}")
+
+        errors = {}
+        # Select the highest priority storage that works
+        for storage_type in storage_types:
+            try:
+                storage_instance = storage_type.get_storage(instance, saving)
+                instance.storage_type = storage_type
+                instance.save()
+                return storage_instance
+            except StorageError as e:
+                errors[storage_type] = e
+        results = '\n'.join([f"{k}: {v}" for k, v in errors.items()])
+        raise StorageError(f"No storage available. Errors:\n{results}.")
 
 
 class Team(TimestampedModel):
@@ -1022,7 +1104,14 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
         blank=True,
         help_text="Preview image of the file"
     )
-    storage_class_name = models.TextField(null=True, blank=True)
+    # We need a storage_type and get_storage to allow pngs to be stored in LabDependentStorageFileField
+    storage_type = models.ForeignKey(
+        StorageType,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pngs"
+    )
 
     def get_storage(self, saving=False):
         return self.harvester.lab.get_storage(self, saving)
@@ -1653,7 +1742,13 @@ class ParquetPartition(UUIDModel):
         default=list,
         help_text="Upload errors"
     )
-    storage_class_name = models.TextField(null=True, blank=True)
+    storage_type = models.ForeignKey(
+        StorageType,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="parquet_partitions"
+    )
 
     def get_storage(self, saving=False):
         return self.observed_file.harvester.lab.get_storage(self, saving)
