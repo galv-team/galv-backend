@@ -241,7 +241,7 @@ else:
     STATIC_ROOT = f"/galv_files/{STATICFILES_LOCATION}"
     STATIC_URL = f"/{STATICFILES_LOCATION}/"
 
-# Data storage is always dynamic depending on StorageType models,
+# Data storage is always dynamic depending on _StorageType models,
 # so doesn't need to be configured in STORAGES.
 DATA_ROOT = f"/galv_files/{DATAFILES_LOCATION}"
 DATA_URL = f"/{DATAFILES_LOCATION}/"

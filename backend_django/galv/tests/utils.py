@@ -10,7 +10,7 @@ from openapi_tester import SchemaTester
 from openapi_tester.clients import OpenAPIClient
 
 from .factories import LabFactory, TeamFactory, UserFactory, generate_create_dict
-from ..models import UserLevel
+from ..models import UserLevel, Lab, Team, UserProxy, GroupProxy
 
 
 def assert_response_property(self, response, assertion, *args, **kwargs):
@@ -98,6 +98,12 @@ class GalvTestCase(APITestCaseWrapper):
         self.strange_lab.admin_group.user_set.add(self.strange_lab_admin)
         self.strange_lab_team.admin_group.user_set.add(self.strange_lab_admin)
 
+        # Check we created at least one instance of each type
+        Lab.objects.get(pk=self.lab.pk)
+        Team.objects.get(pk=self.lab_team.pk)
+        UserProxy.objects.get(pk=self.user.pk)
+        GroupProxy.objects.get(pk=self.lab_team.member_group.pk)
+
         self.create_resource_users_run = True
 
     def assertResourceInResults(self, resource, result, assert_single_result=True, assert_reachable=True):
@@ -148,7 +154,10 @@ class _GalvTeamResourceTestCase(GalvTestCase):
         # Pass team prop to the correct object
         # if self.factory.__name__ in ['CellFactory', 'EquipmentFactory', 'ScheduleFactory']:
         #     return self.factory.create(family__team=self.lab_team, **perms)
-        return self.factory.create(team=self.lab_team, **perms)
+        obj = self.factory.create(team=self.lab_team, **perms)
+        assert self.factory._meta.model.objects.filter(pk=obj.pk).exists(), \
+            f"Could not create {self.factory._meta.model.__name__} with {perms}"
+        return obj
 
     def create_test_resources(self):
         """

@@ -20,7 +20,7 @@ from ..models import EquipmentFamily, Harvester, \
     ScheduleIdentifiers, CellFormFactors, CellChemistries, CellManufacturers, \
     CellModels, EquipmentManufacturers, EquipmentModels, EquipmentTypes, Experiment, \
     ValidationSchema, GroupProxy, UserProxy, Lab, Team, AutoCompleteEntry, DataUnit, DataColumnType, ParquetPartition, \
-    ColumnMapping, GalvStorageType
+    ColumnMapping, GalvStorageType, AdditionalS3StorageType
 from ..models.choices import UserLevel
 
 fake = faker.Faker(django.conf.global_settings.LANGUAGE_CODE)
@@ -141,11 +141,21 @@ class GroupFactory(factory.django.DjangoModelFactory):
 class GalvStorageTypeFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = GalvStorageType
+        django_get_or_create = ('lab',)
+    priority = 0
+    quota = 1_000_0000
 
 
 class AdditionalS3StorageTypeFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = GalvStorageType
+        model = AdditionalS3StorageType
+        django_get_or_create = ('lab', 'priority',)
+    priority = factory.Faker('pyint', min_value=5, max_value=15)
+    quota = 1_000_0000
+    bucket_name = factory.Faker('word')
+    location = factory.Faker('word')
+    access_key = factory.Faker('word')
+    secret_key = factory.Faker('word')
 
 
 class LabFactory(factory.django.DjangoModelFactory):
@@ -160,7 +170,7 @@ class LabFactory(factory.django.DjangoModelFactory):
         if not create:
             return
         if GalvStorageType.objects.filter(lab=self).count() == 0:
-            GalvStorageTypeFactory.create(lab=self, quota=1000000)
+            GalvStorageTypeFactory.create(lab=self)
 
 
 class TeamFactory(factory.django.DjangoModelFactory):
@@ -222,6 +232,7 @@ class ObservedFileFactory(factory.django.DjangoModelFactory):
     path = factory.LazyAttribute(path_with_root)
     harvester = factory.SubFactory(HarvesterFactory)
     mapping = factory.SubFactory(ColumnMappingFactory)
+    storage_type = factory.SubFactory(GalvStorageTypeFactory, lab=factory.SelfAttribute('..harvester.lab'))
 
 
 class ParquetPartitionFactory(factory.django.DjangoModelFactory):
@@ -231,6 +242,10 @@ class ParquetPartitionFactory(factory.django.DjangoModelFactory):
 
     observed_file = factory.SubFactory(ObservedFileFactory)
     partition_number = factory.Faker('random_int', min=1, max=1000000)
+    storage_type = factory.SubFactory(
+        GalvStorageTypeFactory,
+        lab=factory.SelfAttribute('..observed_file.harvester.lab')
+    )
 
 
 class CellFamilyFactory(factory.django.DjangoModelFactory):

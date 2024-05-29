@@ -12,7 +12,7 @@ from django.test import RequestFactory
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.contrib.postgres.fields import ArrayField
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User, Group, AnonymousUser
 import random
@@ -121,8 +121,8 @@ def get_user_auth_details(request):
                 lab_ids.add(values['team__lab__pk'])
         else:
             for g in request.user.groups.values(
-                'editable_team__pk', 'readable_team__pk', 'editable_lab__pk',
-                'editable_team__lab__pk', 'readable_team__lab__pk'
+                    'editable_team__pk', 'readable_team__pk', 'editable_lab__pk',
+                    'editable_team__lab__pk', 'readable_team__lab__pk'
             ):
                 if g['editable_team__pk'] is not None:
                     write_team_ids.add(g['editable_team__pk'])
@@ -324,16 +324,39 @@ class StorageConfigurationError(StorageError):
     pass
 
 
-class StorageType(TimestampedModel):
+class _StorageTypeConsumerModel(UUIDModel):
     """
-    TODO:
-        This is causing a deadlock.
-        We WANT to have an abstract model that provides a shared interface for GalvStorageType and AdditionalS3StorageType.
-        What we get is either an abstract model we can't easily link to (perhaps we can using GenericForeignKey),
-        or a concrete model that we can't easily overwrite the methods for.
+    We can't define a ForeignKey to an abstract model,
+    so this class allows us to define a ForeignKey to any _StorageType subclass.
     """
+    _storage_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True)
+    _storage_object_id = models.UUIDField(null=True)
+    storage_type = GenericForeignKey('_storage_content_type', '_storage_object_id')
+
+    def _get_lab(self):
+        """
+        Return the Lab that this object belongs to.
+
+        This is a helper method to allow get_storage to function across different models.
+        """
+        raise NotImplementedError
+
+    def get_storage(self, saving=False):
+        """
+        Return a *Storage() instance.
+
+        Implementations will point to the Lab's get_storage method.
+        That method will set the storage_type attribute of the instance if it is not already set.
+        """
+        return self._get_lab().get_storage(self, saving)
+
+    class Meta:
+        abstract = True
+
+
+class _StorageType(UUIDModel):
     name = models.TextField(null=True, blank=True)
-    lab = models.OneToOneField('Lab', related_name="storage_%(class)s", on_delete=models.CASCADE)
+    lab = models.ForeignKey('Lab', related_name="storage_%(class)s", on_delete=models.CASCADE)
     enabled = models.BooleanField(default=True, help_text="Whether this storage type is enabled for writing to")
     quota = models.BigIntegerField(help_text="Maximum storage capacity in bytes")
     priority = models.SmallIntegerField(
@@ -341,15 +364,32 @@ class StorageType(TimestampedModel):
         help_text="Priority for storage allocation. Higher values are higher priority."
     )
 
+    # This isn't DRY, but we have to repeat stuff somewhere due to limitations on Django's generic interfaces
+    files = GenericRelation(
+        to='ObservedFile',
+        content_type_field='_storage_content_type',
+        object_id_field='_storage_object_id'
+    )
+    parquet_partitions = GenericRelation(
+        to='ParquetPartition',
+        content_type_field='_storage_content_type',
+        object_id_field='_storage_object_id'
+    )
+
     def get_bytes_used(self) -> int:
         """
-        Estimate storage used by summing the size of each ParquetPartition belonging to this lab and using the storage.
+        Estimate storage used by summing the size of each file using the storage.
         """
         total = 0
-        for p in self.parquet_partitions.all():
+        for file in self.files.all():
             try:
-                total += p.parquet_file.size
-            except FileNotFoundError:
+                total += file.png.size
+            except (FileNotFoundError, ValueError):
+                pass
+        for partition in self.parquet_partitions.all():
+            try:
+                total += partition.parquet_file.size
+            except (FileNotFoundError, ValueError):
                 pass
         return total
 
@@ -392,9 +432,10 @@ class StorageType(TimestampedModel):
 
     class Meta:
         unique_together = [['lab', 'priority']]
+        abstract = True
 
 
-class GalvStorageType(StorageType):
+class GalvStorageType(_StorageType):
     """
     GalvStorageType is storage that the Galv server provides to Labs.
     This has a quota set by the LAB_STORAGE_QUOTA_BYTES setting.
@@ -435,7 +476,7 @@ class GalvStorageType(StorageType):
         return False
 
 
-class AdditionalS3StorageType(StorageType):
+class AdditionalS3StorageType(_StorageType):
     """
     AdditionalS3StorageType is storage that the Lab can use for its own purposes.
     This has a quota set by the Lab admin.
@@ -539,11 +580,20 @@ class Lab(TimestampedModel):
         self.admin_group.delete()
         super(Lab, self).delete(using, keep_parents)
 
+    def get_all_storage_types(self) -> list[_StorageType]:
+        """
+        Return a list of all storage types available to this Lab, sorted by priority (highest first).
+        """
+        storage_types = []
+        for model in _StorageType.__subclasses__():
+            storage_types.extend(list(model.objects.filter(lab=self)))
+        return sorted(storage_types, key=lambda x: x.priority, reverse=True)
+
     def get_storage(self, instance, saving=False):
         if instance.storage_type is not None:
             return instance.storage_type.get_storage(instance, saving)
 
-        storage_types = list(StorageType.objects.filter(lab=self).order_by('priority'))
+        storage_types = self.get_all_storage_types()
         if len(storage_types) == 0:
             raise StorageError(f"No storage available for {self}")
 
@@ -553,7 +603,7 @@ class Lab(TimestampedModel):
             try:
                 storage_instance = storage_type.get_storage(instance, saving)
                 instance.storage_type = storage_type
-                instance.save()
+                # instance.save()  # this was double-saving the instance on create leading to duplicate id errors
                 return storage_instance
             except StorageError as e:
                 errors[storage_type] = e
@@ -717,11 +767,7 @@ class ValidatableBySchemaMixin(TimestampedModel):
     Subclasses are picked up by a crawl in ValidationSchemaViewSet and used
     to list possible values for validation schema root keys.
     """
-    def save(
-            self, force_insert=False, force_update=False, using=None, update_fields=None
-    ):
-        super(ValidatableBySchemaMixin, self).save(force_insert, force_update, using, update_fields)
-        # TODO: stop this happening for minor updates to Files, e.g. when last checked time is updated
+    def register_validation(self):
         for schema in ValidationSchema.objects.all():
             SchemaValidation.objects.update_or_create(
                 defaults={
@@ -732,6 +778,13 @@ class ValidatableBySchemaMixin(TimestampedModel):
                 content_type=ContentType.objects.get_for_model(self),
                 object_id=self.pk
             )
+
+    def save(
+            self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        super(ValidatableBySchemaMixin, self).save(force_insert, force_update, using, update_fields)
+        # TODO: stop this happening for minor updates to Files, e.g. when last checked time is updated
+        self.register_validation()
 
     class Meta:
         abstract = True
@@ -786,7 +839,7 @@ class CellFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
     ):
         super(CellFamily, self).save(force_insert, force_update, using, update_fields)
 
-class Cell(JSONModel, ValidatableBySchemaMixin, ResourceModelPermissionsMixin):
+class Cell(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
     identifier = models.TextField(unique=False, help_text="Unique identifier (e.g. serial number) for the cell", null=False)
     family = models.ForeignKey(to=CellFamily, on_delete=models.CASCADE, null=False, help_text="Cell type", related_name="cells")
 
@@ -825,7 +878,7 @@ class EquipmentFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
     def __str__(self):
         return f"{str(self.manufacturer)} {str(self.model)} ({str(self.type)})"
 
-class Equipment(JSONModel, ValidatableBySchemaMixin, ResourceModelPermissionsMixin):
+class Equipment(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
     identifier = models.TextField(unique=True, help_text="Unique identifier (e.g. serial number) for the equipment", null=False)
     family = models.ForeignKey(to=EquipmentFamily, on_delete=models.CASCADE, null=False, help_text="Equipment type", related_name="equipment")
     calibration_date = models.DateField(help_text="Date of last calibration", null=True, blank=True)
@@ -863,7 +916,7 @@ class ScheduleFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
         return f"{str(self.identifier)}"
 
 
-class Schedule(JSONModel, ValidatableBySchemaMixin, ResourceModelPermissionsMixin):
+class Schedule(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
     family = models.ForeignKey(to=ScheduleFamily, on_delete=models.CASCADE, null=False, help_text="Schedule type", related_name="schedules")
     schedule_file = models.FileField(help_text="File containing the schedule", null=True, blank=True)
     pybamm_schedule_variables = models.JSONField(help_text="Variables used in the PyBaMM.Experiment representation of the schedule", null=True, blank=True)
@@ -1023,7 +1076,7 @@ class ColumnMapping(UUIDModel, ResourceModelPermissionsMixin):
         return self.name
 
 
-class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
+class ObservedFile(_StorageTypeConsumerModel, ValidatableBySchemaMixin):
     path = models.TextField(help_text="Absolute file path")
     harvester = models.ForeignKey(
         to=Harvester,
@@ -1104,17 +1157,9 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
         blank=True,
         help_text="Preview image of the file"
     )
-    # We need a storage_type and get_storage to allow pngs to be stored in LabDependentStorageFileField
-    storage_type = models.ForeignKey(
-        StorageType,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="pngs"
-    )
 
-    def get_storage(self, saving=False):
-        return self.harvester.lab.get_storage(self, saving)
+    def _get_lab(self):
+        return self.harvester.lab
 
     @property
     def has_required_columns(self) -> bool:
@@ -1187,6 +1232,7 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
                 self.state = FileState.MAP_ASSIGNED if self.mapping else FileState.AWAITING_MAP_ASSIGNMENT
         super(ObservedFile, self).save(force_insert, force_update, using, update_fields)
 
+
     def __str__(self):
         return self.path
 
@@ -1211,7 +1257,7 @@ class CyclerTest(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMi
         return render_pybamm_schedule(self.schedule, self.cell, validate = validate)
 
 
-class Experiment(JSONModel, ValidatableBySchemaMixin, ResourceModelPermissionsMixin):
+class Experiment(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
     title = models.TextField(help_text="Title of the experiment")
     description = models.TextField(help_text="Description of the experiment", null=True, blank=True)
     authors = models.ManyToManyField(to=UserProxy, help_text="Authors of the experiment")
@@ -1398,7 +1444,7 @@ class DataUnit(ResourceModelPermissionsMixin):
         return f"{self.name} - {self.description}"
 
 
-class DataColumnType(ValidatableBySchemaMixin, ResourceModelPermissionsMixin):
+class DataColumnType(ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
     unit = models.ForeignKey(
         to=DataUnit,
         on_delete=models.SET_NULL,
@@ -1715,7 +1761,7 @@ class ArbitraryFile(JSONModel, ResourceModelPermissionsMixin):
         return self.name
 
 
-class ParquetPartition(UUIDModel):
+class ParquetPartition(_StorageTypeConsumerModel):
     """
     A datafile partition in .parquet format.
     Part of an ObservedFile's source datafile.
@@ -1742,16 +1788,9 @@ class ParquetPartition(UUIDModel):
         default=list,
         help_text="Upload errors"
     )
-    storage_type = models.ForeignKey(
-        StorageType,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="parquet_partitions"
-    )
 
-    def get_storage(self, saving=False):
-        return self.observed_file.harvester.lab.get_storage(self, saving)
+    def _get_lab(self):
+        return self.observed_file.harvester.lab
 
     @staticmethod
     def has_read_permission(request):

@@ -14,7 +14,7 @@ from django.conf import settings
 
 from .utils import assert_response_property, GalvTestCase
 from .factories import HarvesterFactory, \
-    MonitoredPathFactory, ParquetPartitionFactory, fake
+    MonitoredPathFactory, ParquetPartitionFactory, fake, ObservedFileFactory
 from ..models import HarvestError, \
     ObservedFile, \
     FileState
@@ -226,7 +226,7 @@ class HarvesterTests(GalvTestCase):
 
     def test_report(self, *args):
         mp = MonitoredPathFactory.create(harvester=self.harvester)
-        f = ObservedFile.objects.create(path='/a/b/c/d.ext', harvester=self.harvester)
+        f = ObservedFileFactory.create(path='/a/b/c/d.ext', harvester=self.harvester)
         for i in range(3):
             ParquetPartitionFactory.create(observed_file=f, partition_number=i)
         self.client._credentials = {'HTTP_AUTHORIZATION': f'Harvester {self.harvester.api_key}'}
@@ -403,7 +403,7 @@ class HarvesterTests(GalvTestCase):
         We upload a file, along with some data, and check that we receive a ParquetPartition object in response.
         """
         mp = MonitoredPathFactory.create(harvester=self.harvester)
-        f = ObservedFile.objects.create(path='/a/b/c/d.ext', harvester=self.harvester)
+        f = ObservedFileFactory.create(path='/a/b/c/d/e.ext', harvester=self.harvester)
         self.client._credentials = {'HTTP_AUTHORIZATION': f'Harvester {self.harvester.api_key}'}
         url = reverse(f'{self.stub}-report', args=(self.harvester.id,))
         response = self.client.post(url, {
@@ -426,8 +426,9 @@ class HarvesterTests(GalvTestCase):
 
         # We should get an error if storage is full
         with self.subTest("Cannot save when storage is over quota"):
-            self.lab.local_storage_quota.quota = 0
-            self.lab.local_storage_quota.save()
+            storages = self.lab.get_all_storage_types()
+            storages[0].quota = 0
+            storages[0].save()
             response = self.client.post(url, {
                 'format': 'flat',
                 'status': settings.HARVESTER_STATUS_SUCCESS,
@@ -451,7 +452,7 @@ class HarvesterTests(GalvTestCase):
 
     def test_png_upload(self):
         mp = MonitoredPathFactory.create(harvester=self.harvester)
-        f = ObservedFile.objects.create(path='/a/b/c/d.ext', harvester=self.harvester)
+        f = ObservedFileFactory.create(path='/a/b/c/d/e/f.ext', harvester=self.harvester)
         self.client._credentials = {'HTTP_AUTHORIZATION': f'Harvester {self.harvester.api_key}'}
         url = reverse(f'{self.stub}-report', args=(self.harvester.id,))
         response = self.client.post(url, {

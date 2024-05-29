@@ -14,13 +14,18 @@ import os
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect, FileResponse
 from django.urls import NoReverseMatch
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from drf_spectacular.types import OpenApiTypes
 from dry_rest_permissions.generics import DRYPermissions
 from rest_framework.mixins import ListModelMixin
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.renderers import JSONRenderer
 from rest_framework.reverse import reverse
+from rest_framework.status import HTTP_404_NOT_FOUND
+from rest_framework.views import APIView
 
+from .models.models import _StorageType
 from .serializers import HarvesterSerializer, \
     HarvesterCreateSerializer, \
     HarvesterConfigSerializer, \
@@ -2010,6 +2015,10 @@ class ArbitraryFileViewSet(viewsets.ModelViewSet):
         return ArbitraryFileSerializer
 
 
+class _StorageTypeMixin:
+    model = None
+
+
 @extend_schema_view(
     list=extend_schema(
         summary="View Galv storage by Lab",
@@ -2036,10 +2045,11 @@ Additional storage can be configured by connecting a new S3 bucket to your Lab.
         """
     ),
 )
-class GalvStorageTypeViewSet(viewsets.ModelViewSet):
+class GalvStorageTypeViewSet(viewsets.ModelViewSet, _StorageTypeMixin):
     """
     GalvStorageTypes are used to describe the storage available to a Lab.
     """
+    model = GalvStorageType
     permission_classes = [DRYPermissions]
     filter_backends = [LabResourceFilterBackend]
     serializer_class = GalvStorageTypeSerializer
@@ -2093,12 +2103,48 @@ Use this option with caution, and consider setting the storage to enabled=False 
         """
     )
 )
-class AdditionalS3StorageTypeViewSet(viewsets.ModelViewSet):
+class AdditionalS3StorageTypeViewSet(viewsets.ModelViewSet, _StorageTypeMixin):
     """
     AdditionalS3Storage is used to describe the storage available to a Lab.
     """
+    model = AdditionalS3StorageType
     permission_classes = [DRYPermissions]
     filter_backends = [LabResourceFilterBackend]
     serializer_class = AdditionalS3StorageTypeSerializer
     queryset = AdditionalS3StorageType.objects.all().order_by('-id')
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+
+
+class StorageTypeRedirect(APIView):
+    """
+    Provide a generic interface that will redirect to the appropriate storage type view.
+    """
+    def get_viewset_class(self, pk):
+        for model in _StorageType.__subclasses__():
+            try:
+                model = model.objects.get(id=pk)
+                for viewset in _StorageTypeMixin.__subclasses__():
+                    if viewset.model == model._meta.model:
+                        return viewset
+            except model.DoesNotExist:
+                pass
+
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Redirect to the appropriate storage type view.
+        """
+        pk = kwargs.get('pk')
+        viewset_class = self.get_viewset_class(pk)
+        if viewset_class is None:
+            response = error_response('Storage not found', HTTP_404_NOT_FOUND)
+        else:
+            viewset = viewset_class.as_view({
+                'get': 'retrieve',
+                'put': 'update',
+                'patch': 'partial_update',
+                'delete': 'destroy',
+                'post': 'create',
+            })
+            response = viewset(request, *args, **kwargs)
+
+        return response
