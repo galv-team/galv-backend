@@ -2144,7 +2144,8 @@ class SchemaValidationSerializer(serializers.HyperlinkedModelSerializer, Permiss
 
     validation_target = serializers.SerializerMethodField(help_text="Target of validation")
 
-    def get_validation_target(self, instance) -> OpenApiTypes.URI:
+    @extend_schema_field(OpenApiTypes.URI)
+    def get_validation_target(self, instance):
         return reverse(
             f"{instance.content_type.model}-detail",
             args=(instance.object_id,),
