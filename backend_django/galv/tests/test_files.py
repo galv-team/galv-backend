@@ -10,7 +10,7 @@ from .utils import assert_response_property, GalvTestCase
 from .factories import HarvesterFactory, \
     MonitoredPathFactory, \
     ObservedFileFactory, fake
-from ..models import FileState, UserLevel
+from ..models import FileState, UserLevel, ObservedFile
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
@@ -43,11 +43,13 @@ class ObservedFileTests(GalvTestCase):
             read_access_level=UserLevel.TEAM_MEMBER.value
         )
         self.specific_files = ObservedFileFactory.create_batch(size=2, harvester=self.harvester, path_root=self.specific_path.path)
+        assert ObservedFile.objects.filter(pk=self.specific_files[0].pk).exists(), "File not created"
         self.other_files = ObservedFileFactory.create_batch(size=3, harvester=self.harvester, path_root=self.other_path.path)
         self.regex_files = ObservedFileFactory.create_batch(size=6, harvester=self.harvester, path_root=f"{self.regex_path.path}/abc")
         self.other_harvester = HarvesterFactory.create(name='Test Files Other', lab=self.strange_lab)
         self.other_harvester_path = MonitoredPathFactory.create(harvester=self.other_harvester, path="/", team=self.strange_lab_team)
         self.other_harvester_files = ObservedFileFactory.create_batch(size=4, harvester=self.other_harvester, path_root=self.other_harvester_path.path)
+
         # assign files to paths
         for file in self.specific_files:
             file.monitored_paths.set([self.specific_path])

@@ -3,19 +3,19 @@
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 import os
 import re
-from pathlib import Path
 
 import jsonschema
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.postgres.fields import ArrayField
-from django.contrib.auth.models import User, Group, AnonymousUser
-import random
 from django.conf import settings
+from django.core.files.storage import Storage
 from django.db import models
 from django.test import RequestFactory
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.contrib.postgres.fields import ArrayField
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import User, Group, AnonymousUser
+import random
 from jsonschema.exceptions import _WrappedReferencingError
 from rest_framework import serializers
 
@@ -25,7 +25,7 @@ from .utils import CustomPropertiesModel, JSONModel, LDSources, render_pybamm_sc
     combine_rdf_props, TimestampedModel
 from .autocomplete_entries import *
 from ..fields import DynamicStorageFileField, LabDependentStorageFileField
-from ..storages import LocalDataStorage, DataStorage, DummyDataStorage
+from ..storages import LocalDataStorage, S3DataStorage
 
 ALLOWED_USER_LEVELS_DELETE = [UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]]
 ALLOWED_USER_LEVELS_EDIT_PATH = [UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]]
@@ -121,8 +121,8 @@ def get_user_auth_details(request):
                 lab_ids.add(values['team__lab__pk'])
         else:
             for g in request.user.groups.values(
-                'editable_team__pk', 'readable_team__pk', 'editable_lab__pk',
-                'editable_team__lab__pk', 'readable_team__lab__pk'
+                    'editable_team__pk', 'readable_team__pk', 'editable_lab__pk',
+                    'editable_team__lab__pk', 'readable_team__lab__pk'
             ):
                 if g['editable_team__pk'] is not None:
                     write_team_ids.add(g['editable_team__pk'])
@@ -308,25 +308,221 @@ class GroupProxy(Group):
         return self in request.user.groups.all()
 
 
-class LocalStorageQuota(models.Model):
-    lab = models.OneToOneField('Lab', related_name="local_storage_quota", on_delete=models.CASCADE)
-    quota = models.BigIntegerField(
-        default=settings.DEFAULT_LAB_STORAGE_QUOTA_BYTES,
-        help_text="Maximum storage capacity in bytes"
-    )
-
-
 class StorageError(Exception):
     pass
 
-class StorageConstructionError(StorageError):
+class StorageLockedError(StorageError):
     pass
 
-class StorageIncorrectlyConfiguredError(StorageError):
+class StorageFullError(StorageError):
     pass
 
-class StorageNotConfiguredError(StorageError):
+class StorageReconstructionError(StorageError):
     pass
+
+class StorageConfigurationError(StorageError):
+    pass
+
+
+class _StorageTypeConsumerModel(UUIDModel):
+    """
+    We can't define a ForeignKey to an abstract model,
+    so this class allows us to define a ForeignKey to any _StorageType subclass.
+    """
+    _storage_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True)
+    _storage_object_id = models.UUIDField(null=True)
+    storage_type = GenericForeignKey('_storage_content_type', '_storage_object_id')
+
+    def _get_lab(self):
+        """
+        Return the Lab that this object belongs to.
+
+        This is a helper method to allow get_storage to function across different models.
+        """
+        raise NotImplementedError
+
+    def get_storage(self, saving=False):
+        """
+        Return a *Storage() instance.
+
+        Implementations will point to the Lab's get_storage method.
+        That method will set the storage_type attribute of the instance if it is not already set.
+        """
+        return self._get_lab().get_storage(self, saving)
+
+    class Meta:
+        abstract = True
+
+
+class _StorageType(UUIDModel):
+    name = models.TextField(null=True, blank=True)
+    lab = models.ForeignKey('Lab', related_name="storage_%(class)s", on_delete=models.CASCADE)
+    enabled = models.BooleanField(default=True, help_text="Whether this storage type is enabled for writing to")
+    quota = models.BigIntegerField(help_text="Maximum storage capacity in bytes")
+    priority = models.SmallIntegerField(
+        default=0,
+        help_text="Priority for storage allocation. Higher values are higher priority."
+    )
+
+    # This isn't DRY, but we have to repeat stuff somewhere due to limitations on Django's generic interfaces
+    files = GenericRelation(
+        to='ObservedFile',
+        content_type_field='_storage_content_type',
+        object_id_field='_storage_object_id'
+    )
+    parquet_partitions = GenericRelation(
+        to='ParquetPartition',
+        content_type_field='_storage_content_type',
+        object_id_field='_storage_object_id'
+    )
+
+    def get_bytes_used(self) -> int:
+        """
+        Estimate storage used by summing the size of each file using the storage.
+        """
+        total = 0
+        for file in self.files.all():
+            try:
+                total += file.png.size
+            except (FileNotFoundError, ValueError):
+                pass
+        for partition in self.parquet_partitions.all():
+            try:
+                total += partition.parquet_file.size
+            except (FileNotFoundError, ValueError):
+                pass
+        return total
+
+    def get_storage(self, instance, saving=False) -> Storage:
+        """
+        Return a *Storage() instance.
+
+        Args:
+            - instance: the thing that is being written to or read from storage
+            - saving: whether the storage will be used for saving (True) or reading (False)
+
+        Raises:
+            - StorageConfigurationError if the storage is misconfigured
+            - StorageFullError if the storage is full and saving=True
+        """
+        raise StorageConfigurationError("Subclasses must implement this method") from NotImplementedError
+
+    @staticmethod
+    def has_create_permission(request):
+        return get_user_auth_details(request).is_lab_admin
+
+    @staticmethod
+    def has_read_permission(_):
+        return True
+
+    @staticmethod
+    def has_write_permission(_):
+        return True
+
+    def has_object_read_permission(self, request):
+        return self.lab.has_object_read_permission(request)
+
+    def has_object_write_permission(self, request):
+        return self.lab.has_object_write_permission(request)
+
+    def __str__(self):
+        if self.name is None:
+            return f"{self.__class__.__name__} for {self.lab.name}"
+        return f"{self.name} [{self.__class__.__name__}]"
+
+    class Meta:
+        unique_together = [['lab', 'priority']]
+        abstract = True
+
+
+class GalvStorageType(_StorageType):
+    """
+    GalvStorageType is storage that the Galv server provides to Labs.
+    This has a quota set by the LAB_STORAGE_QUOTA_BYTES setting.
+
+    It _must not_ be updatable by Lab admins because it is a system resource.
+
+    Galv systems may offer GalvStorageType as a LocalStorage (i.e. stored on the server's filesystem),
+    or as an S3DataStorage (i.e. stored in an S3 bucket that the Galv host pays for).
+
+    If LAB_STORAGE_QUOTA_BYTES is set to 0, then GalvStorageType is disabled.
+    """
+    @property
+    def location(self):
+        return os.path.join(settings.DATA_ROOT, f"lab_{self.lab.pk}")
+
+    def get_storage(self, instance, saving=False) -> Storage:
+        if saving:
+            if not self.enabled:
+                raise StorageLockedError(f"Cannot save data: storage is locked for {self}")
+            # TODO: This is a rough check, and will double-count an object that is being updated.
+            if self.get_bytes_used() >= self.quota:
+                raise StorageFullError(f"Cannot save data: local storage quota exceeded for {self}")
+        try:
+            if settings.S3_ENABLED and settings.LABS_USE_OUR_S3_STORAGE:
+                return S3DataStorage(
+                    access_key=settings.AWS_ACCESS_KEY_ID,
+                    secret_key=settings.AWS_SECRET_ACCESS_KEY,
+                    bucket_name=settings.AWS_STORAGE_BUCKET_NAME,
+                    location=self.location,
+                    custom_domain=settings.AWS_S3_CUSTOM_DOMAIN
+                )
+            return LocalDataStorage(location=self.location)
+        except Exception as e:
+            raise StorageConfigurationError(f"Could not configure storage for {self}") from e
+
+    @staticmethod
+    def has_create_permission(_):
+        return False
+
+
+class AdditionalS3StorageType(_StorageType):
+    """
+    AdditionalS3StorageType is storage that the Lab can use for its own purposes.
+    This has a quota set by the Lab admin.
+
+    AdditionalS3StorageType is always an S3DataStorage (i.e. stored in an S3 bucket that the Lab pays for).
+
+    In future, we may offer other storage options with other cloud providers or linking in with
+    the lab's own storage solutions.
+    """
+    bucket_name = models.TextField(null=True, blank=True, help_text="Name of the S3 bucket to store files in")
+    location = models.TextField(null=True, blank=True, help_text="Directory within the S3 bucket to store files in")
+    access_key = models.TextField(null=True, blank=True, help_text="Access key for the S3 bucket")
+    secret_key = models.TextField(null=True, blank=True, help_text="Secret key for the S3 bucket")
+    # s3_region = models.TextField(
+    #     null=True,
+    #     blank=True,
+    #     help_text="Region for the S3 bucket. Only one of custom domain or region should be set."
+    # )
+    custom_domain = models.TextField(
+        null=True,
+        blank=True,
+        help_text=("Custom domain for the S3 bucket.")
+    )
+
+    def get_storage(self, instance, saving=False) -> Storage:
+        if saving:
+            # TODO: This is a rough check, and will double-count an object that is being updated.
+            if self.get_bytes_used() >= self.quota:
+                raise StorageFullError(f"Cannot save data: local storage quota exceeded for {self}")
+        try:
+            return S3DataStorage(
+                access_key=self.access_key,
+                secret_key=self.secret_key,
+                bucket_name=self.bucket_name,
+                location=self.location,
+                custom_domain=self.custom_domain
+            )
+        except Exception as e:
+            raise StorageConfigurationError(f"Could not configure storage for {self}") from e
+
+    def has_object_write_permission(self, request):
+        return self.lab.has_object_write_permission(request)
+
+    def has_object_read_permission(self, request):
+        return self.lab.has_object_read_permission(request)
+
 
 class Lab(TimestampedModel):
     name = models.TextField(
@@ -337,20 +533,6 @@ class Lab(TimestampedModel):
         null=True,
         help_text="Description of the Lab"
     )
-    s3_bucket_name = models.TextField(null=True, blank=True, help_text="Name of the S3 bucket to store files in")
-    s3_location = models.TextField(null=True, blank=True, help_text="Directory within the S3 bucket to store files in")
-    s3_access_key = models.TextField(null=True, blank=True, help_text="Access key for the S3 bucket")
-    s3_secret_key = models.TextField(null=True, blank=True, help_text="Secret key for the S3 bucket")
-    # s3_region = models.TextField(
-    #     null=True,
-    #     blank=True,
-    #     help_text="Region for the S3 bucket. Only one of custom domain or region should be set."
-    # )
-    s3_custom_domain = models.TextField(
-        null=True,
-        blank=True,
-        help_text=("Custom domain for the S3 bucket.")
-    )
 
     admin_group = models.OneToOneField(
         to=GroupProxy,
@@ -359,10 +541,6 @@ class Lab(TimestampedModel):
         related_name='editable_lab',
         help_text="Users authorised to make changes to the Lab"
     )
-
-    @property
-    def local_storage_allowed(self):
-        return settings.ALLOW_LOCAL_DATA_STORAGE and LocalStorageQuota.objects.filter(lab=self).exists()
 
     @staticmethod
     def has_read_permission(_):
@@ -402,81 +580,35 @@ class Lab(TimestampedModel):
         self.admin_group.delete()
         super(Lab, self).delete(using, keep_parents)
 
-    @property
-    def s3_configuration_status(self) -> dict:
-        s3_settings = [
-            's3_bucket_name',
-            's3_access_key',
-            's3_secret_key',
-            's3_custom_domain'
-        ]
-        enabled = any([getattr(self, s) is not None for s in s3_settings])
-        missing = []
-        s3_settings.pop(-1)  # custom domain is optional
-        for s in s3_settings:
-            if getattr(self, s) is None:
-                missing.append(s)
-        ok = len(missing) == 0
-        error = None
-        if ok:
-            try:
-                DataStorage(
-                    access_key=self.s3_access_key,
-                    secret_key=self.s3_secret_key,
-                    bucket_name=self.s3_bucket_name,
-                    location=self.s3_location,
-                    custom_domain=self.s3_custom_domain
-                )
-            except Exception as e:
-                ok = False
-                error = e
-        return {
-            'enabled': enabled,
-            'ok': ok,
-            'missing_properties': missing,
-            'initialization_error': error
-        }
-
-    def get_used_local_storage_quota(self):
-        location = os.path.join(settings.DATA_ROOT, f"lab_{self.pk}")
-        return sum([p.lstat().st_size for p in Path(location).glob('**/*') if p.is_file()])
-
-    def get_local_storage(self, saving=False):
+    def get_all_storage_types(self) -> list[_StorageType]:
         """
-        Return a LocalDataStorage() instance if local storage is enabled for this Lab.
-        Raise a StorageNotConfiguredError if local storage is disabled.
+        Return a list of all storage types available to this Lab, sorted by priority (highest first).
         """
-        if not settings.ALLOW_LOCAL_DATA_STORAGE:
-            raise StorageNotConfiguredError("Cannot access locally stored data: local data storage is disabled")
-        if not self.local_storage_allowed:
-            raise StorageNotConfiguredError(f"Cannot access locally stored data: permission denied to {self}")
-        if saving:
-            current_usage = self.get_used_local_storage_quota()
-            # TODO: This is a rough check, and will double-count an object that is being updated.
-            if current_usage >= LocalStorageQuota.objects.get(lab=self).quota:
-                raise StorageNotConfiguredError(f"Cannot save data: local storage quota exceeded for {self}")
-        return LocalDataStorage(location=os.path.join(settings.DATA_ROOT, f"lab_{self.pk}"))
+        storage_types = []
+        for model in _StorageType.__subclasses__():
+            storage_types.extend(list(model.objects.filter(lab=self)))
+        return sorted(storage_types, key=lambda x: x.priority, reverse=True)
 
     def get_storage(self, instance, saving=False):
-        if instance.storage_class_name == "LocalDataStorage":
-            return self.get_local_storage(saving)
-        try:
-            s3_status = self.s3_configuration_status
-            if not s3_status.get('enabled'):
-                return self.get_local_storage(saving)
-            elif not s3_status.get('ok'):
-                raise StorageIncorrectlyConfiguredError(f"Missing properties: {s3_status.get('missing_properties')}")
-            storage = DataStorage(
-                access_key=self.s3_access_key,
-                secret_key=self.s3_secret_key,
-                bucket_name=self.s3_bucket_name,
-                location=self.s3_location,
-                custom_domain=self.s3_custom_domain or False
-            )
-            instance.storage_class_name = storage.__class__.__name__
-            return storage
-        except Exception as e:
-            raise StorageConstructionError from e
+        if instance.storage_type is not None:
+            return instance.storage_type.get_storage(instance, saving)
+
+        storage_types = self.get_all_storage_types()
+        if len(storage_types) == 0:
+            raise StorageError(f"No storage available for {self}")
+
+        errors = {}
+        # Select the highest priority storage that works
+        for storage_type in storage_types:
+            try:
+                storage_instance = storage_type.get_storage(instance, saving)
+                instance.storage_type = storage_type
+                # instance.save()  # this was double-saving the instance on create leading to duplicate id errors
+                return storage_instance
+            except StorageError as e:
+                errors[storage_type] = e
+        results = '\n'.join([f"{k}: {v}" for k, v in errors.items()])
+        raise StorageError(f"No storage available. Errors:\n{results}.")
 
 
 class Team(TimestampedModel):
@@ -635,11 +767,7 @@ class ValidatableBySchemaMixin(TimestampedModel):
     Subclasses are picked up by a crawl in ValidationSchemaViewSet and used
     to list possible values for validation schema root keys.
     """
-    def save(
-            self, force_insert=False, force_update=False, using=None, update_fields=None
-    ):
-        super(ValidatableBySchemaMixin, self).save(force_insert, force_update, using, update_fields)
-        # TODO: stop this happening for minor updates to Files, e.g. when last checked time is updated
+    def register_validation(self):
         for schema in ValidationSchema.objects.all():
             SchemaValidation.objects.update_or_create(
                 defaults={
@@ -650,6 +778,13 @@ class ValidatableBySchemaMixin(TimestampedModel):
                 content_type=ContentType.objects.get_for_model(self),
                 object_id=self.pk
             )
+
+    def save(
+            self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        super(ValidatableBySchemaMixin, self).save(force_insert, force_update, using, update_fields)
+        # TODO: stop this happening for minor updates to Files, e.g. when last checked time is updated
+        self.register_validation()
 
     class Meta:
         abstract = True
@@ -704,7 +839,7 @@ class CellFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
     ):
         super(CellFamily, self).save(force_insert, force_update, using, update_fields)
 
-class Cell(JSONModel, ValidatableBySchemaMixin, ResourceModelPermissionsMixin):
+class Cell(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
     identifier = models.TextField(unique=False, help_text="Unique identifier (e.g. serial number) for the cell", null=False)
     family = models.ForeignKey(to=CellFamily, on_delete=models.CASCADE, null=False, help_text="Cell type", related_name="cells")
 
@@ -743,7 +878,7 @@ class EquipmentFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
     def __str__(self):
         return f"{str(self.manufacturer)} {str(self.model)} ({str(self.type)})"
 
-class Equipment(JSONModel, ValidatableBySchemaMixin, ResourceModelPermissionsMixin):
+class Equipment(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
     identifier = models.TextField(unique=True, help_text="Unique identifier (e.g. serial number) for the equipment", null=False)
     family = models.ForeignKey(to=EquipmentFamily, on_delete=models.CASCADE, null=False, help_text="Equipment type", related_name="equipment")
     calibration_date = models.DateField(help_text="Date of last calibration", null=True, blank=True)
@@ -781,7 +916,7 @@ class ScheduleFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
         return f"{str(self.identifier)}"
 
 
-class Schedule(JSONModel, ValidatableBySchemaMixin, ResourceModelPermissionsMixin):
+class Schedule(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
     family = models.ForeignKey(to=ScheduleFamily, on_delete=models.CASCADE, null=False, help_text="Schedule type", related_name="schedules")
     schedule_file = models.FileField(help_text="File containing the schedule", null=True, blank=True)
     pybamm_schedule_variables = models.JSONField(help_text="Variables used in the PyBaMM.Experiment representation of the schedule", null=True, blank=True)
@@ -941,7 +1076,7 @@ class ColumnMapping(UUIDModel, ResourceModelPermissionsMixin):
         return self.name
 
 
-class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
+class ObservedFile(_StorageTypeConsumerModel, ValidatableBySchemaMixin):
     path = models.TextField(help_text="Absolute file path")
     harvester = models.ForeignKey(
         to=Harvester,
@@ -1022,10 +1157,9 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
         blank=True,
         help_text="Preview image of the file"
     )
-    storage_class_name = models.TextField(null=True, blank=True)
 
-    def get_storage(self, saving=False):
-        return self.harvester.lab.get_storage(self, saving)
+    def _get_lab(self):
+        return self.harvester.lab
 
     @property
     def has_required_columns(self) -> bool:
@@ -1098,6 +1232,7 @@ class ObservedFile(UUIDModel, ValidatableBySchemaMixin):
                 self.state = FileState.MAP_ASSIGNED if self.mapping else FileState.AWAITING_MAP_ASSIGNMENT
         super(ObservedFile, self).save(force_insert, force_update, using, update_fields)
 
+
     def __str__(self):
         return self.path
 
@@ -1122,7 +1257,7 @@ class CyclerTest(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMi
         return render_pybamm_schedule(self.schedule, self.cell, validate = validate)
 
 
-class Experiment(JSONModel, ValidatableBySchemaMixin, ResourceModelPermissionsMixin):
+class Experiment(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
     title = models.TextField(help_text="Title of the experiment")
     description = models.TextField(help_text="Description of the experiment", null=True, blank=True)
     authors = models.ManyToManyField(to=UserProxy, help_text="Authors of the experiment")
@@ -1309,7 +1444,7 @@ class DataUnit(ResourceModelPermissionsMixin):
         return f"{self.name} - {self.description}"
 
 
-class DataColumnType(ValidatableBySchemaMixin, ResourceModelPermissionsMixin):
+class DataColumnType(ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
     unit = models.ForeignKey(
         to=DataUnit,
         on_delete=models.SET_NULL,
@@ -1626,7 +1761,7 @@ class ArbitraryFile(JSONModel, ResourceModelPermissionsMixin):
         return self.name
 
 
-class ParquetPartition(UUIDModel):
+class ParquetPartition(_StorageTypeConsumerModel):
     """
     A datafile partition in .parquet format.
     Part of an ObservedFile's source datafile.
@@ -1653,10 +1788,9 @@ class ParquetPartition(UUIDModel):
         default=list,
         help_text="Upload errors"
     )
-    storage_class_name = models.TextField(null=True, blank=True)
 
-    def get_storage(self, saving=False):
-        return self.observed_file.harvester.lab.get_storage(self, saving)
+    def _get_lab(self):
+        return self.observed_file.harvester.lab
 
     @staticmethod
     def has_read_permission(request):

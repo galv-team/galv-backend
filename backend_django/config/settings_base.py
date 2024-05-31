@@ -20,7 +20,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.1.33"
+API_VERSION = "2.1.34"
 
 try:
     USER_ACTIVATION_TOKEN_EXPIRY_S = int(os.environ.get("DJANGO_USER_ACTIVATION_TOKEN_EXPIRY_S"))
@@ -201,10 +201,12 @@ AWS_S3_OBJECT_PARAMETERS = {
 AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
 DATA_STORAGE_UPLOAD_URL_EXPIRY_S = int(os.environ.get("DJANGO_DATA_STORAGE_UPLOAD_URL_EXPIRY_S", 60 * 60))  # 1 hour
 
-# If ALLOW_LOCAL_DATA_STORAGE is set, data files may be stored locally.
-# Labs can still define their own S3 storage settings to save to the S3 cloud.
-ALLOW_LOCAL_DATA_STORAGE = os.environ.get("DJANGO_ALLOW_LOCAL_DATA_STORAGE")
-DEFAULT_LAB_STORAGE_QUOTA_BYTES = int(os.environ.get("DJANGO_DEFAULT_LAB_STORAGE_QUOTA_BYTES", 10 ** 8))  # 100 MB
+# If Labs exceed their storage quota (or if the quota is set to 0),
+# they can still define their own S3 storage settings to save to the S3 cloud.
+LAB_STORAGE_QUOTA_BYTES = int(os.environ.get("DJANGO_LAB_STORAGE_QUOTA_BYTES", 10 ** 8))  # 100 MB
+# If this is set to True, Labs can use our S3 storage to store their data files.
+# This is still subject to the LAB_STORAGE_QUOTA_BYTES limit.
+LABS_USE_OUR_S3_STORAGE = os.environ.get("DJANGO_LABS_USE_OUR_S3_STORAGE") == "True"
 
 # Static, media, and data files are served from S3 if S3 is configured
 # Otherwise, they are served from the local filesystem
@@ -217,30 +219,30 @@ if S3_ENABLED and not os.environ.get("AWS_SECRET_ACCESS_KEY"):
     print(os.system('env'))
     raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")
 
-if S3_ENABLED:
-    STORAGES = {
-        "default": {"BACKEND": "galv.storages.MediaStorage"},  # for media
-        "staticfiles": {"BACKEND": "galv.storages.StaticStorage"}
-    }
-    STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/"
+STORAGES = {}
+
+if S3_ENABLED and os.environ.get("DJANGO_STORE_MEDIA_FILES_ON_S3", False) == "True":
+    STORAGES["default"] = {"BACKEND": "galv.storages.MediaStorage"}  # for media
     MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIAFILES_LOCATION}/"
-    STATICFILES_DIRS = [
-        f"/{STATICFILES_LOCATION}",
-    ]
 else:
-    STORAGES = {
-        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "LOCATION": f"/{MEDIAFILES_LOCATION}"},
-        "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-            # "LOCATION": f"/{STATICFILES_LOCATION}"
-        },
+    STORAGES["default"] = {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "LOCATION": f"/{MEDIAFILES_LOCATION}"
     }
-    STATIC_ROOT = f"/galv_files/{STATICFILES_LOCATION}"
-    STATIC_URL = f"/{STATICFILES_LOCATION}/"
     MEDIA_ROOT = f"/galv_files/{MEDIAFILES_LOCATION}"
     MEDIA_URL = f"/{MEDIAFILES_LOCATION}/"
 
-# DATA_* settings are only used if ALLOW_LOCAL_DATA_STORAGE is set
+if S3_ENABLED and os.environ.get("DJANGO_STORE_STATIC_FILES_ON_S3", False) == "True":
+    STORAGES["staticfiles"] = {"BACKEND": "galv.storages.StaticStorage"}  # for static
+    STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/"
+    STATICFILES_DIRS = [f"/{STATICFILES_LOCATION}"]
+else:
+    STORAGES["staticfiles"] = {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}
+    STATIC_ROOT = f"/galv_files/{STATICFILES_LOCATION}"
+    STATIC_URL = f"/{STATICFILES_LOCATION}/"
+
+# Data storage is always dynamic depending on _StorageType models,
+# so doesn't need to be configured in STORAGES.
 DATA_ROOT = f"/galv_files/{DATAFILES_LOCATION}"
 DATA_URL = f"/{DATAFILES_LOCATION}/"
 

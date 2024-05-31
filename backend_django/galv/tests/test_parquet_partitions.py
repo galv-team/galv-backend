@@ -50,8 +50,9 @@ class ParquetPartitionTests(GalvTestCase):
         )
         self.other_partition = ParquetPartitionFactory.create(observed_file=self.other_file)
         # We should still be able to read even if we reduce the quota for the Lab's storage
-        self.lab.local_storage_quota.quota = 0
-        self.lab.local_storage_quota.save()
+        storage = self.lab.get_all_storage_types()[0]
+        storage.quota = 0
+        storage.save()
 
 
     def test_create_rejected(self):

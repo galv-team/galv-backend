@@ -47,10 +47,14 @@ router.register(r'schedules', views.ScheduleViewSet)
 router.register(r'cycler_tests', views.CyclerTestViewSet)
 router.register(r'experiments', views.ExperimentViewSet)
 router.register(r'arbitrary_files', views.ArbitraryFileViewSet)
+
 router.register(r'validation_schemas', views.ValidationSchemaViewSet)
 router.register(r'schema_validations', views.SchemaValidationViewSet)
 router.register(r'users', views.UserViewSet, basename='userproxy')
 router.register(r'tokens', views.TokenViewSet, basename='tokens')
+router.register(r'galv_storage', views.GalvStorageTypeViewSet)
+router.register(r'additional_storage', views.AdditionalS3StorageTypeViewSet)
+
 router.register(r'equipment_types', views.EquipmentTypesViewSet)
 router.register(r'equipment_models', views.EquipmentModelsViewSet)
 router.register(r'equipment_manufacturers', views.EquipmentManufacturersViewSet)
@@ -64,6 +68,7 @@ router.register(r'schedule_identifiers', views.ScheduleIdentifiersViewSet)
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
     path('', include(router.urls)),
+    path('storage/<str:pk>/', views.StorageTypeRedirect.as_view(), name='storage-redirect'),
     # path('data/{pk}/', views.TimeseriesDataViewSet.as_view({'get': 'detail'}), name='timeseriesdata-detail'),
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),

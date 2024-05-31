@@ -24,6 +24,11 @@ class LabFilterBackend(DRYPermissionFiltersBase):
     def filter_list_queryset(self, request, queryset, view):
         return queryset.filter(pk__in=get_user_auth_details(request).lab_ids)
 
+class LabResourceFilterBackend(DRYPermissionFiltersBase):
+    action_routing = True
+    def filter_list_queryset(self, request, queryset, view):
+        return queryset.filter(lab__pk__in=get_user_auth_details(request).lab_ids)
+
 class TeamFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):

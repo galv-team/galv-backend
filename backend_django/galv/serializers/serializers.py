@@ -1,13 +1,14 @@
 # SPDX-License-Identifier: BSD-2-Clause
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
+from __future__ import annotations
+
 import os.path
 import re
 from typing import Optional, Union
 
 import jsonschema
 from django.conf import settings
-from django.db import models
 from drf_spectacular.types import OpenApiTypes
 from rest_framework.reverse import reverse
 from drf_spectacular.utils import extend_schema_field, extend_schema_serializer, OpenApiExample
@@ -29,7 +30,7 @@ from ..models import Harvester, \
     render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, \
     SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
     ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, ColumnMapping, \
-    get_user_auth_details, LocalStorageQuota
+    get_user_auth_details, GalvStorageType, AdditionalS3StorageType
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
 from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
@@ -366,6 +367,116 @@ class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
 @extend_schema_serializer(examples = [
     OpenApiExample(
         'Valid example',
+        summary='Galv Storage details',
+        description='Galv Storage is storage allocated to a Lab by the Galv server',
+        value={
+            "url": "http://localhost:8001/galv_storage_type/1/",
+            "id": "1",
+            "name": "Example Lab Storage",
+            "lab": "http://localhost:8001/labs/1/",
+            "quota": "100000000",
+            "bytes_used": "500234",
+            "priority": "0",
+            "enabled": "true",
+            "permissions": {
+                "create": True,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
+class GalvStorageTypeSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+    bytes_used = serializers.SerializerMethodField()
+
+    def get_bytes_used(self, instance) -> int:
+        return instance.get_bytes_used()
+
+    class Meta:
+        model = GalvStorageType
+        fields = ['url', 'id', 'name', 'lab', 'quota', 'bytes_used', 'priority', 'enabled', 'permissions']
+        read_only_fields = ['url', 'id', 'lab', 'quota', "permissions"]
+
+
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
+        summary='Additional Storage details',
+        description='Additional Storage is storage configured by a Lab',
+        value={
+            "url": "http://localhost:8001/additional_storage_type/1/",
+            "id": "1",
+            "name": "Example Lab S3 Storage",
+            "lab": "http://localhost:8001/labs/1/",
+            "quota": "100000000",
+            "bytes_used": "500234",
+            "priority": "0",
+            "enabled": "true",
+            "access_key": "AWS_********",
+            "secret_key": "********",
+            "bucket_name": "eg_lab_bucket",
+            "location": "galv-files",
+            "custom_domain": "",
+            "permissions": {
+                "create": True,
+                "write": True,
+                "read": True
+            }
+        },
+        response_only=True, # signal that example only applies to responses
+    ),
+])
+class AdditionalS3StorageTypeSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+    bytes_used = serializers.SerializerMethodField()
+    secret_key = serializers.SerializerMethodField()
+    access_key = serializers.SerializerMethodField()
+
+    def get_bytes_used(self, instance) -> int:
+        return instance.get_bytes_used()
+
+    def get_access_key(self, instance) -> str|None:
+        if instance.access_key:
+            return f"{instance.access_key[:4]}********"
+        return instance.access_key
+
+    def get_secret_key(self, instance) -> str|None:
+        return instance.secret_key if not instance.secret_key else "********"
+
+    def validate_lab(self, value):
+        """
+        Only lab admins can create teams in their lab
+        """
+        try:
+            assert value.pk in self.context['request'].user_auth_details.writeable_lab_ids
+        except:
+            raise ValidationError("You may only create Storages in your own lab(s)")
+        return value
+
+    def validate_access_key(self, value):
+        if self.instance is not None and value is None:
+            return self.instance.access_key
+        return value
+
+    def validate_secret_key(self, value):
+        if self.instance is not None and value is None:
+            return self.instance.secret_key
+        return value
+
+    class Meta:
+        model = AdditionalS3StorageType
+        fields = [
+            'url', 'id',
+            'name', 'lab', 'quota', 'bytes_used', 'priority', 'enabled', 
+            'secret_key', 'access_key', 'bucket_name', 'location', 'custom_domain',
+            'permissions'
+        ]
+        read_only_fields = ['url', 'id', 'lab', "permissions"]
+
+
+@extend_schema_serializer(examples = [
+    OpenApiExample(
+        'Valid example',
         summary='Lab details',
         description='Labs are collections of teams, and are used to organise access to raw data.',
         value={
@@ -410,16 +521,20 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         many=True,
         help_text="Teams in this Lab"
     )
-    s3_secret_key = serializers.SerializerMethodField()
-    s3_access_key = serializers.SerializerMethodField()
-    local_storage_quota = serializers.SerializerMethodField()
+    storages = serializers.SerializerMethodField()
+
+    def get_storages(self, instance) -> list[str]:
+        storages = instance.get_all_storage_types()
+        return [
+            reverse('storage-redirect', args=[s.pk], request=self.context['request'])
+            for s in storages
+        ]
 
     def create(self, validated_data):
         admin_group = validated_data.pop('admin_group')
         lab = super().create(validated_data)
         TransparentGroupSerializer().update(lab.admin_group, admin_group)
-        if settings.LOCALE_STORAGE_ALLOWED and settings.DEFAULT_LAB_STORAGE_QUOTA_BYTES > 0:
-            LocalStorageQuota.objects.create(lab=lab, quota=settings.DEFAULT_LAB_STORAGE_QUOTA_BYTES)
+        GalvStorageType.objects.create(lab=lab, quota=settings.LAB_STORAGE_QUOTA_BYTES)
         lab.save()
         return lab
 
@@ -432,30 +547,6 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             TransparentGroupSerializer().update(instance.admin_group, admin_group)
         return super().update(instance, validated_data)
 
-    def get_s3_access_key(self, instance) -> str|None:
-        if instance.s3_access_key:
-            return f"{instance.s3_access_key[:4]}********"
-        return instance.s3_access_key
-
-    def get_s3_secret_key(self, instance) -> str|None:
-        return instance.s3_secret_key if not instance.s3_secret_key else "********"
-
-    def validate_s3_access_key(self, value):
-        if self.instance is not None and value is None:
-            return self.instance.s3_access_key
-        return value
-
-    def validate_s3_secret_key(self, value):
-        if self.instance is not None and value is None:
-            return self.instance.s3_secret_key
-        return value
-
-    def get_local_storage_quota(self, instance) -> int:
-        try:
-            return instance.local_storage_quota.quota
-        except:
-            return 0
-
     class Meta:
         model = Lab
         fields = [
@@ -463,21 +554,12 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             'name', 'description',
             'admin_group',
             'harvesters',
-            's3_bucket_name',
-            's3_location',
-            's3_access_key',
-            's3_secret_key',
-            's3_custom_domain',
-            's3_configuration_status',
-            'local_storage_allowed',
-            'local_storage_quota',
             'teams',
+            'storages',
             'permissions'
         ]
-        read_only_fields = [
-            'url', 'id', 'teams', 'harvesters',
-            's3_configuration_status', 'local_storage_allowed', 'local_storage_quota', 'permissions'
-        ]
+        read_only_fields = ['url', 'id', 'teams', 'harvesters', 'permissions']
+
 
 class WithTeamMixin(serializers.Serializer):
     team = TruncatedHyperlinkedRelatedIdField(
@@ -2062,7 +2144,8 @@ class SchemaValidationSerializer(serializers.HyperlinkedModelSerializer, Permiss
 
     validation_target = serializers.SerializerMethodField(help_text="Target of validation")
 
-    def get_validation_target(self, instance) -> OpenApiTypes.URI:
+    @extend_schema_field(OpenApiTypes.URI)
+    def get_validation_target(self, instance):
         return reverse(
             f"{instance.content_type.model}-detail",
             args=(instance.object_id,),
@@ -2091,3 +2174,49 @@ class ArbitraryFileSerializer(serializers.HyperlinkedModelSerializer, Permission
 class ArbitraryFileCreateSerializer(ArbitraryFileSerializer):
     class Meta(ArbitraryFileSerializer.Meta):
         read_only_fields = ['url', 'id', 'permissions']
+
+
+class GalvStorageTypeSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+    bytes_used = serializers.SerializerMethodField()
+
+    def get_bytes_used(self, instance) -> int:
+        return instance.get_bytes_used()
+
+    class Meta:
+        model = GalvStorageType
+        read_only_fields = ['url', 'id', 'permissions', 'quota']
+        fields = [
+            'url', 'id', 'name', 'lab', 'enabled',
+            'quota', 'bytes_used', 'priority', 'permissions'
+        ]
+        extra_kwargs = augment_extra_kwargs()
+
+
+class AdditionalS3StorageTypeSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+    bytes_used = serializers.SerializerMethodField()
+
+    def get_bytes_used(self, instance) -> int:
+        return instance.get_bytes_used()
+
+    def validate_lab(self, value):
+        """
+        Can only create if you're a lab admin
+        """
+        if self.instance is not None:
+            return self.instance.lab
+        administered_labs = self.context['request'].user_auth_details.writeable_lab_ids
+        if value.pk in administered_labs:
+            return value
+
+        raise ValidationError("You may only create Additional Storage in your own lab(s)")
+
+    class Meta:
+        model = AdditionalS3StorageType
+        read_only_fields = ['url', 'id', 'permissions']
+        write_only_fields = ['access_key', 'secret_key']
+        fields = [
+            'url', 'id', 'name', 'lab', 'enabled', 'quota', 'bytes_used', 'priority',
+            'bucket_name', 'location', 'access_key', 'secret_key', 'custom_domain',
+            'permissions',
+        ]
+        extra_kwargs = augment_extra_kwargs()

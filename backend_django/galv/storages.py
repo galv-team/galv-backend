@@ -33,7 +33,7 @@ class MediaStorage(S3Boto3Storage):
                 self.querystring_auth = acl != "public-read"
 
 
-class DataStorage(S3Boto3Storage):
+class S3DataStorage(S3Boto3Storage):
     location = settings.DATAFILES_LOCATION
     default_acl = "private"
     querystring_auth = True
@@ -60,16 +60,6 @@ class LocalDataStorage(FileSystemStorage):
         file_permissions_mode = file_permissions_mode or 0o744  # any user in container can read -- potentially dangerous
         directory_permissions_mode = directory_permissions_mode or 0o744
         super().__init__(location, base_url, file_permissions_mode, directory_permissions_mode)
-
-    def _open(self, name, mode="rb"):
-        if not settings.ALLOW_LOCAL_DATA_STORAGE:
-            raise PermissionError("Local data storage is disabled")
-        return super()._open(name, mode)
-
-    def _save(self, name, content):
-        if not settings.ALLOW_LOCAL_DATA_STORAGE:
-            raise PermissionError("Local data storage is disabled")
-        return super()._save(name, content)
 
 
 class DummyDataStorage(FileSystemStorage):
