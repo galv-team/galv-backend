@@ -57,6 +57,7 @@ from .utils import CustomPropertiesModelSerializer, GetOrCreateTextField, augmen
             "id": 1,
             "is_staff": True,
             "is_superuser": True,
+            "is_lab_admin": True,
             "groups": [
                 "http://localhost:8001/groups/1/",
                 "http://localhost:8001/groups/2/"
@@ -79,6 +80,17 @@ class UserSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         style={'input_type': 'password'},
         help_text="Current password"
     )
+    is_lab_admin = serializers.SerializerMethodField()
+
+    def get_is_lab_admin(self, instance) -> bool:
+        return instance.groups.filter(editable_lab__isnull=False).exists()
+
+    def validate_email(self, value):
+        if self.instance and self.instance.email == value:
+            return value
+        if UserProxy.objects.filter(email=value).exists():
+            raise ValidationError("Email address is already in use")
+        return value
 
     @staticmethod
     def validate_password(value):
@@ -107,7 +119,7 @@ class UserSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         model = UserProxy
         write_fields = ['username', 'email', 'first_name', 'last_name']
         write_only_fields = ['password', 'current_password']
-        read_only_fields = ['url', 'id', 'is_staff', 'is_superuser', 'permissions']
+        read_only_fields = ['url', 'id', 'is_staff', 'is_superuser', 'is_lab_admin', 'permissions']
         fields = [*write_fields, *read_only_fields, *write_only_fields]
         extra_kwargs = augment_extra_kwargs({
             'password': {'write_only': True, 'help_text': "Password (8 characters minimum)"},
