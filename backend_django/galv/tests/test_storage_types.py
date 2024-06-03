@@ -374,36 +374,11 @@ class AdditionalS3StorageTypeTests(StorageResourceTestCase):
     def get_edit_kwargs(self):
         return {
             'name': fake.word(),
-            'priority': fake.pyint(5, 10),
+            'priority': fake.pyint(1501, 10000),
             'bucket_name': fake.word(),
             'secret_key': fake.word(),
             'access_key': fake.word()
         }
-
-
-class StorageRedirectViewTests(GalvTestCase):
-    stub = "NA"
-    factory = GalvStorageTypeFactory
-    edit_kwargs = {}
-
-    def setUp(self) -> None:
-        super().setUp()
-        self.galv_storage = GalvStorageTypeFactory.create(lab=self.lab)
-        self.additional_storage = AdditionalS3StorageTypeFactory.create(lab=self.lab)
-
-    def test_redirect(self):
-        """
-        The StorageRedirectView should allow access to all storage types
-        """
-        self.client.force_login(self.user)
-        self.assertEqual(
-            self.client.get(reverse('storage-redirect', (self.galv_storage.pk,))).json()['id'],
-            self.client.get(reverse('galvstoragetype-detail', (self.galv_storage.pk,))).json()['id']
-        )
-        self.assertEqual(
-            self.client.get(reverse('storage-redirect', (self.additional_storage.pk,))).json()['id'],
-            self.client.get(reverse('additionals3storagetype-detail', (self.additional_storage.pk,))).json()['id']
-        )
 
 
 if __name__ == '__main__':

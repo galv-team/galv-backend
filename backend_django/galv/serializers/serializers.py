@@ -42,6 +42,7 @@ from .utils import CustomPropertiesModelSerializer, GetOrCreateTextField, augmen
     TruncatedHyperlinkedRelatedIdField, \
     CreateOnlyMixin, ValidationPresentationMixin
 
+
 @extend_schema_serializer(examples = [
     OpenApiExample(
         'Valid example',
@@ -524,9 +525,10 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
     storages = serializers.SerializerMethodField()
 
     def get_storages(self, instance) -> list[str]:
+        from ..views import get_storage_url
         storages = instance.get_all_storage_types()
         return [
-            reverse('storage-redirect', args=[s.pk], request=self.context['request'])
+            get_storage_url(s._meta.model, 'detail', args=[s.pk], request=self.context['request'])
             for s in storages
         ]
 

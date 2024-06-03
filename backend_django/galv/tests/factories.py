@@ -150,7 +150,7 @@ class AdditionalS3StorageTypeFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = AdditionalS3StorageType
         django_get_or_create = ('lab', 'priority',)
-    priority = factory.Faker('pyint', min_value=5, max_value=15)
+    priority = factory.Faker('pyint', min_value=5, max_value=1500)
     quota = 1_000_0000
     bucket_name = factory.Faker('word')
     location = factory.Faker('word')

@@ -2016,6 +2016,7 @@ class ArbitraryFileViewSet(viewsets.ModelViewSet):
 
 
 class _StorageTypeMixin:
+    view_prefix = None
     model = None
 
 
@@ -2049,6 +2050,7 @@ class GalvStorageTypeViewSet(viewsets.ModelViewSet, _StorageTypeMixin):
     """
     GalvStorageTypes are used to describe the storage available to a Lab.
     """
+    view_prefix = r'galvstoragetype'
     model = GalvStorageType
     permission_classes = [DRYPermissions]
     filter_backends = [LabResourceFilterBackend]
@@ -2107,6 +2109,7 @@ class AdditionalS3StorageTypeViewSet(viewsets.ModelViewSet, _StorageTypeMixin):
     """
     AdditionalS3Storage is used to describe the storage available to a Lab.
     """
+    view_prefix = r'additionals3storagetype'
     model = AdditionalS3StorageType
     permission_classes = [DRYPermissions]
     filter_backends = [LabResourceFilterBackend]
@@ -2115,36 +2118,12 @@ class AdditionalS3StorageTypeViewSet(viewsets.ModelViewSet, _StorageTypeMixin):
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
 
-class StorageTypeRedirect(APIView):
+def get_storage_url(model, view_suffix, *args, **kwargs):
     """
-    Provide a generic interface that will redirect to the appropriate storage type view.
+    Retrieve the URL for a storage type. Args and kwargs are passed to the DRF reverse function.
     """
-    def get_viewset_class(self, pk):
-        for model in _StorageType.__subclasses__():
-            try:
-                model = model.objects.get(id=pk)
-                for viewset in _StorageTypeMixin.__subclasses__():
-                    if viewset.model == model._meta.model:
-                        return viewset
-            except model.DoesNotExist:
-                pass
-
-    def dispatch(self, request, *args, **kwargs):
-        """
-        Redirect to the appropriate storage type view.
-        """
-        pk = kwargs.get('pk')
-        viewset_class = self.get_viewset_class(pk)
-        if viewset_class is None:
-            response = error_response('Storage not found', HTTP_404_NOT_FOUND)
-        else:
-            viewset = viewset_class.as_view({
-                'get': 'retrieve',
-                'put': 'update',
-                'patch': 'partial_update',
-                'delete': 'destroy',
-                'post': 'create',
-            })
-            response = viewset(request, *args, **kwargs)
-
-        return response
+    all_storage_views = _StorageTypeMixin.__subclasses__()
+    for view in all_storage_views:
+        if view.model == model:
+            return reverse(f"{view.view_prefix}-{view_suffix}", *args, **kwargs)
+    raise ValueError(f"Model {model} not found in storage views")
