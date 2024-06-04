@@ -2035,31 +2035,6 @@ class KnoxTokenFullSerializer(KnoxTokenSerializer):
             "monitored_paths": [
                 "http://localhost:8001/monitored_paths/172f2460-9528-11ee-8454-eb9d381d3cc4/"
             ],
-            "standard_units": [
-                {
-                    "url": "http://localhost:8001/data_units/1/",
-                    "id": 1,
-                    "name": "Example Unit",
-                    "symbol": "e",
-                    "description": "Example description"
-                }
-            ],
-            "standard_columns": [
-                {
-                    "url": "http://localhost:8001/data_column_types/1/",
-                    "id": 1,
-                    "name": "Example Column Type",
-                    "description": "Example description",
-                    "is_default": True,
-                    "unit": {
-                        "url": "http://localhost:8001/data_units/1/",
-                        "id": 1,
-                        "name": "Example Unit",
-                        "symbol": "e",
-                        "description": "Example description"
-                    }
-                }
-            ],
             "max_upload_bytes": 26214400,
             "environment_variables": {
                 "EXAMPLE_ENV_VAR": "example value"
@@ -2076,30 +2051,11 @@ class KnoxTokenFullSerializer(KnoxTokenSerializer):
     ),
 ])
 class HarvesterConfigSerializer(HarvesterSerializer, PermissionsMixin):
-    standard_units = serializers.SerializerMethodField(help_text="Units recognised by the initial database")
-    standard_columns = serializers.SerializerMethodField(help_text="Column Types recognised by the initial database")
     max_upload_bytes = serializers.SerializerMethodField(help_text="Maximum upload size (bytes)")
     deleted_environment_variables = serializers.SerializerMethodField(help_text="Envvars to unset")
     monitored_paths = MonitoredPathSerializer(many=True, read_only=True, help_text="Directories to harvest")
 
-    @extend_schema_field(DataUnitSerializer(many=True))
-    def get_standard_units(self, instance):
-        return DataUnitSerializer(
-            DataUnit.objects.filter(is_default=True),
-            many=True,
-            context={'request': self.context['request']}
-        ).data
-
-    @extend_schema_field(DataColumnTypeSerializer(many=True))
-    def get_standard_columns(self, instance):
-        # return []
-        return DataColumnTypeSerializer(
-            DataColumnType.objects.filter(is_default=True),
-            many=True,
-            context={'request': self.context['request']}
-        ).data
-
-    def get_max_upload_bytes(self, instance):
+    def get_max_upload_bytes(self, _):
         return DATA_UPLOAD_MAX_MEMORY_SIZE
 
     def get_deleted_environment_variables(self, instance):
@@ -2109,8 +2065,7 @@ class HarvesterConfigSerializer(HarvesterSerializer, PermissionsMixin):
         model = Harvester
         fields = [
             'url', 'id', 'api_key', 'name', 'sleep_time', 'monitored_paths',
-            'standard_units', 'standard_columns', 'max_upload_bytes',
-            'environment_variables', 'deleted_environment_variables', 'permissions'
+            'max_upload_bytes', 'environment_variables', 'deleted_environment_variables', 'permissions'
         ]
         read_only_fields = fields
         extra_kwargs = augment_extra_kwargs({
