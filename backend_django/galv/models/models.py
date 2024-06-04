@@ -1499,55 +1499,6 @@ class DataColumnType(ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
         unique_together = [['unit', 'name']]
 
 
-class DataColumn(TimestampedModel):
-    file = models.ForeignKey(
-        to=ObservedFile,
-        related_name='columns',
-        on_delete=models.CASCADE,
-        help_text="File in which this Column appears"
-    )
-    type = models.ForeignKey(
-        to=DataColumnType,
-        on_delete=models.CASCADE,
-        help_text="Column Type which this Column instantiates",
-        related_name='columns',
-        null=True,
-        blank=True
-    )
-    data_type = models.TextField(null=False, help_text="Type of the data in this column")
-    name_in_file = models.TextField(null=False, help_text="Column title e.g. in .tsv file headers")
-
-    @staticmethod
-    def has_create_permission(request):
-        for harvester in Harvester.objects.all():
-            if harvester.is_valid_harvester(request):
-                return True
-        return request.user.is_staff or request.user.is_superuser
-
-    @staticmethod
-    def has_read_permission(request):
-        return True
-
-    @staticmethod
-    def has_write_permission(request):
-        return True
-
-    def has_object_read_permission(self, request):
-        return self.file.has_object_read_permission(request)
-
-    def has_object_write_permission(self, request):
-        return self.file.has_object_write_permission(request)
-
-    def get_name(self):
-        return (self.type is not None and self.type.override_child_name) or self.name_in_file
-
-    def __str__(self):
-        return f"{self.get_name()} ({self.type.unit.symbol})"
-
-    class Meta:
-        unique_together = [['file', 'name_in_file']]
-
-
 class TimeseriesRangeLabel(TimestampedModel):
     file = models.ForeignKey(
         to=ObservedFile,

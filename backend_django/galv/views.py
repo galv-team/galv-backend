@@ -22,10 +22,7 @@ from rest_framework.mixins import ListModelMixin
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.renderers import JSONRenderer
 from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_404_NOT_FOUND
-from rest_framework.views import APIView
 
-from .models.models import _StorageType
 from .serializers import HarvesterSerializer, \
     HarvesterCreateSerializer, \
     HarvesterConfigSerializer, \
@@ -39,7 +36,7 @@ from .serializers import HarvesterSerializer, \
     HarvestErrorSerializer, \
     KnoxTokenSerializer, \
     KnoxTokenFullSerializer, CellFamilySerializer, EquipmentFamilySerializer, \
-    ScheduleSerializer, CyclerTestSerializer, ScheduleFamilySerializer, DataColumnTypeSerializer, DataColumnSerializer, \
+    ScheduleSerializer, CyclerTestSerializer, ScheduleFamilySerializer, DataColumnTypeSerializer, \
     ExperimentSerializer, LabSerializer, TeamSerializer, ValidationSchemaSerializer, SchemaValidationSerializer, \
     ArbitraryFileSerializer, ArbitraryFileCreateSerializer, ParquetPartitionSerializer, ColumnMappingSerializer, \
     GalvStorageTypeSerializer, AdditionalS3StorageTypeSerializer
@@ -51,7 +48,6 @@ from .models import Harvester, \
     Equipment, \
     DataUnit, \
     DataColumnType, \
-    DataColumn, \
     FileState, \
     KnoxAuthToken, CellFamily, EquipmentTypes, EquipmentModels, EquipmentManufacturers, CellModels, CellManufacturers, \
     CellChemistries, CellFormFactors, ScheduleIdentifiers, EquipmentFamily, Schedule, CyclerTest, ScheduleFamily, \
@@ -1731,82 +1727,6 @@ class DataColumnTypeViewSet(viewsets.ModelViewSet):
     search_fields = ['@name', '@description']
     queryset = DataColumnType.objects.all().order_by('id')
     http_method_names = ['get', 'post', 'patch', 'options']
-
-
-@extend_schema_view(
-    list=extend_schema(
-        summary="View Columns to which you have access",
-        description="""
-Column instances link Column Types to the TimeseriesData they contain.
-You can access any Column in any Dataset to which you have access.
-
-Searchable fields:
-- dataset__name
-- type__name (Column Type name)
-        """
-    ),
-    retrieve=extend_schema(
-        summary="View a Column",
-        description="""
-Column instances link Column Types to the TimeseriesData they contain.
-
-Searchable fields:
-- dataset__name
-- type__name (Column Type name)
-        """
-    )
-)
-class DataColumnViewSet(viewsets.ModelViewSet):
-    """
-    DataColumns describe which columns are in a Dataset's data.
-    """
-    permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend]
-    serializer_class = DataColumnSerializer
-    filterset_fields = ['file__id', 'type__is_required', 'file__name', 'type__unit__symbol', 'type__id', 'type__name']
-    search_fields = ['@file__name', '@type__name']
-    queryset = DataColumn.objects.all().order_by('-file__id', '-id')
-    http_method_names = ['get', 'patch', 'options']
-
-
-# @extend_schema_view(
-#     list=extend_schema(
-#         summary="View time-series range labels to which you have access",
-#         description="""
-# Labels marking blocks of contiguous time series data.
-#
-# Searchable fields:
-# - label
-#         """
-#     ),
-#     retrieve=extend_schema(
-#         summary="View a specific label.",
-#         description="""
-# Labels marking blocks of contiguous time series data.
-#         """
-#     ),
-#     create=extend_schema(
-#         summary="Create a label.",
-#         description="""
-# Create a label with a description.
-#         """
-#     ),
-#     destroy=extend_schema(
-#         summary="Delete a label.",
-#         description="""
-# RangeLabels not used in any Dataset may be deleted.
-#         """
-#     )
-# )
-# class TimeseriesRangeLabelViewSet(viewsets.ModelViewSet):
-#     """
-#     TimeseriesRangeLabels mark contiguous observations using start and endpoints.
-#     """
-#     serializer_class = TimeseriesRangeLabelSerializer
-#     queryset = TimeseriesRangeLabel.objects.all().order_by('id')
-#     filterset_fields = ['label', 'info']
-#     search_fields = ['@label']
-#     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
 
 @extend_schema_view(

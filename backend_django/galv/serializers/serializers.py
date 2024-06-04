@@ -24,7 +24,6 @@ from ..models import Harvester, \
     Equipment, \
     DataUnit, \
     DataColumnType, \
-    DataColumn, \
     KnoxAuthToken, CellFamily, EquipmentTypes, CellFormFactors, CellChemistries, CellModels, CellManufacturers, \
     EquipmentManufacturers, EquipmentModels, EquipmentFamily, Schedule, ScheduleIdentifiers, CyclerTest, \
     render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, \
@@ -1160,6 +1159,7 @@ class CyclerTestSerializer(CustomPropertiesModelSerializer, PermissionsMixin, Wi
         queryset=ObservedFile.objects.all(),
         many=True,
         allow_null=True,
+        allow_empty=True,
         help_text="Files harvested for this Cycler Test"
     )
 
@@ -1790,49 +1790,11 @@ class DataColumnTypeSerializer(serializers.HyperlinkedModelSerializer, WithTeamM
         fields = [
             'url', 'id',
             'name', 'description', 'is_default', 'is_required', 'unit', 'data_type',
-            'team', 'columns',
-            'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
+            'team', 'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
         ]
         read_only_fields = ['url', 'id', 'is_default', 'is_required', 'columns', 'permissions']
         extra_kwargs = augment_extra_kwargs()
 
-
-class DataColumnSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
-    """
-    A column contains metadata and data. Data are an ordered list of values.
-    """
-    name = serializers.SerializerMethodField(help_text="Column name (assigned by harvester but overridden by Galv for core fields)")
-    file = TruncatedHyperlinkedRelatedIdField(
-        'ObservedFileSerializer',
-        ['harvester', 'path'],
-        view_name='observedfile-detail',
-        read_only=True,
-        help_text="File this Column belongs to"
-    )
-    type = TruncatedHyperlinkedRelatedIdField(
-        'DataColumnTypeSerializer',
-        ['name', 'description', 'is_default', 'is_required', 'unit'],
-        view_name='datacolumntype-detail',
-        queryset=DataColumnType.objects.all(),
-        help_text="Type of data in this Column"
-    )
-
-    def get_name(self, instance) -> str:
-        return instance.get_name()
-
-    class Meta:
-        model = DataColumn
-        read_only_fields = [
-            'id',
-            'url',
-            'name',
-            'name_in_file',
-            'file',
-            'type',
-            'permissions'
-        ]
-        fields = [*read_only_fields, 'type']
-        extra_kwargs = augment_extra_kwargs()
 
 @extend_schema_serializer(examples = [
     OpenApiExample(
