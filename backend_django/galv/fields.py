@@ -57,7 +57,7 @@ class LabDependentStorageFieldFile(FieldFile):
     def url(self):
         if not self.instance:
             return None
-        return reverse('parquetpartition-file', args=[self.instance.pk])
+        return reverse(self.instance.view_name, args=[self.instance.pk])
 
     def backend_url(self):
         """

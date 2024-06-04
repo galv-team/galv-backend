@@ -78,6 +78,8 @@ import json
 import time
 import logging
 
+from .storages import LocalDataStorage
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 
@@ -117,7 +119,7 @@ def lab_dependent_file_fetcher(parent_object, file_field_name: str):
     try:
         file = getattr(parent_object, file_field_name)
         if file:
-            if parent_object.storage_class_name == "LocalDataStorage":
+            if parent_object.storage_type and isinstance(parent_object.storage_type.get_storage(file), LocalDataStorage):
                 # Send the file directly via the upstream nginx proxy
                 response = HttpResponse()
                 response["Content-Disposition"] = f"attachment; filename={file.name}"

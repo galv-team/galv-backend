@@ -332,6 +332,7 @@ class _StorageTypeConsumerModel(UUIDModel):
     _storage_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True)
     _storage_object_id = models.UUIDField(null=True)
     storage_type = GenericForeignKey('_storage_content_type', '_storage_object_id')
+    view_name = ""  # This is set by the subclass and is used to create the URL for the object via DRF's reverse()
 
     def _get_lab(self):
         """
@@ -451,6 +452,10 @@ class GalvStorageType(_StorageType):
     def location(self):
         return os.path.join(settings.DATA_ROOT, f"lab_{self.lab.pk}")
 
+    @property
+    def base_url(self):
+        return os.path.join(settings.DATA_URL, f"lab_{self.lab.pk}")
+
     def get_storage(self, instance, saving=False) -> Storage:
         if saving:
             if not self.enabled:
@@ -467,7 +472,7 @@ class GalvStorageType(_StorageType):
                     location=self.location,
                     custom_domain=settings.AWS_S3_CUSTOM_DOMAIN
                 )
-            return LocalDataStorage(location=self.location)
+            return LocalDataStorage(location=self.location, base_url=self.base_url)
         except Exception as e:
             raise StorageConfigurationError(f"Could not configure storage for {self}") from e
 
@@ -1158,6 +1163,8 @@ class ObservedFile(_StorageTypeConsumerModel, ValidatableBySchemaMixin):
         help_text="Preview image of the file"
     )
 
+    view_name = "observedfile-png"
+
     def _get_lab(self):
         return self.harvester.lab
 
@@ -1788,6 +1795,8 @@ class ParquetPartition(_StorageTypeConsumerModel):
         default=list,
         help_text="Upload errors"
     )
+
+    view_name = "parquetpartition-file"
 
     def _get_lab(self):
         return self.observed_file.harvester.lab
