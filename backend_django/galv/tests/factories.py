@@ -355,6 +355,20 @@ class CyclerTestFactory(factory.django.DjangoModelFactory):
         # Add the iterable of equipment using bulk addition
         self.equipment.add(*extracted)
 
+    @factory.post_generation
+    def files(self, create, extracted, **kwargs):
+        if not create or not extracted:
+            # Stub build - horrible hack to create child objects and return ids
+            # We _really_ shouldn't be creating children from a parent stub call, but we are.
+            if isinstance(self, StubObject):
+                files = [ObservedFileFactory.create(**kwargs) for _ in range(3)]
+                self.files = [e.pk for e in files]
+            # Simple build, or nothing to add, do nothing.
+            return
+
+        # Add the iterable of equipment using bulk addition
+        self.files.add(*extracted)
+
 
 class ExperimentFactory(factory.django.DjangoModelFactory):
     class Meta:
