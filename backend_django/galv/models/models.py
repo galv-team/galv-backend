@@ -1251,7 +1251,7 @@ class CyclerTest(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMi
     cell = models.ForeignKey(to=Cell, on_delete=models.CASCADE, null=False, help_text="Cell that was tested", related_name="cycler_tests")
     schedule = models.ForeignKey(to=Schedule, null=True, blank=True, on_delete=models.CASCADE, help_text="Schedule used to test the cell", related_name="cycler_tests")
     equipment = models.ManyToManyField(to=Equipment, help_text="Equipment used to test the cell", related_name="cycler_tests")
-    file = models.ManyToManyField(to=ObservedFile,  help_text="Columns of data in the test", related_name="cycler_tests")
+    files = models.ManyToManyField(to=ObservedFile,  help_text="Test data", related_name="cycler_tests")
 
     def __str__(self):
         return f"{self.cell} [CyclerTest {self.id}]"

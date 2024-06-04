@@ -123,6 +123,7 @@ def lab_dependent_file_fetcher(parent_object, file_field_name: str):
                 # Send the file directly via the upstream nginx proxy
                 response = HttpResponse()
                 response["Content-Disposition"] = f"attachment; filename={file.name}"
+                # response['Content-Disposition'] = f"inline; filename={file.name}"
                 response['X-Accel-Redirect'] = file.backend_url()
             else:
                 # Redirect to S3

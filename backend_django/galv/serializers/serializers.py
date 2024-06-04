@@ -1153,6 +1153,15 @@ class CyclerTestSerializer(CustomPropertiesModelSerializer, PermissionsMixin, Wi
         many=True,
         help_text="Equipment this Cycler Test uses"
     )
+    files = TruncatedHyperlinkedRelatedIdField(
+        'ObservedFileSerializer',
+        ['name', 'path', 'parquet_partitions', 'png'],
+        'observedfile-detail',
+        queryset=ObservedFile.objects.all(),
+        many=True,
+        allow_null=True,
+        help_text="Files harvested for this Cycler Test"
+    )
 
     def get_rendered_schedule(self, instance) -> list[str] | None:
         if instance.schedule is None:
@@ -1170,7 +1179,7 @@ class CyclerTestSerializer(CustomPropertiesModelSerializer, PermissionsMixin, Wi
     class Meta:
         model = CyclerTest
         fields = [
-            'url', 'id', 'cell', 'equipment', 'schedule', 'rendered_schedule', 'team', 'permissions',
+            'url', 'id', 'cell', 'equipment', 'files', 'schedule', 'rendered_schedule', 'team', 'permissions',
             'read_access_level', 'edit_access_level', 'delete_access_level',
             'custom_properties'
         ]
