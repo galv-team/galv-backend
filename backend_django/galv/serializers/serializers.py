@@ -410,6 +410,7 @@ class GalvStorageTypeSerializer(serializers.HyperlinkedModelSerializer, Permissi
         model = GalvStorageType
         fields = ['url', 'id', 'name', 'lab', 'quota', 'bytes_used', 'priority', 'enabled', 'permissions']
         read_only_fields = ['url', 'id', 'lab', 'quota', "permissions"]
+        extra_kwargs = augment_extra_kwargs()
 
 
 @extend_schema_serializer(examples = [
@@ -440,10 +441,19 @@ class GalvStorageTypeSerializer(serializers.HyperlinkedModelSerializer, Permissi
         response_only=True, # signal that example only applies to responses
     ),
 ])
-class AdditionalS3StorageTypeSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+class AdditionalS3StorageTypeSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin, CreateOnlyMixin):
     bytes_used = serializers.SerializerMethodField()
     secret_key = serializers.SerializerMethodField()
     access_key = serializers.SerializerMethodField()
+
+    lab = TruncatedHyperlinkedRelatedIdField(
+        'LabSerializer',
+        ['name'],
+        'lab-detail',
+        queryset=Lab.objects.all(),
+        help_text="Lab this Storage belongs to",
+        create_only=True
+    )
 
     def get_bytes_used(self, instance) -> int:
         return instance.get_bytes_used()
@@ -467,12 +477,12 @@ class AdditionalS3StorageTypeSerializer(serializers.HyperlinkedModelSerializer, 
         return value
 
     def validate_access_key(self, value):
-        if self.instance is not None and value is None:
+        if self.instance is not None and value in [None, self.get_access_key(self.instance)]:
             return self.instance.access_key
         return value
 
     def validate_secret_key(self, value):
-        if self.instance is not None and value is None:
+        if self.instance is not None and value in [None, self.get_secret_key(self.instance)]:
             return self.instance.secret_key
         return value
 
