@@ -20,7 +20,7 @@ from ..models import EquipmentFamily, Harvester, \
     ScheduleIdentifiers, CellFormFactors, CellChemistries, CellManufacturers, \
     CellModels, EquipmentManufacturers, EquipmentModels, EquipmentTypes, Experiment, \
     ValidationSchema, GroupProxy, UserProxy, Lab, Team, AutoCompleteEntry, DataUnit, DataColumnType, ParquetPartition, \
-    ColumnMapping, GalvStorageType, AdditionalS3StorageType
+    ColumnMapping, GalvStorageType, AdditionalS3StorageType, ArbitraryFile
 from ..models.choices import UserLevel
 
 fake = faker.Faker(django.conf.global_settings.LANGUAGE_CODE)
@@ -329,6 +329,26 @@ class ScheduleFactory(factory.django.DjangoModelFactory):
     team = factory.SubFactory(TeamFactory)
     family = factory.SubFactory(ScheduleFamilyFactory)
     schedule_file = factory.LazyFunction(make_tmp_file)
+
+
+class ArbitraryFileFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = ArbitraryFile
+        django_get_or_create = ('name', 'team',)
+
+    team = factory.SubFactory(TeamFactory)
+    file = factory.LazyFunction(make_tmp_file)
+    name = factory.Faker('word')
+    description = factory.Faker('sentence')
+
+    @factory.post_generation
+    def add_storage_type(self, create, extracted, **kwargs):
+        if not create:
+            return
+        if not extracted:
+            extracted = GalvStorageTypeFactory.create(lab=self.team.lab)
+        self.storage_type = extracted
+
 
 class CyclerTestFactory(factory.django.DjangoModelFactory):
     class Meta:

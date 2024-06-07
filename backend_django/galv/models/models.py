@@ -24,7 +24,7 @@ from .choices import FileState, UserLevel, ValidationStatus
 from .utils import CustomPropertiesModel, JSONModel, LDSources, render_pybamm_schedule, UUIDModel, \
     combine_rdf_props, TimestampedModel
 from .autocomplete_entries import *
-from ..fields import DynamicStorageFileField, LabDependentStorageFileField
+from ..fields import LabDependentStorageFileField
 from ..storages import LocalDataStorage, S3DataStorage
 
 ALLOWED_USER_LEVELS_DELETE = [UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]]
@@ -1705,11 +1705,19 @@ class SchemaValidation(TimestampedModel):
         ]
 
 
-class ArbitraryFile(JSONModel, ResourceModelPermissionsMixin):
-    file = DynamicStorageFileField(unique=True)
-    is_public = models.BooleanField(default=False, help_text="Whether the file is public")
-    name = models.TextField(help_text="The name of the file", null=False, blank=False, unique=True)
+class ArbitraryFile(_StorageTypeConsumerModel, ResourceModelPermissionsMixin):
+    file = LabDependentStorageFileField(
+        null=True,
+        blank=True,
+        help_text="File"
+    )
+    name = models.TextField(help_text="The name of the file", null=False, blank=False)
     description = models.TextField(help_text="The description of the file", null=True, blank=True)
+
+    view_name = "arbitraryfile-file"
+
+    def _get_lab(self):
+        return self.team.lab
 
     def delete(self, using=None, keep_parents=False):
         self.file.delete()
@@ -1717,6 +1725,9 @@ class ArbitraryFile(JSONModel, ResourceModelPermissionsMixin):
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        unique_together = [['name', 'team'], ['file', 'team']]
 
 
 class ParquetPartition(_StorageTypeConsumerModel):

@@ -7,7 +7,7 @@ import logging
 
 from rest_framework.reverse import reverse
 
-from .utils import GalvTestCase, assert_response_property
+from .utils import GalvTestCase
 from .factories import fake, GalvStorageTypeFactory, AdditionalS3StorageTypeFactory
 
 logger = logging.getLogger(__file__)

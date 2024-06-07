@@ -2,6 +2,8 @@
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 from uuid import UUID
+
+from django.core.files.base import File
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
@@ -210,7 +212,7 @@ class _GalvTeamResourceTestCase(GalvTestCase):
         Helper method for making requests with file content.
         """
         return_value = None
-        if 'schedule_file' in content:
+        if 'schedule_file' in content or any([isinstance(v, File) for v in content.values()]):
             return_value = request_method(url, content, **kwargs)
         else:
             return_value = request_method(url, content, **{'format': 'json', **kwargs})

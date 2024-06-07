@@ -1882,11 +1882,7 @@ class SchemaValidationViewSet(viewsets.ReadOnlyModelViewSet):
     create=extend_schema(
         summary="Upload a file",
         description="""
-Upload a file along with its metadata. The file will be stored in an AWS S3 bucket.
-
-Files with `is_public` set to `True` will be available to the public.
-Files with `is_public` set to `False` will only be displayed as links which will provide access for 1 hour,
-after which the link must be retrieved again.
+Upload a file along with its metadata. The file will be stored in Lab storage.
         """,
         request={
             'multipart/form-data': ArbitraryFileCreateSerializer,
@@ -1936,6 +1932,15 @@ class ArbitraryFileViewSet(viewsets.ModelViewSet):
         if self.action is not None and self.action == 'create':
             return ArbitraryFileCreateSerializer
         return ArbitraryFileSerializer
+
+    @action(detail=True, methods=['GET'])
+    def file(self, request, pk = None):
+        try:
+            arbitrary_file = self.queryset.get(id=pk)
+        except ParquetPartition.DoesNotExist:
+            return error_response('Requested file not found')
+        self.check_object_permissions(self.request, arbitrary_file)
+        return lab_dependent_file_fetcher(arbitrary_file, 'file')
 
 
 class _StorageTypeMixin:

@@ -4,7 +4,8 @@ from rest_framework.reverse import reverse
 
 from .storages import MediaStorage, LocalDataStorage
 
-
+# DEPRECATED
+# TODO: remove when squashing migrations
 class DynamicStorageFieldFile(FieldFile):
     def __init__(self, instance, field, name):
         super(DynamicStorageFieldFile, self).__init__(instance, field, name)
@@ -20,7 +21,8 @@ class DynamicStorageFieldFile(FieldFile):
         if isinstance(self.storage, MediaStorage):
             self.storage.update_acl(self.name)
 
-#
+# DEPRECATED
+# TODO: remove when squashing migrations
 class DynamicStorageFileField(models.FileField):
     attr_class = DynamicStorageFieldFile
 

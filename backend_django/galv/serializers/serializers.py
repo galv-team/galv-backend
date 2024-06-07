@@ -9,6 +9,7 @@ from typing import Optional, Union
 
 import jsonschema
 from django.conf import settings
+from django.db import transaction
 from drf_spectacular.types import OpenApiTypes
 from rest_framework.reverse import reverse
 from drf_spectacular.utils import extend_schema_field, extend_schema_serializer, OpenApiExample
@@ -479,11 +480,12 @@ class AdditionalS3StorageTypeSerializer(serializers.HyperlinkedModelSerializer, 
         model = AdditionalS3StorageType
         fields = [
             'url', 'id',
-            'name', 'lab', 'quota', 'bytes_used', 'priority', 'enabled', 
+            'name', 'lab', 'quota', 'bytes_used', 'priority', 'enabled',
             'secret_key', 'access_key', 'bucket_name', 'location', 'custom_domain',
             'permissions'
         ]
-        read_only_fields = ['url', 'id', 'lab', "permissions"]
+        read_only_fields = ['url', 'id', "permissions"]
+        extra_kwargs = augment_extra_kwargs({'lab': {'create_only': True}})
 
 
 @extend_schema_serializer(examples = [
@@ -2104,7 +2106,7 @@ class ArbitraryFileSerializer(serializers.HyperlinkedModelSerializer, Permission
     class Meta:
         model = ArbitraryFile
         fields = [
-            'url', 'id', 'name', 'description', 'file', 'team', 'is_public', 'custom_properties',
+            'url', 'id', 'name', 'description', 'file', 'team',
             'read_access_level', 'edit_access_level', 'delete_access_level', 'permissions'
         ]
         read_only_fields = ['url', 'id', 'file', 'permissions']
@@ -2114,49 +2116,12 @@ class ArbitraryFileSerializer(serializers.HyperlinkedModelSerializer, Permission
 class ArbitraryFileCreateSerializer(ArbitraryFileSerializer):
     class Meta(ArbitraryFileSerializer.Meta):
         read_only_fields = ['url', 'id', 'permissions']
+        extra_kwargs = augment_extra_kwargs({'file': {'required': True}})
 
-
-class GalvStorageTypeSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
-    bytes_used = serializers.SerializerMethodField()
-
-    def get_bytes_used(self, instance) -> int:
-        return instance.get_bytes_used()
-
-    class Meta:
-        model = GalvStorageType
-        read_only_fields = ['url', 'id', 'permissions', 'quota']
-        fields = [
-            'url', 'id', 'name', 'lab', 'enabled',
-            'quota', 'bytes_used', 'priority', 'permissions'
-        ]
-        extra_kwargs = augment_extra_kwargs()
-
-
-class AdditionalS3StorageTypeSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
-    bytes_used = serializers.SerializerMethodField()
-
-    def get_bytes_used(self, instance) -> int:
-        return instance.get_bytes_used()
-
-    def validate_lab(self, value):
-        """
-        Can only create if you're a lab admin
-        """
-        if self.instance is not None:
-            return self.instance.lab
-        administered_labs = self.context['request'].user_auth_details.writeable_lab_ids
-        if value.pk in administered_labs:
-            return value
-
-        raise ValidationError("You may only create Additional Storage in your own lab(s)")
-
-    class Meta:
-        model = AdditionalS3StorageType
-        read_only_fields = ['url', 'id', 'permissions']
-        write_only_fields = ['access_key', 'secret_key']
-        fields = [
-            'url', 'id', 'name', 'lab', 'enabled', 'quota', 'bytes_used', 'priority',
-            'bucket_name', 'location', 'access_key', 'secret_key', 'custom_domain',
-            'permissions',
-        ]
-        extra_kwargs = augment_extra_kwargs()
+    def create(self, validated_data):
+        file = validated_data.pop('file', None)
+        with transaction.atomic():
+            arbitrary_file = ArbitraryFile.objects.create(**validated_data)
+            if file:
+                arbitrary_file.file.save(file.name, file, save=True)
+        return arbitrary_file
