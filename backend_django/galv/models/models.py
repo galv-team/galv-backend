@@ -469,6 +469,7 @@ class GalvStorageType(_StorageType):
                     access_key=settings.AWS_ACCESS_KEY_ID,
                     secret_key=settings.AWS_SECRET_ACCESS_KEY,
                     bucket_name=settings.AWS_STORAGE_BUCKET_NAME,
+                    region_name=settings.AWS_S3_REGION_NAME,
                     location=self.location,
                     custom_domain=settings.AWS_S3_CUSTOM_DOMAIN
                 )
@@ -495,11 +496,11 @@ class AdditionalS3StorageType(_StorageType):
     location = models.TextField(null=True, blank=True, help_text="Directory within the S3 bucket to store files in")
     access_key = models.TextField(null=True, blank=True, help_text="Access key for the S3 bucket")
     secret_key = models.TextField(null=True, blank=True, help_text="Secret key for the S3 bucket")
-    # s3_region = models.TextField(
-    #     null=True,
-    #     blank=True,
-    #     help_text="Region for the S3 bucket. Only one of custom domain or region should be set."
-    # )
+    region_name = models.TextField(
+        blank=True,
+        help_text="Region for the S3 bucket. Only one of custom domain or region should be set.",
+        default="eu-west-2"
+    )
     custom_domain = models.TextField(
         null=True,
         blank=True,
@@ -516,6 +517,7 @@ class AdditionalS3StorageType(_StorageType):
                 access_key=self.access_key,
                 secret_key=self.secret_key,
                 bucket_name=self.bucket_name,
+                region_name=self.region_name,
                 location=self.location,
                 custom_domain=self.custom_domain
             )

@@ -108,7 +108,11 @@ def deserialize_datetime(serialized_value: str | float) -> timezone.datetime|Non
     raise TypeError
 
 
-def lab_dependent_file_fetcher(parent_object, file_field_name: str):
+def lab_dependent_file_fetcher(
+        parent_object,
+        file_field_name: str,
+        headers = lambda f: {'Content-Disposition': f"attachment; filename={f.name}"}
+):
     """
     Check a user is allowed to access a file, and redirect them to its actual location if they are.
     """
@@ -118,8 +122,8 @@ def lab_dependent_file_fetcher(parent_object, file_field_name: str):
             if parent_object.storage_type and isinstance(parent_object.storage_type.get_storage(file), LocalDataStorage):
                 # Send the file directly via the upstream nginx proxy
                 response = HttpResponse()
-                response["Content-Disposition"] = f"attachment; filename={file.name}"
-                # response['Content-Disposition'] = f"inline; filename={file.name}"
+                for k, v in headers(file).items():
+                    response[k] = v
                 response['X-Accel-Redirect'] = file.backend_url()
             else:
                 # Redirect to S3
@@ -1104,7 +1108,14 @@ class ObservedFileViewSet(viewsets.ModelViewSet):
         except ObservedFile.DoesNotExist:
             return error_response('Requested file not found')
         self.check_object_permissions(self.request, file)
-        return lab_dependent_file_fetcher(file, 'png')
+        return lab_dependent_file_fetcher(
+            file,
+            'png',
+            lambda f: {
+                'Content-Disposition': f'inline; filename="{f.path.split("/")[-1]}.png"',
+                'Content-Type': 'image/png'
+            }
+        )
 
 
 class ColumnMappingViewSet(viewsets.ModelViewSet):
