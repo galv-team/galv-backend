@@ -41,7 +41,7 @@ def make_tmp_file():
     length = fake.pyint(min_value=1, max_value=1000000)
     content = fake.binary(length=length)
     file = SimpleUploadedFile(
-        name=fake.file_name(extension='tst'),
+        name=f"{fake.word()}_{fake.file_name(extension='tst')}",
         content=content,
         content_type=fake.mime_type()
     )
