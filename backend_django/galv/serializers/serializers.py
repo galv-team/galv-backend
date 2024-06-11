@@ -40,7 +40,7 @@ from knox.models import AuthToken
 from .utils import CustomPropertiesModelSerializer, GetOrCreateTextField, augment_extra_kwargs, url_help_text, \
     PermissionsMixin, TruncatedUserHyperlinkedRelatedIdField, \
     TruncatedHyperlinkedRelatedIdField, \
-    CreateOnlyMixin, ValidationPresentationMixin
+    CreateOnlyMixin, ValidationPresentationMixin, PasswordField
 
 
 @extend_schema_serializer(examples = [
@@ -443,8 +443,8 @@ class GalvStorageTypeSerializer(serializers.HyperlinkedModelSerializer, Permissi
 ])
 class AdditionalS3StorageTypeSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin, CreateOnlyMixin):
     bytes_used = serializers.SerializerMethodField()
-    secret_key = serializers.SerializerMethodField()
-    access_key = serializers.SerializerMethodField()
+    secret_key = PasswordField()
+    access_key = PasswordField(show_first_chars=4)
 
     lab = TruncatedHyperlinkedRelatedIdField(
         'LabSerializer',
@@ -458,14 +458,6 @@ class AdditionalS3StorageTypeSerializer(serializers.HyperlinkedModelSerializer, 
     def get_bytes_used(self, instance) -> int:
         return instance.get_bytes_used()
 
-    def get_access_key(self, instance) -> str|None:
-        if instance.access_key:
-            return f"{instance.access_key[:4]}********"
-        return instance.access_key
-
-    def get_secret_key(self, instance) -> str|None:
-        return instance.secret_key if not instance.secret_key else "********"
-
     def validate_lab(self, value):
         """
         Only lab admins can create teams in their lab
@@ -477,13 +469,17 @@ class AdditionalS3StorageTypeSerializer(serializers.HyperlinkedModelSerializer, 
         return value
 
     def validate_access_key(self, value):
-        if self.instance is not None and value in [None, self.get_access_key(self.instance)]:
+        if self.instance is not None and value in [None, self.fields['access_key'].to_representation(self.instance.access_key)]:
             return self.instance.access_key
+        if not value or not isinstance(value, str):
+            raise ValidationError("access_key must be a string")
         return value
 
     def validate_secret_key(self, value):
-        if self.instance is not None and value in [None, self.get_secret_key(self.instance)]:
+        if self.instance is not None and value in [None, self.fields['secret_key'].to_representation(self.instance.secret_key)]:
             return self.instance.secret_key
+        if not value or not isinstance(value, str):
+            raise ValidationError("secret_key must be a string")
         return value
 
     class Meta:

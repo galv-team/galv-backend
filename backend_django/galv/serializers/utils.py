@@ -352,3 +352,25 @@ class ValidationPresentationMixin(serializers.Serializer):
             print(e)
             pass
         return super().to_representation(instance)
+
+
+class PasswordField(serializers.CharField):
+    """
+    A CharField that will hash the input value.
+    """
+    def __init__(self, show_first_chars=0, min_length=10, **kwargs):
+        super().__init__(**kwargs)
+        self.show_first_chars = show_first_chars
+        self.min_length = min_length
+
+    def to_internal_value(self, data):
+        return super().to_internal_value(data)
+
+    def to_representation(self, value):
+        v = super().to_representation(value)
+        if v is None:
+            return None
+        stars = '*' * max(max(self.min_length, 1), len(v))
+        if self.show_first_chars:
+            return f"{v[:self.show_first_chars]}{stars[self.show_first_chars:]}"
+        return stars
