@@ -17,7 +17,7 @@ class ArbitraryFileTests(GalvTeamResourceTestCase):
     factory = ArbitraryFileFactory
 
     def get_edit_kwargs(self):
-        return {'name': fake.word()}
+        return {'name': f"{fake.word()} {fake.word()} {self.client.user.username or 'anonymous'}"}
 
 if __name__ == '__main__':
     unittest.main()
