@@ -707,7 +707,12 @@ class HarvesterViewSet(viewsets.ModelViewSet):
             if content.get('size') is None:
                 return error_response('file_size task requires content to include size field')
 
-            file, _ = ObservedFile.objects.get_or_create(harvester=harvester, path=path)
+            # reserve 1MB for the png snapshot
+            file, _ = ObservedFile.objects.get_or_create(
+                harvester=harvester,
+                path=path,
+                defaults={"bytes_required": 1_000_000_000}
+            )
             file.monitored_paths.add(monitored_path)
 
             size = content['size']
@@ -796,13 +801,14 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                     file.num_partitions = data['partition_count']
                     file.state = FileState.IMPORTING
                     file.save()
+                    upload = request.FILES.get('parquet_file')
                     partition, _ = ParquetPartition.objects.get_or_create(
                         observed_file=file,
-                        partition_number=data['partition_number']
+                        partition_number=data['partition_number'],
+                        defaults={'bytes_required': upload.size}
                     )
                     partition.parquet_file.delete()
-                    partition.parquet_file = request.FILES.get('parquet_file')
-                    # partition.parquet_file.save()
+                    partition.parquet_file = upload
                     partition.save()
                 except StorageError as e:
                     return error_response(f"Error uploading file to storage: {e}")
@@ -817,7 +823,10 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                     pq.save()
 
             def handle_upload_png(file, _, request):
-                file.png = request.FILES.get('png_file')
+                upload = request.FILES.get('png_file')
+                file.bytes_required = upload.size
+                file.save()
+                file.png = upload
 
             def handle_completion(file, stage, content):
                 if stage == settings.HARVEST_STAGE_FAILED:

@@ -332,6 +332,11 @@ class _StorageTypeConsumerModel(UUIDModel):
     _storage_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True)
     _storage_object_id = models.UUIDField(null=True)
     storage_type = GenericForeignKey('_storage_content_type', '_storage_object_id')
+    # This is a workaround for not being able to access the file we're trying to save in the pre_save hook
+    # for the FileField.
+    # Instead, we make sure we populate this field _before_ saving the actual file.
+    # If overwriting a file with a smaller file, this will be negative.
+    bytes_required = models.BigIntegerField(default=0)
     view_name = ""  # This is set by the subclass and is used to create the URL for the object via DRF's reverse()
 
     def _get_lab(self):
@@ -460,8 +465,7 @@ class GalvStorageType(_StorageType):
         if saving:
             if not self.enabled:
                 raise StorageLockedError(f"Cannot save data: storage is locked for {self}")
-            # TODO: This is a rough check, and will double-count an object that is being updated.
-            if self.get_bytes_used() >= self.quota:
+            if self.get_bytes_used() + instance.bytes_required >= self.quota:
                 raise StorageFullError(f"Cannot save data: local storage quota exceeded for {self}")
         try:
             if settings.S3_ENABLED and settings.LABS_USE_OUR_S3_STORAGE:
@@ -509,9 +513,10 @@ class AdditionalS3StorageType(_StorageType):
 
     def get_storage(self, instance, saving=False) -> Storage:
         if saving:
-            # TODO: This is a rough check, and will double-count an object that is being updated.
-            if self.get_bytes_used() >= self.quota:
-                raise StorageFullError(f"Cannot save data: local storage quota exceeded for {self}")
+            if not self.enabled:
+                raise StorageLockedError(f"Cannot save data: storage is locked for {self}")
+            if self.get_bytes_used() + instance.bytes_required >= self.quota:
+                raise StorageFullError(f"Cannot save data: storage quota exceeded for {self}")
         try:
             return S3DataStorage(
                 access_key=self.access_key,

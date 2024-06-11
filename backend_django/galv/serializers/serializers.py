@@ -2126,8 +2126,11 @@ class ArbitraryFileCreateSerializer(ArbitraryFileSerializer):
 
     def create(self, validated_data):
         file = validated_data.pop('file', None)
+        bytes_required = file.size if file else 0
         with transaction.atomic():
-            arbitrary_file = ArbitraryFile.objects.create(**validated_data)
+            arbitrary_file = ArbitraryFile.objects.create(**validated_data, bytes_required=bytes_required)
             if file:
+                arbitrary_file.bytes_required = file.size
+                arbitrary_file.save()
                 arbitrary_file.file.save(file.name, file, save=True)
         return arbitrary_file
