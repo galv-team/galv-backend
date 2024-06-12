@@ -316,7 +316,10 @@
             ]
           }
         }
-      }
+      },
+      "read_access_level": 0,
+      "delete_access_level": 4,
+      "edit_access_level": 4
     }
   }
 ]
