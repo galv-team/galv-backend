@@ -338,7 +338,7 @@ class ArbitraryFileFactory(factory.django.DjangoModelFactory):
 
     team = factory.SubFactory(TeamFactory)
     file = factory.LazyFunction(make_tmp_file)
-    name = factory.Faker('word')
+    name = factory.Faker('pystr')
     description = factory.Faker('sentence')
 
     @factory.post_generation
