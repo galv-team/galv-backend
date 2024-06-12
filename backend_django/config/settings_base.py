@@ -35,8 +35,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 ALLOWED_HOSTS = [*os.environ.get("VIRTUAL_HOST", "").split(",")]
 
 CORS_ALLOW_HEADERS = list(corsheaders.defaults.default_headers) + [
-    "X-CSRF-TOKEN"
+    "X-CSRF-TOKEN",
+    "Galv-Storage-No-Redirect"
 ]
+CORS_EXPOSE_HEADERS = ["Galv-Storage-Redirect-URL"]
 CORS_ALLOWED_ORIGINS = os.environ.get("FRONTEND_VIRTUAL_HOST", "").split(",")
 CORS_ALLOW_CREDENTIALS = True
 

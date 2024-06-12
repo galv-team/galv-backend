@@ -111,6 +111,7 @@ def deserialize_datetime(serialized_value: str | float) -> timezone.datetime|Non
 def lab_dependent_file_fetcher(
         parent_object,
         file_field_name: str,
+        request,
         headers = lambda f: {'Content-Disposition': f"attachment; filename={f.name}"}
 ):
     """
@@ -127,7 +128,11 @@ def lab_dependent_file_fetcher(
                 response['X-Accel-Redirect'] = file.backend_url()
             else:
                 # Redirect to S3
-                response = HttpResponseRedirect(file.backend_url())
+                if request.headers.get('Galv-Storage-No-Redirect'):
+                    response = HttpResponse()
+                    response['Galv-Storage-Redirect-URL'] = file.backend_url()
+                else:
+                    response = HttpResponseRedirect(file.backend_url())
             return response
     except Exception as e:
         logger.error(f"Error fetching file: {e}")
@@ -1120,6 +1125,7 @@ class ObservedFileViewSet(viewsets.ModelViewSet):
         return lab_dependent_file_fetcher(
             file,
             'png',
+            request,
             lambda f: {
                 'Content-Disposition': f'inline; filename="{f.path.split("/")[-1]}.png"',
                 'Content-Type': 'image/png'
@@ -1175,7 +1181,7 @@ class ParquetPartitionViewSet(viewsets.ReadOnlyModelViewSet):
         except ParquetPartition.DoesNotExist:
             return error_response('Requested partition not found')
         self.check_object_permissions(self.request, partition)
-        return lab_dependent_file_fetcher(partition, 'parquet_file')
+        return lab_dependent_file_fetcher(partition, 'parquet_file', request)
 
 
 @extend_schema_view(
@@ -1960,7 +1966,7 @@ class ArbitraryFileViewSet(viewsets.ModelViewSet):
         except ParquetPartition.DoesNotExist:
             return error_response('Requested file not found')
         self.check_object_permissions(self.request, arbitrary_file)
-        return lab_dependent_file_fetcher(arbitrary_file, 'file')
+        return lab_dependent_file_fetcher(arbitrary_file, 'file', request)
 
 
 class _StorageTypeMixin:
