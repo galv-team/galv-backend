@@ -67,7 +67,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.debug_enabled || inputs.debug_only_this_job) }}
+#        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.debug_enabled || inputs.debug_only_this_job) }}
       - name: Setup docker-compose
         run: |
           brew install docker
