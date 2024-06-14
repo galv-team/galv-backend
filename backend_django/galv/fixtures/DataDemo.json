@@ -111,6 +111,9 @@
       "modified": "2024-04-10T15:43:19.888Z",
       "path": "/usr/harvester/.test-data/test-suite-small/Ivium_Cell+1.idf",
       "harvester": "de149eba-3aed-406a-9508-bc33013e554e",
+      "monitored_paths": [
+        "fe4b94dc-46ec-4b68-8213-818056e700fa"
+      ],
       "last_observed_size": 6655242,
       "last_observed_time": "2024-04-10T15:36:15.698Z",
       "state": "IMPORTED",
@@ -1500,6 +1503,9 @@
       "modified": "2024-04-10T15:43:20.215Z",
       "path": "/usr/harvester/.test-data/test-suite-small/Jie_OCV1_C01.mpr",
       "harvester": "de149eba-3aed-406a-9508-bc33013e554e",
+      "monitored_paths": [
+        "fe4b94dc-46ec-4b68-8213-818056e700fa"
+      ],
       "last_observed_size": 561846,
       "last_observed_time": "2024-04-10T15:36:16.068Z",
       "state": "IMPORTED",
@@ -1576,6 +1582,9 @@
       "modified": "2024-04-10T15:43:17.780Z",
       "path": "/usr/harvester/.test-data/test-suite-small/CCCV -exp1_C01.mpr",
       "harvester": "de149eba-3aed-406a-9508-bc33013e554e",
+      "monitored_paths": [
+        "fe4b94dc-46ec-4b68-8213-818056e700fa"
+      ],
       "last_observed_size": 5804677,
       "last_observed_time": "2024-04-10T15:36:13.301Z",
       "state": "IMPORTED",
@@ -1652,6 +1661,9 @@
       "modified": "2024-04-10T15:42:29.994Z",
       "path": "/usr/harvester/.test-data/test-suite-small/TPG1+-+Cell+15+-+002.txt",
       "harvester": "de149eba-3aed-406a-9508-bc33013e554e",
+      "monitored_paths": [
+        "fe4b94dc-46ec-4b68-8213-818056e700fa"
+      ],
       "last_observed_size": 140480746,
       "last_observed_time": "2024-04-10T15:36:58.702Z",
       "state": "IMPORTED",
@@ -1945,6 +1957,9 @@
       "modified": "2024-04-10T15:43:17.386Z",
       "path": "/usr/harvester/.test-data/test-suite-small/adam_3_C05.mpr",
       "harvester": "de149eba-3aed-406a-9508-bc33013e554e",
+      "monitored_paths": [
+        "fe4b94dc-46ec-4b68-8213-818056e700fa"
+      ],
       "last_observed_size": 3420493,
       "last_observed_time": "2024-04-10T15:36:12.823Z",
       "state": "IMPORTED",
@@ -2021,6 +2036,9 @@
       "modified": "2024-04-10T15:43:18.599Z",
       "path": "/usr/harvester/.test-data/test-suite-small/headerless.csv",
       "harvester": "de149eba-3aed-406a-9508-bc33013e554e",
+      "monitored_paths": [
+        "fe4b94dc-46ec-4b68-8213-818056e700fa"
+      ],
       "last_observed_size": 225,
       "last_observed_time": "2024-04-10T15:36:14.259Z",
       "state": "IMPORTED",
@@ -2063,6 +2081,9 @@
       "modified": "2024-04-10T15:43:18.200Z",
       "path": "/usr/harvester/.test-data/test-suite-small/headered.csv",
       "harvester": "de149eba-3aed-406a-9508-bc33013e554e",
+      "monitored_paths": [
+        "fe4b94dc-46ec-4b68-8213-818056e700fa"
+      ],
       "last_observed_size": 259,
       "last_observed_time": "2024-04-10T15:36:13.793Z",
       "state": "IMPORTED",
@@ -2105,6 +2126,9 @@
       "modified": "2024-04-10T15:43:20.566Z",
       "path": "/usr/harvester/.test-data/test-suite-small/preamble.csv",
       "harvester": "de149eba-3aed-406a-9508-bc33013e554e",
+      "monitored_paths": [
+        "fe4b94dc-46ec-4b68-8213-818056e700fa"
+      ],
       "last_observed_size": 718,
       "last_observed_time": "2024-04-10T15:36:16.571Z",
       "state": "IMPORTED",
