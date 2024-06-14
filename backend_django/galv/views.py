@@ -1209,7 +1209,18 @@ class ParquetPartitionViewSet(viewsets.ReadOnlyModelViewSet):
         except ParquetPartition.DoesNotExist:
             return error_response('Requested partition not found')
         self.check_object_permissions(self.request, partition)
-        return lab_dependent_file_fetcher(partition, 'parquet_file', request)
+        return lab_dependent_file_fetcher(
+            partition,
+            'parquet_file',
+            request,
+            lambda f: {
+                'Content-Disposition': (
+                    f'inline; '
+                    f'filename="{partition.observed_file.path.split("/")[-1]}.{partition.partition_number}.parquet"'
+                ),
+                'Content-Type': 'application/octet-stream'
+            }
+        )
 
 
 @extend_schema_view(
