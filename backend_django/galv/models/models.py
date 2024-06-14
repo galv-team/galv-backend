@@ -1035,7 +1035,7 @@ class Harvester(UUIDModel):
             text = 'abcdefghijklmnopqrstuvwxyz' + \
                    'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + \
                    '0123456789' + \
-                   '!£$%^&*-=+'
+                   '!$%^&*-=+'
             self.api_key = f"galv_hrv_{''.join(random.choices(text, k=60))}"
         super(Harvester, self).save(*args, **kwargs)
 
