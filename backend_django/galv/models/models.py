@@ -381,6 +381,11 @@ class _StorageType(UUIDModel):
         content_type_field='_storage_content_type',
         object_id_field='_storage_object_id'
     )
+    arbitrary_files = GenericRelation(
+        to='ArbitraryFile',
+        content_type_field='_storage_content_type',
+        object_id_field='_storage_object_id'
+    )
 
     def get_bytes_used(self) -> int:
         """
@@ -395,6 +400,11 @@ class _StorageType(UUIDModel):
         for partition in self.parquet_partitions.all():
             try:
                 total += partition.parquet_file.size
+            except (FileNotFoundError, ValueError):
+                pass
+        for af in self.arbitrary_files.all():
+            try:
+                total += af.file.size
             except (FileNotFoundError, ValueError):
                 pass
         return total

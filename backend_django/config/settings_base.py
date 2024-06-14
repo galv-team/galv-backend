@@ -249,6 +249,8 @@ else:
 DATA_ROOT = f"/galv_files/{DATAFILES_LOCATION}"
 DATA_URL = f"/{DATAFILES_LOCATION}/"
 
+MAX_PNG_PREVIEW_SIZE = int(os.environ.get("DJANGO_MAX_PNG_PREVIEW_SIZE_BYTES", 10 ** 5))  # 100 KB
+
 # Harvester report constants
 # These definitions should be kept in sync with the definitions in the harvester program
 HARVESTER_TASK_FILE_SIZE = 'file_size'

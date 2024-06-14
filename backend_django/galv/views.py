@@ -712,12 +712,18 @@ class HarvesterViewSet(viewsets.ModelViewSet):
             if content.get('size') is None:
                 return error_response('file_size task requires content to include size field')
 
-            # reserve 1MB for the png snapshot
-            file, _ = ObservedFile.objects.get_or_create(
-                harvester=harvester,
-                path=path,
-                defaults={"bytes_required": 1_000_000_000}
-            )
+            # reserve space for the png snapshot
+            try:
+                file = ObservedFile.objects.get(harvester=harvester, path=path)
+            except ObservedFile.DoesNotExist:
+                try:
+                    file = ObservedFile.objects.create(
+                        harvester=harvester,
+                        path=path,
+                        bytes_required=settings.MAX_PNG_PREVIEW_SIZE
+                    )
+                except Exception as e:
+                    return error_response(f"Error creating File: {e}")
             file.monitored_paths.add(monitored_path)
 
             size = content['size']
@@ -807,11 +813,20 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                     file.state = FileState.IMPORTING
                     file.save()
                     upload = request.FILES.get('parquet_file')
-                    partition, _ = ParquetPartition.objects.get_or_create(
-                        observed_file=file,
-                        partition_number=data['partition_number'],
-                        defaults={'bytes_required': upload.size}
-                    )
+                    try:
+                        partition = ParquetPartition.objects.get(
+                            observed_file=file,
+                            partition_number=data['partition_number']
+                        )
+                    except ParquetPartition.DoesNotExist:
+                        try:
+                            partition = ParquetPartition.objects.create(
+                                observed_file=file,
+                                partition_number=data['partition_number'],
+                                bytes_required=upload.size
+                            )
+                        except Exception as e:
+                            return error_response(f"Error creating ParquetPartition: {e}")
                     partition.parquet_file.delete()
                     partition.parquet_file = upload
                     partition.save()
@@ -829,6 +844,8 @@ class HarvesterViewSet(viewsets.ModelViewSet):
 
             def handle_upload_png(file, _, request):
                 upload = request.FILES.get('png_file')
+                if upload.size > settings.MAX_PNG_PREVIEW_SIZE:
+                    return error_response(f"PNG file too large: {upload.size} > {settings.MAX_PNG_PREVIEW_SIZE}")
                 file.bytes_required = upload.size
                 file.save()
                 file.png = upload
