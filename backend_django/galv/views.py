@@ -814,20 +814,20 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                     file.save()
                     upload = request.FILES.get('parquet_file')
                     try:
-                        partition = ParquetPartition.objects.get(
+                        ParquetPartition.objects.get(
                             observed_file=file,
                             partition_number=data['partition_number']
-                        )
+                        ).delete()
                     except ParquetPartition.DoesNotExist:
-                        try:
-                            partition = ParquetPartition.objects.create(
-                                observed_file=file,
-                                partition_number=data['partition_number'],
-                                bytes_required=upload.size
-                            )
-                        except Exception as e:
-                            return error_response(f"Error creating ParquetPartition: {e}")
-                    partition.parquet_file.delete()
+                        pass
+                    try:
+                        partition = ParquetPartition.objects.create(
+                            observed_file=file,
+                            partition_number=data['partition_number'],
+                            bytes_required=upload.size
+                        )
+                    except Exception as e:
+                        return error_response(f"Error creating ParquetPartition: {e}")
                     partition.parquet_file = upload
                     partition.save()
                 except StorageError as e:

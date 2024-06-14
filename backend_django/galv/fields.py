@@ -79,6 +79,6 @@ class LabDependentStorageFileField(models.FileField):
     attr_class = LabDependentStorageFieldFile
 
     def pre_save(self, model_instance, add):
-        self.storage = model_instance.get_storage(True)
+        self.storage = model_instance.get_storage(add)
         return super().pre_save(model_instance, add)
 

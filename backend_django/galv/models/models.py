@@ -334,7 +334,7 @@ class _StorageTypeConsumerModel(UUIDModel):
     storage_type = GenericForeignKey('_storage_content_type', '_storage_object_id')
     # This is a workaround for not being able to access the file we're trying to save in the pre_save hook
     # for the FileField.
-    # Instead, we make sure we populate this field _before_ saving the actual file.
+    # Instead, we make sure we populate this field _before_ adding the actual file.
     # If overwriting a file with a smaller file, this will be negative.
     bytes_required = models.BigIntegerField(default=0)
     view_name = ""  # This is set by the subclass and is used to create the URL for the object via DRF's reverse()
@@ -387,39 +387,45 @@ class _StorageType(UUIDModel):
         object_id_field='_storage_object_id'
     )
 
-    def get_bytes_used(self) -> int:
+    def get_bytes_used(self, instance) -> int:
         """
         Estimate storage used by summing the size of each file using the storage.
+
+        Args:
+            - instance: the instance that is being written to or read from storage
         """
         total = 0
         for file in self.files.all():
             try:
-                total += file.png.size
+                if file != instance:
+                    total += file.png.size
             except (FileNotFoundError, ValueError):
                 pass
         for partition in self.parquet_partitions.all():
             try:
-                total += partition.parquet_file.size
+                if partition != instance:
+                    total += partition.parquet_file.size
             except (FileNotFoundError, ValueError):
                 pass
         for af in self.arbitrary_files.all():
             try:
-                total += af.file.size
+                if af != instance:
+                    total += af.file.size
             except (FileNotFoundError, ValueError):
                 pass
         return total
 
-    def get_storage(self, instance, saving=False) -> Storage:
+    def get_storage(self, instance, adding=False) -> Storage:
         """
         Return a *Storage() instance.
 
         Args:
             - instance: the thing that is being written to or read from storage
-            - saving: whether the storage will be used for saving (True) or reading (False)
+            - adding: whether the storage will be used for adding (True) or reading (False)
 
         Raises:
             - StorageConfigurationError if the storage is misconfigured
-            - StorageFullError if the storage is full and saving=True
+            - StorageFullError if the storage is full and adding=True
         """
         raise StorageConfigurationError("Subclasses must implement this method") from NotImplementedError
 
@@ -471,11 +477,20 @@ class GalvStorageType(_StorageType):
     def base_url(self):
         return os.path.join(settings.DATA_URL, f"lab_{self.lab.pk}")
 
-    def get_storage(self, instance, saving=False) -> Storage:
-        if saving:
+    def get_storage(self, instance, adding=False) -> Storage:
+        # We can only detect whether a file is being added.
+        # Theoretically, this means that locked storage could be consumed where
+        # a file was uploaded to unlocked storage and then edited once storage was locked.
+        # This also means that storage quotas are not enforced for file edits.
+        # To avoid this issue, we ensure that all consumers of the storage type
+        # disallow editing of files.
+        # ParquetPartitions are never edited - if they change they are destroyed and recreated
+        # PNG previews for ObservedFiles have a hard limit on size in the settings
+        # ArbitraryFiles cannot be edited, only created or deleted
+        if adding:
             if not self.enabled:
                 raise StorageLockedError(f"Cannot save data: storage is locked for {self}")
-            if self.get_bytes_used() + instance.bytes_required >= self.quota:
+            if self.get_bytes_used(instance) + instance.bytes_required >= self.quota:
                 raise StorageFullError(f"Cannot save data: local storage quota exceeded for {self}")
         try:
             if settings.S3_ENABLED and settings.LABS_USE_OUR_S3_STORAGE:
@@ -521,11 +536,11 @@ class AdditionalS3StorageType(_StorageType):
         help_text=("Custom domain for the S3 bucket.")
     )
 
-    def get_storage(self, instance, saving=False) -> Storage:
-        if saving:
+    def get_storage(self, instance, adding=False) -> Storage:
+        if adding:
             if not self.enabled:
                 raise StorageLockedError(f"Cannot save data: storage is locked for {self}")
-            if self.get_bytes_used() + instance.bytes_required >= self.quota:
+            if self.get_bytes_used(instance) + instance.bytes_required >= self.quota:
                 raise StorageFullError(f"Cannot save data: storage quota exceeded for {self}")
         try:
             return S3DataStorage(
@@ -625,7 +640,7 @@ class Lab(TimestampedModel):
             try:
                 storage_instance = storage_type.get_storage(instance, saving)
                 instance.storage_type = storage_type
-                # instance.save()  # this was double-saving the instance on create leading to duplicate id errors
+                # instance.save()  # this was double-adding the instance on create leading to duplicate id errors
                 return storage_instance
             except StorageError as e:
                 errors[storage_type] = e
