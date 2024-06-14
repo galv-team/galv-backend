@@ -387,12 +387,12 @@ class _StorageType(UUIDModel):
         object_id_field='_storage_object_id'
     )
 
-    def get_bytes_used(self, instance) -> int:
+    def get_bytes_used(self, instance = None) -> int:
         """
         Estimate storage used by summing the size of each file using the storage.
 
         Args:
-            - instance: the instance that is being written to or read from storage
+            - [instance]: the instance that is being written to or read from storage
         """
         total = 0
         for file in self.files.all():

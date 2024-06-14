@@ -814,10 +814,21 @@ class HarvesterViewSet(viewsets.ModelViewSet):
                     file.save()
                     upload = request.FILES.get('parquet_file')
                     try:
-                        ParquetPartition.objects.get(
+                        # Before we delete the old partition, check we have storage for the new one
+                        partition = ParquetPartition.objects.get(
                             observed_file=file,
                             partition_number=data['partition_number']
-                        ).delete()
+                        )
+                        old_size = partition.bytes_required
+                        try:
+                            partition.bytes_required = upload.size
+                            partition.save()
+                            partition.get_storage(True)
+                        except StorageError as e:
+                            partition.bytes_required = old_size
+                            partition.save()
+                            return error_response(f"Error updating parquet file: {e}")
+                        partition.delete()
                     except ParquetPartition.DoesNotExist:
                         pass
                     try:
