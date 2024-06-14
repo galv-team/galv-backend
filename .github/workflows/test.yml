@@ -35,12 +35,7 @@ jobs:
     secrets: inherit
 
   run-tests:
-    strategy:
-      matrix:
-        # include an arm runner
-        os: [ubuntu-latest, macos-14]
-
-    runs-on: ${{ matrix.os }}
+    runs-on: matrix[ubuntu-latest, macos-14] # include an arm runner
     outputs:
       release: ${{ steps.check-tag.outputs.match }}
     steps:
@@ -65,6 +60,23 @@ jobs:
       - name: Validate spec
         run: |
           docker-compose run --rm app_test bash -c "python manage.py spectacular --fail-on-warn --validate"
+
+  check-macos-build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.debug_enabled || inputs.debug_only_this_job) }}
+      - name: Setup docker-compose
+        run: |
+          brew install docker
+          brew install colima
+          colima start
+          brew install docker-compose
+          touch .env.secret
+      - name: Check macOS build
+        run: docker-compose build app_test
 
   check-release-type:
     runs-on: ubuntu-latest
