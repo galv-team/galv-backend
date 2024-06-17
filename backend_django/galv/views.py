@@ -209,15 +209,15 @@ def activate_user(request):
 @api_view(('POST',))
 @renderer_classes((JSONRenderer,))
 def request_password_reset(request):
-    email = request.GET.get('email')
+    email = request.data.get('email')
     if not email:
         return error_response("No email provided")
     try:
         user = UserProxy.objects.get(email=email)
     except UserProxy.DoesNotExist:
         return error_response("No user with that email")
-    reset = PasswordReset.objects.create(user=user)
-    reset.send_email(request)
+    reset, _ = PasswordReset.objects.get_or_create(user=user)
+    reset.send_email()
     return Response(status=204)
 
 @extend_schema(responses={204: None}, request=inline_serializer(
@@ -231,7 +231,7 @@ def request_password_reset(request):
 @api_view(('POST',))
 @renderer_classes((JSONRenderer,))
 def reset_password(request):
-    email = request.GET.get('email')
+    email = request.data.get('email')
     if not email:
         return error_response("No email provided")
     try:
@@ -239,7 +239,7 @@ def reset_password(request):
     except UserProxy.DoesNotExist:
         return error_response("No user with that email")
 
-    token = request.GET.get('token')
+    token = request.data.get('token')
     if not token:
         return error_response("No token provided")
     try:

@@ -241,10 +241,9 @@ class PasswordReset(TimestampedModel):
     def send_email(self):
         from django.core.mail import send_mail
 
-        if self.token is None or self.get_is_expired():
-            print(f"Regenerating password reset token for {self.user.username}")
-            self.generate_token()
-            self.save()
+        print(f"Regenerating password reset token for {self.user.username}")
+        self.generate_token()
+        self.save()
 
         print(f"Sending password reset email for {self.user.username}")
         send_mail(
@@ -267,13 +266,6 @@ class PasswordReset(TimestampedModel):
     def get_is_expired(self) -> bool:
         return self.token_update_date is None or \
             (timezone.now() - self.token_update_date).total_seconds() > settings.USER_ACTIVATION_TOKEN_EXPIRY_S
-
-    def save(
-        self, force_insert=False, force_update=False, using=None, update_fields=None
-    ):
-        super(PasswordReset, self).save(force_insert, force_update, using, update_fields)
-        if self.token is None or self.get_is_expired():
-            self.generate_token()
 
 
 # Proxy User and Group models so that we can apply DRYPermissions
