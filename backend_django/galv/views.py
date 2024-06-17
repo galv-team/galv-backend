@@ -202,7 +202,7 @@ def activate_user(request):
         return error_response(str(e))
     return Response({"detail": f"User {activation.user.username} activated"})
 
-@extend_schema(responses=204, request=inline_serializer(
+@extend_schema(responses={204: None}, request=inline_serializer(
     'PasswordResetRequest',
     {'email': serializers.EmailField()}
 ))
@@ -220,7 +220,7 @@ def request_password_reset(request):
     reset.send_email(request)
     return Response(status=204)
 
-@extend_schema(responses=204, request=inline_serializer(
+@extend_schema(responses={204: None}, request=inline_serializer(
     'PasswordResetRequest',
     {
         'email': serializers.EmailField(),
