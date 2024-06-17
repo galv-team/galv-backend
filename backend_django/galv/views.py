@@ -39,7 +39,8 @@ from .serializers import HarvesterSerializer, \
     ScheduleSerializer, CyclerTestSerializer, ScheduleFamilySerializer, DataColumnTypeSerializer, \
     ExperimentSerializer, LabSerializer, TeamSerializer, ValidationSchemaSerializer, SchemaValidationSerializer, \
     ArbitraryFileSerializer, ArbitraryFileCreateSerializer, ParquetPartitionSerializer, ColumnMappingSerializer, \
-    GalvStorageTypeSerializer, AdditionalS3StorageTypeSerializer
+    GalvStorageTypeSerializer, AdditionalS3StorageTypeSerializer, PasswordResetRequestSerializer, \
+    PasswordResetSerializer
 from .models import Harvester, \
     HarvestError, \
     MonitoredPath, \
@@ -54,7 +55,7 @@ from .models import Harvester, \
     ValidationSchema, Experiment, Lab, Team, UserProxy, GroupProxy, ValidatableBySchemaMixin, SchemaValidation, \
     UserActivation, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, ALLOWED_USER_LEVELS_DELETE, \
     ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, StorageError, ColumnMapping, GalvStorageType, \
-    AdditionalS3StorageType
+    AdditionalS3StorageType, PasswordReset
 from .permissions import HarvesterFilterBackend, TeamFilterBackend, LabFilterBackend, GroupFilterBackend, \
     ResourceFilterBackend, ObservedFileFilterBackend, UserFilterBackend, SchemaValidationFilterBackend, \
     ParquetPartitionFilterBackend, LabResourceFilterBackend
@@ -200,6 +201,63 @@ def activate_user(request):
     except (UserActivation.DoesNotExist, ValueError, RuntimeError) as e:
         return error_response(str(e))
     return Response({"detail": f"User {activation.user.username} activated"})
+
+@extend_schema(responses=204, request=inline_serializer(
+    'PasswordResetRequest',
+    {'email': serializers.EmailField()}
+))
+@api_view(('POST',))
+@renderer_classes((JSONRenderer,))
+def request_password_reset(request):
+    email = request.GET.get('email')
+    if not email:
+        return error_response("No email provided")
+    try:
+        user = UserProxy.objects.get(email=email)
+    except UserProxy.DoesNotExist:
+        return error_response("No user with that email")
+    reset = PasswordReset.objects.create(user=user)
+    reset.send_email(request)
+    return Response(status=204)
+
+@extend_schema(responses=204, request=inline_serializer(
+    'PasswordResetRequest',
+    {
+        'email': serializers.EmailField(),
+        'password': serializers.CharField(),
+        'token': serializers.CharField()
+    }
+))
+@api_view(('POST',))
+@renderer_classes((JSONRenderer,))
+def reset_password(request):
+    email = request.GET.get('email')
+    if not email:
+        return error_response("No email provided")
+    try:
+        user = UserProxy.objects.get(email=email)
+    except UserProxy.DoesNotExist:
+        return error_response("No user with that email")
+
+    token = request.GET.get('token')
+    if not token:
+        return error_response("No token provided")
+    try:
+        reset = PasswordReset.objects.get(user=user, token=token)
+    except PasswordReset.DoesNotExist:
+        return error_response("Invalid token")
+
+    password = request.data.get('password')
+    if not password:
+        return error_response("No password provided")
+    if len(password) < 8:
+        return error_response("Password must be at least 8 characters")
+
+    user.set_password(password)
+    user.save()
+
+    reset.delete()
+    return Response(status=204)
 
 
 @extend_schema(responses={200: inline_serializer('PermittedAccessLevels', {

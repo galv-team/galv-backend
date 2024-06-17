@@ -20,12 +20,17 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.1.40"
+API_VERSION = "2.1.41"
 
 try:
     USER_ACTIVATION_TOKEN_EXPIRY_S = int(os.environ.get("DJANGO_USER_ACTIVATION_TOKEN_EXPIRY_S"))
 except (ValueError, TypeError):
     USER_ACTIVATION_TOKEN_EXPIRY_S = 60 * 15  # 15 minutes
+
+try:
+    USER_PW_RESET_TOKEN_EXPIRY_S = int(os.environ.get("DJANGO_USER_PW_RESET_TOKEN_EXPIRY_S"))
+except (ValueError, TypeError):
+    USER_PW_RESET_TOKEN_EXPIRY_S = 60 * 15  # 15 minutes
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

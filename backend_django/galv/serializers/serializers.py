@@ -30,7 +30,7 @@ from ..models import Harvester, \
     render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, \
     SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
     ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, ColumnMapping, \
-    get_user_auth_details, GalvStorageType, AdditionalS3StorageType
+    get_user_auth_details, GalvStorageType, AdditionalS3StorageType, PasswordReset
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
 from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
@@ -124,6 +124,51 @@ class UserSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         extra_kwargs = augment_extra_kwargs({
             'password': {'write_only': True, 'help_text': "Password (8 characters minimum)"},
         })
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(help_text="Email address to send password reset link to")
+
+    def validate_email(self, value):
+        if not UserProxy.objects.filter(email=value).exists():
+            raise ValidationError("No user with that email address")
+        return value
+
+    def reset(self, validated_data):
+        user = UserProxy.objects.get(email=validated_data['email'])
+        token = PasswordReset.objects.create(user=user)
+        token.send_email()
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField(help_text="Email address for user account")
+    token = serializers.CharField(help_text="Token from password reset email")
+    password = serializers.CharField(help_text="New password (8 characters minimum)")
+
+    def validate_password(self, value):
+        if len(value) < 8:
+            raise ValidationError("Password must be at least 8 characters")
+        return value
+
+    def validate(self, attrs):
+        try:
+            user = UserProxy.objects.get(email=attrs['email'])
+        except UserProxy.DoesNotExist:
+            raise ValidationError("No user with that email address")
+        try:
+            token = PasswordReset.objects.get(user=user, token=attrs['token'])
+        except PasswordReset.DoesNotExist:
+            raise ValidationError("Invalid token")
+        if token.expired:
+            raise ValidationError("Token has expired")
+        return attrs
+
+    def reset(self, validated_data):
+        user = UserProxy.objects.get(email=validated_data['email'])
+        user.set_password(validated_data['password'])
+        user.save()
+        PasswordReset.objects.filter(user=user).delete()
+        return {"success": True}
 
 
 @extend_schema_serializer(examples = [

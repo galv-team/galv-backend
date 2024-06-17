@@ -71,6 +71,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('activate/', views.activate_user, name='activate_user'),
+    path('forgot_password/', views.request_password_reset, name='forgot_password'),
+    path('reset_password/', views.reset_password, name='reset_password'),
     path('access_levels/', views.access_levels, name='access_levels'),
     path(r'login/', views.LoginView.as_view(), name='knox_login'),
     path(r'logout/', views.LogoutView.as_view(), name='knox_logout'),
