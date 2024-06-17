@@ -216,6 +216,8 @@ def request_password_reset(request):
         user = UserProxy.objects.get(email=email)
     except UserProxy.DoesNotExist:
         return error_response("No user with that email")
+    if not user.is_active:
+        return error_response("User is not active")
     reset, _ = PasswordReset.objects.get_or_create(user=user)
     reset.send_email()
     return Response(status=204)
@@ -238,6 +240,8 @@ def reset_password(request):
         user = UserProxy.objects.get(email=email)
     except UserProxy.DoesNotExist:
         return error_response("No user with that email")
+    if not user.is_active:
+        return error_response("User is not active")
 
     token = request.data.get('token')
     if not token:
