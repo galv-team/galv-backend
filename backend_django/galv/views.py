@@ -221,7 +221,7 @@ def request_password_reset(request):
     return Response(status=204)
 
 @extend_schema(responses={204: None}, request=inline_serializer(
-    'PasswordResetRequest',
+    'PasswordReset',
     {
         'email': serializers.EmailField(),
         'password': serializers.CharField(),
