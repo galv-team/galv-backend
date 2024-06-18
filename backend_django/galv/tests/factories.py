@@ -143,7 +143,7 @@ class GalvStorageTypeFactory(factory.django.DjangoModelFactory):
         model = GalvStorageType
         django_get_or_create = ('lab',)
     priority = 0
-    quota = 1_000_0000
+    quota_bytes = 1_000_0000
 
 
 class AdditionalS3StorageTypeFactory(factory.django.DjangoModelFactory):
@@ -151,7 +151,7 @@ class AdditionalS3StorageTypeFactory(factory.django.DjangoModelFactory):
         model = AdditionalS3StorageType
         django_get_or_create = ('lab', 'priority',)
     priority = factory.Faker('pyint', min_value=5, max_value=1500)
-    quota = 1_000_0000
+    quota_bytes = 1_000_0000
     bucket_name = factory.Faker('word')
     location = factory.Faker('word')
     access_key = factory.Faker('word')
@@ -166,7 +166,7 @@ class LabFactory(factory.django.DjangoModelFactory):
     name = factory.Faker('company')
 
     @factory.post_generation
-    def local_storage_quota(self, create, *_args, **_kwargs):
+    def local_storage_quota_bytes(self, create, *_args, **_kwargs):
         if not create:
             return
         if GalvStorageType.objects.filter(lab=self).count() == 0:
@@ -261,12 +261,12 @@ class CellFamilyFactory(factory.django.DjangoModelFactory):
     form_factor = factory.SubFactory(CellFormFactorsFactory)
     datasheet = factory.Faker('uri')
     chemistry = factory.SubFactory(CellChemistriesFactory)
-    nominal_voltage = factory.Faker('pyfloat', min_value=1.0, max_value=1000000.0)
-    nominal_capacity = factory.Faker('pyfloat', min_value=1.0, max_value=1000000.0)
-    initial_ac_impedance = factory.Faker('pyfloat', min_value=1.0, max_value=1000000.0)
-    initial_dc_resistance = factory.Faker('pyfloat', min_value=1.0, max_value=1000000.0)
-    energy_density = factory.Faker('pyfloat', min_value=1.0, max_value=1000000.0)
-    power_density = factory.Faker('pyfloat', min_value=1.0, max_value=1000000.0)
+    nominal_voltage_v = factory.Faker('pyfloat', min_value=1.0, max_value=1000000.0)
+    nominal_capacity_ah = factory.Faker('pyfloat', min_value=1.0, max_value=1000000.0)
+    initial_ac_impedance_o = factory.Faker('pyfloat', min_value=1.0, max_value=1000000.0)
+    initial_dc_resistance_o = factory.Faker('pyfloat', min_value=1.0, max_value=1000000.0)
+    energy_density_wh_per_kg = factory.Faker('pyfloat', min_value=1.0, max_value=1000000.0)
+    power_density_w_per_kg = factory.Faker('pyfloat', min_value=1.0, max_value=1000000.0)
 
 
 class CellFactory(factory.django.DjangoModelFactory):
@@ -317,7 +317,7 @@ class ScheduleFamilyFactory(factory.django.DjangoModelFactory):
     team = factory.SubFactory(TeamFactory)
     identifier = factory.SubFactory(ScheduleIdentifiersFactory)
     description = factory.Faker('sentence')
-    ambient_temperature = factory.Faker('pyfloat', min_value=0.0, max_value=1000.0)
+    ambient_temperature_c = factory.Faker('pyfloat', min_value=0.0, max_value=1000.0)
     pybamm_template = None
 
 

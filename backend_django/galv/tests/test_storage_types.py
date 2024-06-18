@@ -342,7 +342,7 @@ class GalvStorageTypeTests(StorageResourceTestCase):
             },
             'lab_admin': {
                 'login': self.lab_admin,
-                'response': lambda r: r.json()['quota'] > 10  # should not have changed
+                'response': lambda r: r.json()['quota_bytes'] > 10  # should not have changed
             },
             'strange_lab_admin': {
                 'login': self.strange_lab_admin,
@@ -356,7 +356,7 @@ class GalvStorageTypeTests(StorageResourceTestCase):
             with self.subTest(user=user):
                 details['login']() if callable(details['login']) else self.client.force_login(details['login'])
                 url = reverse(f'{self.stub}-detail', (self.resource.pk,))
-                response = self.client.patch(url, {'quota': fake.pyint(5, 10)})
+                response = self.client.patch(url, {'quota_bytes': fake.pyint(5, 10)})
                 self.assertTrue(
                     details['response'](response),
                     msg=f"{user} update resources on {self.lab_team}\n{response.status_code}\n{response.data}"

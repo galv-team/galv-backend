@@ -789,17 +789,17 @@ class HarvesterViewSet(viewsets.ModelViewSet):
             file.monitored_paths.add(monitored_path)
 
             size = content['size']
-            if size < file.last_observed_size:
+            if size < file.last_observed_size_bytes:
                 file.state = FileState.UNSTABLE
-            elif size > file.last_observed_size:
+            elif size > file.last_observed_size_bytes:
                 file.state = FileState.GROWING
 
-            if size != file.last_observed_size:
-                file.last_observed_size = size
+            if size != file.last_observed_size_bytes:
+                file.last_observed_size_bytes = size
                 file.last_observed_time = timezone.now()
             else:
                 # Recent changes
-                if file.last_observed_time + timezone.timedelta(seconds=monitored_path.stable_time) > timezone.now():
+                if file.last_observed_time + timezone.timedelta(seconds=monitored_path.stable_time_s) > timezone.now():
                     file.state = FileState.UNSTABLE
                 # Stable file -- already imported?
                 elif file.state not in [
@@ -1437,7 +1437,7 @@ class CellFamilyViewSet(viewsets.ModelViewSet):
     filter_backends = [ResourceFilterBackend]
     serializer_class = CellFamilySerializer
     filterset_fields = [
-        'model', 'form_factor', 'chemistry', 'nominal_capacity', 'manufacturer'
+        'model', 'form_factor', 'chemistry', 'nominal_capacity_ah', 'manufacturer'
     ]
     search_fields = ['@model', '@manufacturer', '@form_factor']
     queryset = CellFamily.objects.all().order_by('-id')

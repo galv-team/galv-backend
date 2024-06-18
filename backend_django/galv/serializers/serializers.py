@@ -432,7 +432,7 @@ class TeamSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             "id": "1",
             "name": "Example Lab Storage",
             "lab": "http://localhost:8001/labs/1/",
-            "quota": "100000000",
+            "quota_bytes": "100000000",
             "bytes_used": "500234",
             "priority": "0",
             "enabled": "true",
@@ -453,8 +453,8 @@ class GalvStorageTypeSerializer(serializers.HyperlinkedModelSerializer, Permissi
 
     class Meta:
         model = GalvStorageType
-        fields = ['url', 'id', 'name', 'lab', 'quota', 'bytes_used', 'priority', 'enabled', 'permissions']
-        read_only_fields = ['url', 'id', 'lab', 'quota', "permissions"]
+        fields = ['url', 'id', 'name', 'lab', 'quota_bytes', 'bytes_used', 'priority', 'enabled', 'permissions']
+        read_only_fields = ['url', 'id', 'lab', 'quota_bytes', "permissions"]
         extra_kwargs = augment_extra_kwargs()
 
 
@@ -468,7 +468,7 @@ class GalvStorageTypeSerializer(serializers.HyperlinkedModelSerializer, Permissi
             "id": "1",
             "name": "Example Lab S3 Storage",
             "lab": "http://localhost:8001/labs/1/",
-            "quota": "100000000",
+            "quota_bytes": "100000000",
             "bytes_used": "500234",
             "priority": "0",
             "enabled": "true",
@@ -531,7 +531,7 @@ class AdditionalS3StorageTypeSerializer(serializers.HyperlinkedModelSerializer, 
         model = AdditionalS3StorageType
         fields = [
             'url', 'id',
-            'name', 'lab', 'quota', 'bytes_used', 'priority', 'enabled',
+            'name', 'lab', 'quota_bytes', 'bytes_used', 'priority', 'enabled',
             'secret_key', 'access_key', 'bucket_name', 'location', 'custom_domain',
             'permissions'
         ]
@@ -600,7 +600,7 @@ class LabSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
         admin_group = validated_data.pop('admin_group')
         lab = super().create(validated_data)
         TransparentGroupSerializer().update(lab.admin_group, admin_group)
-        GalvStorageType.objects.create(lab=lab, quota=settings.LAB_STORAGE_QUOTA_BYTES)
+        GalvStorageType.objects.create(lab=lab, quota_bytes=settings.LAB_STORAGE_QUOTA_BYTES)
         lab.save()
         return lab
 
@@ -815,12 +815,12 @@ class CellSerializer(CustomPropertiesModelSerializer, PermissionsMixin, WithTeam
             "model": "HG2",
             "datasheet": None,
             "chemistry": "NMC",
-            "nominal_voltage": 3.6,
-            "nominal_capacity": None,
-            "initial_ac_impedance": None,
-            "initial_dc_resistance": None,
-            "energy_density": None,
-            "power_density": None,
+            "nominal_voltage_v": 3.6,
+            "nominal_capacity_ah": None,
+            "initial_ac_impedance_o": None,
+            "initial_dc_resistance_o": None,
+            "energy_density_wh_per_kg": None,
+            "power_density_w_per_kg": None,
             "form_factor": "Cyclindrical",
             "cells": [
                 "http://localhost:8001/cells/4281a89b-48ff-4f4a-bcd8-5fe427f87a81/"
@@ -863,12 +863,12 @@ class CellFamilySerializer(CustomPropertiesModelSerializer, PermissionsMixin, Wi
             'model',
             'datasheet',
             'chemistry',
-            'nominal_voltage',
-            'nominal_capacity',
-            'initial_ac_impedance',
-            'initial_dc_resistance',
-            'energy_density',
-            'power_density',
+            'nominal_voltage_v',
+            'nominal_capacity_ah',
+            'initial_ac_impedance_o',
+            'initial_dc_resistance_o',
+            'energy_density_wh_per_kg',
+            'power_density_w_per_kg',
             'form_factor',
             'cells',
             'in_use',
@@ -1004,7 +1004,7 @@ class EquipmentSerializer(CustomPropertiesModelSerializer, PermissionsMixin, Wit
             "id": "e25f7c94-ca32-4f47-b95a-3b0e7ae4a47f",
             "identifier": "Cell Conditioning",
             "description": "Each cell is cycled five times at 1C discharge and the standard charge. This test is completed at 25◦C.",
-            "ambient_temperature": 25.0,
+            "ambient_temperature_c": 25.0,
             "pybamm_template": [
                 "Charge at 1 A until 4.1 V",
                 "Discharge at {standard_discharge_constant_current} C for 10 hours or until 3.3 V",
@@ -1052,7 +1052,7 @@ class ScheduleFamilySerializer(CustomPropertiesModelSerializer, PermissionsMixin
         model = ScheduleFamily
         fields = [
             'url', 'id', 'identifier', 'description',
-            'ambient_temperature', 'pybamm_template',
+            'ambient_temperature_c', 'pybamm_template',
             'in_use', 'team', 'schedules', 'permissions',
             'read_access_level', 'edit_access_level', 'delete_access_level',
             'custom_properties'
@@ -1340,7 +1340,7 @@ class HarvesterSerializer(serializers.HyperlinkedModelSerializer, PermissionsMix
             "files": ["http://localhost:8001/files/c690ddf0-9527-11ee-8454-eb9d381d3cc4/"],
             "path": "/home/example_user/example_data.csv",
             "regex": ".*\\.csv",
-            "stable_time": 60,
+            "stable_time_s": 60,
             "active": True,
             "harvester": "http://localhost:8001/harvesters/d8290e68-bfbb-3bc8-b621-5a9590aa29fd/",
             "team": "http://localhost:8001/teams/1/",
@@ -1418,13 +1418,13 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
         abs_path = os.path.normpath(value)
         return abs_path
 
-    def validate_stable_time(self, value):
+    def validate_stable_time_s(self, value):
         try:
             v = int(value)
             assert v > 0
             return v
         except (TypeError, ValueError, AssertionError):
-            raise ValidationError(f"stable_time value '{value}' is not a positive integer")
+            raise ValidationError(f"stable_time_s value '{value}' is not a positive integer")
 
     def validate_regex(self, value):
         try:
@@ -1436,7 +1436,7 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
     class Meta:
         model = MonitoredPath
         fields = [
-            'url', 'id', 'path', 'regex', 'stable_time', 'active', 'max_partition_line_count',
+            'url', 'id', 'path', 'regex', 'stable_time_s', 'active', 'max_partition_line_count',
             'files', 'harvester', 'team',
             'permissions', 'read_access_level', 'edit_access_level', 'delete_access_level'
         ]
@@ -1612,7 +1612,7 @@ class ParquetPartitionSerializer(serializers.HyperlinkedModelSerializer, Permiss
             },
             "has_required_columns": False,
             "last_observed_time": "2024-04-10T14:35:44.467420Z",
-            "last_observed_size": 225,
+            "last_observed_size_bytes": 225,
             "column_errors": [
                 "Missing required column: Elapsed_time_s",
                 "Missing required column: Voltage_V",
@@ -1761,7 +1761,7 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
             'num_rows',
             'first_sample_no',
             'last_sample_no',
-            'last_observed_time', 'last_observed_size',
+            'last_observed_time', 'last_observed_size_bytes',
             'mapping',
             'has_required_columns',
             'parquet_partitions',

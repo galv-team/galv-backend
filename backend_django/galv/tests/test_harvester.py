@@ -427,7 +427,7 @@ class HarvesterTests(GalvTestCase):
         # We should get an error if storage is full
         with self.subTest("Cannot save when storage is over quota"):
             storages = self.lab.get_all_storage_types()
-            storages[0].quota = 0
+            storages[0].quota_bytes = 0
             storages[0].save()
             response = self.client.post(url, {
                 'format': 'flat',

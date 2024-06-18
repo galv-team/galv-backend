@@ -109,7 +109,7 @@
             "model": 1,
             "chemistry": 1,
             "form_factor": 2,
-            "nominal_voltage": 3.6,
+            "nominal_voltage_v": 3.6,
             "custom_properties": {
                 "pattern": {
                     "_type": "string",
@@ -133,7 +133,7 @@
             "model": 2,
             "chemistry": 1,
             "form_factor": 2,
-            "nominal_voltage": 3.6,
+            "nominal_voltage_v": 3.6,
             "custom_properties": {
                 "standard_discharge_constant_current": {
                     "_type": "number",

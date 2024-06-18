@@ -24,7 +24,7 @@
       "created": "2023-12-06T15:10:05+00:00",
       "modified": "2023-12-06T15:10:05+00:00",
       "lab": 1,
-      "quota": 5000000
+      "quota_bytes": 5000000
     }
   },
   {
@@ -95,7 +95,7 @@
       "harvester": "de149eba-3aed-406a-9508-bc33013e554e",
       "path": "/usr/harvester/.test-data/test-suite-small",
       "regex": ".*",
-      "stable_time": 60,
+      "stable_time_s": 60,
       "max_partition_line_count": 100000,
       "active": true,
       "team": 1,
@@ -114,7 +114,7 @@
       "monitored_paths": [
         "fe4b94dc-46ec-4b68-8213-818056e700fa"
       ],
-      "last_observed_size": 6655242,
+      "last_observed_size_bytes": 6655242,
       "last_observed_time": "2024-04-10T15:36:15.698Z",
       "state": "IMPORTED",
       "data_generation_date": "2019-01-24T11:45:23Z",
@@ -1506,7 +1506,7 @@
       "monitored_paths": [
         "fe4b94dc-46ec-4b68-8213-818056e700fa"
       ],
-      "last_observed_size": 561846,
+      "last_observed_size_bytes": 561846,
       "last_observed_time": "2024-04-10T15:36:16.068Z",
       "state": "IMPORTED",
       "data_generation_date": "2021-02-08T00:00:00Z",
@@ -1585,7 +1585,7 @@
       "monitored_paths": [
         "fe4b94dc-46ec-4b68-8213-818056e700fa"
       ],
-      "last_observed_size": 5804677,
+      "last_observed_size_bytes": 5804677,
       "last_observed_time": "2024-04-10T15:36:13.301Z",
       "state": "IMPORTED",
       "data_generation_date": "2017-02-08T00:00:00Z",
@@ -1664,7 +1664,7 @@
       "monitored_paths": [
         "fe4b94dc-46ec-4b68-8213-818056e700fa"
       ],
-      "last_observed_size": 140480746,
+      "last_observed_size_bytes": 140480746,
       "last_observed_time": "2024-04-10T15:36:58.702Z",
       "state": "IMPORTED",
       "data_generation_date": "2018-02-23T08:42:16Z",
@@ -1960,7 +1960,7 @@
       "monitored_paths": [
         "fe4b94dc-46ec-4b68-8213-818056e700fa"
       ],
-      "last_observed_size": 3420493,
+      "last_observed_size_bytes": 3420493,
       "last_observed_time": "2024-04-10T15:36:12.823Z",
       "state": "IMPORTED",
       "data_generation_date": "2021-01-22T00:00:00Z",
@@ -2039,7 +2039,7 @@
       "monitored_paths": [
         "fe4b94dc-46ec-4b68-8213-818056e700fa"
       ],
-      "last_observed_size": 225,
+      "last_observed_size_bytes": 225,
       "last_observed_time": "2024-04-10T15:36:14.259Z",
       "state": "IMPORTED",
       "data_generation_date": null,
@@ -2084,7 +2084,7 @@
       "monitored_paths": [
         "fe4b94dc-46ec-4b68-8213-818056e700fa"
       ],
-      "last_observed_size": 259,
+      "last_observed_size_bytes": 259,
       "last_observed_time": "2024-04-10T15:36:13.793Z",
       "state": "IMPORTED",
       "data_generation_date": null,
@@ -2129,7 +2129,7 @@
       "monitored_paths": [
         "fe4b94dc-46ec-4b68-8213-818056e700fa"
       ],
-      "last_observed_size": 718,
+      "last_observed_size_bytes": 718,
       "last_observed_time": "2024-04-10T15:36:16.571Z",
       "state": "IMPORTED",
       "data_generation_date": null,

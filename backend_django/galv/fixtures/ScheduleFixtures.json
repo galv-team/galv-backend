@@ -18,7 +18,7 @@
             "team": 1,
             "identifier": 1,
             "description": "Each cell is cycled five times at 1C discharge and the standard charge. This test is completed at 25◦C.",
-            "ambient_temperature": 25.0,
+            "ambient_temperature_c": 25.0,
             "pybamm_template": [
                 "Charge at 1 A until 4.1 V",
                 "Discharge at {standard_discharge_constant_current} C for 10 hours or until 3.3 V",

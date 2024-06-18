@@ -265,7 +265,7 @@
                 "type": "string",
                 "description": "Description of the experiment"
               },
-              "ambient_temperature": {
+              "ambient_temperature_c": {
                 "type": "number",
                 "description": "Ambient temperature in Kelvin",
                 "exclusiveMinimum": 0

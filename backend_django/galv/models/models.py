@@ -417,7 +417,7 @@ class _StorageType(UUIDModel):
     name = models.TextField(null=True, blank=True)
     lab = models.ForeignKey('Lab', related_name="storage_%(class)s", on_delete=models.CASCADE)
     enabled = models.BooleanField(default=True, help_text="Whether this storage type is enabled for writing to")
-    quota = models.BigIntegerField(help_text="Maximum storage capacity in bytes")
+    quota_bytes = models.BigIntegerField(help_text="Maximum storage capacity in bytes")
     priority = models.SmallIntegerField(
         default=0,
         help_text="Priority for storage allocation. Higher values are higher priority."
@@ -531,7 +531,7 @@ class GalvStorageType(_StorageType):
         if adding:
             if not self.enabled:
                 raise StorageLockedError(f"Cannot save data: storage is locked for {self}")
-            if self.get_bytes_used(instance) + instance.bytes_required >= self.quota:
+            if self.get_bytes_used(instance) + instance.bytes_required >= self.quota_bytes:
                 raise StorageFullError(f"Cannot save data: local storage quota exceeded for {self}")
         try:
             if settings.S3_ENABLED and settings.LABS_USE_OUR_S3_STORAGE:
@@ -581,7 +581,7 @@ class AdditionalS3StorageType(_StorageType):
         if adding:
             if not self.enabled:
                 raise StorageLockedError(f"Cannot save data: storage is locked for {self}")
-            if self.get_bytes_used(instance) + instance.bytes_required >= self.quota:
+            if self.get_bytes_used(instance) + instance.bytes_required >= self.quota_bytes:
                 raise StorageFullError(f"Cannot save data: storage quota exceeded for {self}")
         try:
             return S3DataStorage(
@@ -896,12 +896,12 @@ class CellFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
     chemistry = models.ForeignKey(to=CellChemistries, help_text="Chemistry of the cells", null=True, blank=True, on_delete=models.CASCADE)
     form_factor = models.ForeignKey(to=CellFormFactors, help_text="Physical shape of the cells", null=True, blank=True, on_delete=models.CASCADE)
     datasheet = models.URLField(help_text="Link to the datasheet", null=True, blank=True)
-    nominal_voltage = models.FloatField(help_text="Nominal voltage of the cells (in volts)", null=True, blank=True)
-    nominal_capacity = models.FloatField(help_text="Nominal capacity of the cells (in amp hours)", null=True, blank=True)
-    initial_ac_impedance = models.FloatField(help_text="Initial AC impedance of the cells (in ohms)", null=True, blank=True)
-    initial_dc_resistance = models.FloatField(help_text="Initial DC resistance of the cells (in ohms)", null=True, blank=True)
-    energy_density = models.FloatField(help_text="Energy density of the cells (in watt hours per kilogram)", null=True, blank=True)
-    power_density = models.FloatField(help_text="Power density of the cells (in watts per kilogram)", null=True, blank=True)
+    nominal_voltage_v = models.FloatField(help_text="Nominal voltage of the cells (in volts)", null=True, blank=True)
+    nominal_capacity_ah = models.FloatField(help_text="Nominal capacity of the cells (in amp hours)", null=True, blank=True)
+    initial_ac_impedance_o = models.FloatField(help_text="Initial AC impedance of the cells (in ohms)", null=True, blank=True)
+    initial_dc_resistance_o = models.FloatField(help_text="Initial DC resistance of the cells (in ohms)", null=True, blank=True)
+    energy_density_wh_per_kg = models.FloatField(help_text="Energy density of the cells (in watt hours per kilogram)", null=True, blank=True)
+    power_density_w_per_kg = models.FloatField(help_text="Power density of the cells (in watts per kilogram)", null=True, blank=True)
 
     def in_use(self) -> bool:
         return self.cells.count() > 0
@@ -980,7 +980,7 @@ class Equipment(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMix
 class ScheduleFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
     identifier = models.OneToOneField(to=ScheduleIdentifiers, unique=True, blank=False, null=False, help_text="Type of experiment, e.g. Constant-Current Discharge", on_delete=models.CASCADE)
     description = models.TextField(help_text="Description of the schedule")
-    ambient_temperature = models.FloatField(help_text="Ambient temperature during the experiment (in degrees Celsius)", null=True, blank=True)
+    ambient_temperature_c = models.FloatField(help_text="Ambient temperature during the experiment (in degrees Celsius)", null=True, blank=True)
     pybamm_template = ArrayField(base_field=models.TextField(), help_text="Template for the schedule in PyBaMM format", null=True, blank=True)
 
     def pybamm_template_variable_names(self):
@@ -1161,7 +1161,7 @@ class ObservedFile(_StorageTypeConsumerModel, ValidatableBySchemaMixin):
         on_delete=models.CASCADE,
         help_text="Harvester that harvested the File"
     )
-    last_observed_size = models.PositiveBigIntegerField(
+    last_observed_size_bytes = models.PositiveBigIntegerField(
         null=False,
         default=0,
         help_text="Size of the file as last reported by Harvester"
@@ -1406,7 +1406,7 @@ class MonitoredPath(UUIDModel, ResourceModelPermissionsMixin):
     applied to full file name starting from this Path's directory""",
         default=".*"
     )
-    stable_time = models.PositiveSmallIntegerField(
+    stable_time_s = models.PositiveSmallIntegerField(
         default=60,
         help_text="Number of seconds files must remain stable to be processed"
     )
