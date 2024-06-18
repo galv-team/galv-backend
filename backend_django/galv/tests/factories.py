@@ -447,7 +447,6 @@ class DataColumnTypeFactory(factory.django.DjangoModelFactory):
     description = factory.Faker('sentence')
     is_default = False
     is_required = False
-    override_child_name = False
 
 def to_validation_schema(obj):
     # Suppress errors when 'not' is a key

@@ -1700,9 +1700,6 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
     applicable_mappings = serializers.SerializerMethodField(
         help_text="Mappings that can be applied to this File"
     )
-    upload_info = serializers.SerializerMethodField(
-        help_text="Metadata required for harvester program to resume file parsing"
-    )
     extra_metadata = serializers.SerializerMethodField(
         help_text="Extra metadata about this File"
     )
