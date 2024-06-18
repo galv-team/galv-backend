@@ -8,6 +8,7 @@ import jsonschema
 from django.conf import settings
 from django.core.files.storage import Storage
 from django.db import models
+from django.db.models import Sum
 from django.test import RequestFactory
 from django.utils import timezone
 from django.utils.crypto import get_random_string
@@ -446,25 +447,13 @@ class _StorageType(UUIDModel):
         Args:
             - [instance]: the instance that is being written to or read from storage
         """
-        total = 0
-        for file in self.files.all():
-            try:
-                if file != instance:
-                    total += file.png.size
-            except (FileNotFoundError, ValueError):
-                pass
-        for partition in self.parquet_partitions.all():
-            try:
-                if partition != instance:
-                    total += partition.parquet_file.size
-            except (FileNotFoundError, ValueError):
-                pass
-        for af in self.arbitrary_files.all():
-            try:
-                if af != instance:
-                    total += af.file.size
-            except (FileNotFoundError, ValueError):
-                pass
+        total = (
+            self.files.aggregate(x=Sum('bytes_required', default=0))['x'] +
+            self.parquet_partitions.aggregate(x=Sum('bytes_required', default=0))['x'] +
+            self.arbitrary_files.aggregate(x=Sum('bytes_required', default=0))['x']
+        )
+        if instance:
+            return total - (instance.bytes_required or 0)
         return total
 
     def get_storage(self, instance, adding=False) -> Storage:
@@ -1323,6 +1312,9 @@ class ObservedFile(_StorageTypeConsumerModel, ValidatableBySchemaMixin):
                 self.state = FileState.MAP_ASSIGNED if self.mapping else FileState.AWAITING_MAP_ASSIGNMENT
         super(ObservedFile, self).save(force_insert, force_update, using, update_fields)
 
+    def delete(self, using=None, keep_parents=False):
+        self.png.delete()
+        super(ObservedFile, self).delete(using, keep_parents)
 
     def __str__(self):
         return self.path
@@ -1868,3 +1860,7 @@ class ParquetPartition(_StorageTypeConsumerModel):
     @property
     def uploaded(self) -> bool:
         return self.parquet_file is not None
+
+    def delete(self, using=None, keep_parents=False):
+        self.parquet_file.delete()
+        super(ParquetPartition, self).delete(using, keep_parents)
