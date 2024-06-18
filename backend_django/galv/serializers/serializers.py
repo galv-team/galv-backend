@@ -1629,7 +1629,6 @@ class ParquetPartitionSerializer(serializers.HyperlinkedModelSerializer, Permiss
                     "uploaded": True
                 }
             ],
-            "upload_info": None,
             "columns": [
                 {
                     "name": "column_0",
@@ -1711,24 +1710,6 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
         help_text="First few rows of this file's data"
     )
 
-    def get_upload_info(self, instance) -> Optional[dict]:
-        if not self.context.get('with_upload_info'):
-            return None
-        try:
-            last_record = 0
-            columns = DataColumn.objects.filter(file=instance)
-            column_data = []
-            for c in columns:
-                column_data.append({'name': c.name, 'id': c.id})
-                if c.type.override_child_name == 'Sample_number':
-                    last_record = c.values[:-1] if len(c.values) > 0 else 0
-            return {
-                'columns': column_data,
-                'last_record_number': last_record
-            }
-        except BaseException as e:
-            return {'columns': [], 'last_record_number': None, 'error': str(e)}
-
     def get_applicable_mappings(self, instance) -> str:
         return reverse(
             'observedfile-applicable-mappings',
@@ -1769,7 +1750,6 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
             'summary',
             'png',
             'applicable_mappings',
-            'upload_info',
             'permissions'
         ]
         read_only_fields = list(set(fields) - {'name', 'mapping'})

@@ -968,10 +968,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
 
             file.save()
 
-            return Response(ObservedFileSerializer(file, context={
-                'request': self.request,
-                'with_upload_info': content['stage'] == settings.HARVEST_STAGE_FILE_METADATA
-            }).data)
+            return Response(ObservedFileSerializer(file, context={'request': self.request}).data)
 
         harvester = get_object_or_404(Harvester, id=pk)
         self.check_object_permissions(self.request, harvester)

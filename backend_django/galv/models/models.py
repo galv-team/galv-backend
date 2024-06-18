@@ -1550,11 +1550,6 @@ class DataColumnType(ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
         default=False,
         help_text="Whether the Column must be present in every Dataset"
     )
-    override_child_name = models.TextField(
-        null=True,
-        blank=True,
-        help_text="If set, this name will be used instead of the Column name in Dataframes"
-    )
 
     @staticmethod
     def has_write_permission(request):
