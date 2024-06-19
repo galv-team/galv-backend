@@ -357,6 +357,18 @@ class GalvTeamResourceTestCase(_GalvTeamResourceTestCase):
             ]:
                 self.assertResourceInResults(resource, response)
 
+        if isinstance(self.access_test_default.pk, UUID):
+            with self.subTest("Test dump"):
+                response = self.client.get(reverse('dump', args=(self.access_test_default.pk,)))
+                assert_response_property(self, response, self.assertEqual, response.status_code, 200)
+                if (
+                        hasattr(self.access_test_default, 'special_dump_fields') and
+                        self.access_test_default.special_dump_fields
+                ):
+                    self.assertGreater(len(response.json().keys()), 0)
+                    for field in self.access_test_default.special_dump_fields:
+                        self.assertNotIn(field, response.json().keys())
+
     def test_update_anonymous(self):
         """
         * Write requests disallowed

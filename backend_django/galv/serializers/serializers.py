@@ -1892,6 +1892,7 @@ class ExperimentSerializer(serializers.HyperlinkedModelSerializer, PermissionsMi
         read_only_fields = ['url', 'id', 'permissions']
         extra_kwargs = augment_extra_kwargs()
 
+
 @extend_schema_serializer(examples = [
     OpenApiExample(
         'Valid example',

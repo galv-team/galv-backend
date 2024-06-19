@@ -2,6 +2,7 @@ import json
 from collections import OrderedDict
 
 import django.db.models
+from django.core.serializers.json import DjangoJSONEncoder
 from drf_spectacular.utils import extend_schema_field
 from dry_rest_permissions.generics import DRYPermissionsField
 from rest_framework import serializers
@@ -374,3 +375,138 @@ class PasswordField(serializers.CharField):
         if self.show_first_chars:
             return f"{v[:self.show_first_chars]}{stars[self.show_first_chars:]}"
         return stars
+
+
+class DumpSerializer(serializers.Serializer):
+    """
+    A Serializer that will dump a model to a JSON dictionary of id: properties.
+    Related fields are included in the dictionary, and the process is repeated for them.
+
+    Models will not be dumped if they do not have a special_dump_fields property.
+    Fields can be excluded from the dump by setting special_dump_fields = {'field_name': X, ...}.
+    X can be a callable that returns a value, or a value to be used directly.
+    If X is None, or a callable that returns None, the field will be excluded from the dump.
+    X as a callable will be called with the arguments:
+        - putative value of the field
+        - the model instance
+        - whether the model instance is the root of the dump
+        - this serializer instance in case you need to continue dumping with self.dump_value(), check the request, etc.
+    Set special_dump_fields to {} to dump all fields.
+    As a convenience, special_dump_fields can be a set of field names, which will be converted to a dictionary
+    with all values set to None.
+    special_dump_fields will cascade to parent models, so if a parent model has a special_dump_fields property,
+    it will apply to child models that do not have their own special_dump_fields property.
+
+    Models that do not have special_dump_fields will be represented by the output of their
+    .__dump__() method if it exists, or by their __str__() method if it does not.
+
+    __dump__() output will be coerced to a str value, because the output is used as a dictionary key.
+    The output should not be sensitive information, because it will be exposed where relevant,
+    even if the user does not have permission to read the whole object.
+
+    A model that does not allow read permissions will be redacted.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.context or 'request' not in self.context:
+            raise ValueError("DumpSerializer requires a 'request' in the context")
+        self.request = self.context['request']
+        self.dump = {}
+
+    @property
+    def dumped_object_ids(self):
+        return self.dump.keys()
+
+    def dump_ref_or_str(self, model):
+        """
+        Return the id of the model if it has been dumped, or its string representation.
+        This can be used in lambda callbacks to avoid crawling huge swathes of the database
+        when e.g. a Cell calls a Cell Family which then wants to dump all its Cells.
+        """
+        id = str(model.pk)
+        if id in self.dumped_object_ids:
+            return id
+        return self.model_dump_value(model)
+
+    @staticmethod
+    def special_dump_fields(obj):
+        if hasattr(obj, 'special_dump_fields'):
+            if isinstance(obj.special_dump_fields, set):
+                return [{k: None} for k in obj.special_dump_fields]
+            if not isinstance(obj.special_dump_fields, dict) and obj.special_dump_fields is not None:
+                raise ValueError("special_dump_fields must be a dictionary")
+            return obj.special_dump_fields
+        return None
+
+    @staticmethod
+    def model_dump_value(model):
+        if hasattr(model, '__dump__') and callable(model.__dump__):
+            return str(model.__dump__())
+        return str(model.pk)
+
+    def dump_relation(self, rel, root=False):
+        dump_value = self.model_dump_value(rel)
+        special_fields = self.special_dump_fields(rel)
+
+        if special_fields is None:
+            return dump_value
+
+        if dump_value not in self.dumped_object_ids:
+            representation = {
+                'resource_type': rel.__class__.__name__
+            }
+            # Check permissions
+            allowed = True
+            if hasattr(rel, 'has_read_permission'):
+                allowed = rel.has_read_permission(self.context['request'])
+                if allowed and hasattr(rel, 'has_object_read_permission'):
+                    allowed = rel.has_object_read_permission(self.request)
+            if not allowed:
+                representation['redacted'] = True
+            else:
+                self.dump[dump_value] = representation  # adding to dump here to prevent infinite recursion
+
+                for field in rel._meta.get_fields():
+                    if field.name in special_fields:
+                        x = special_fields[field.name]
+                        if x is not None:
+                            if callable(x):
+                                y = x(getattr(rel, field.name), rel, root, self)
+                                if y is not None:
+                                    representation[field.name] = y
+                            else:
+                                representation[field.name] = x
+                        continue
+
+                    representation[field.name] = self.dump_value(getattr(rel, field.name))
+
+            self.dump[dump_value] = representation  # updating with full representation
+
+        return dump_value
+
+    @staticmethod
+    def dump_other(v):
+        try:
+            return json.loads(json.dumps(v, cls=DjangoJSONEncoder))
+        except Exception as e:
+            print(f"Couldn't serialize value for dumping:\n{e}\n{v}")
+        return str(v)
+
+    def dump_value(self, value, root=False):
+        if isinstance(value, django.db.models.Model):
+            return self.dump_relation(value, root)
+        if isinstance(value, django.db.models.Manager):
+            value = value.all()
+        if isinstance(value, list) or isinstance(value, django.db.models.QuerySet):
+            return [self.dump_value(o, root) for o in value]
+        return self.dump_other(value)
+
+    def to_representation(self, instance, accumulator = None, nest_level = 0):
+        """
+        Crawl through the object graph, dumping objects to a dictionary.
+        """
+        # request is required for checking permissions
+        self.dump = {}
+
+        self.dump_value(instance, root=True)
+        return self.dump

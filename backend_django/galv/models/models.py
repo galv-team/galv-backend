@@ -392,6 +392,11 @@ class _StorageTypeConsumerModel(UUIDModel):
     bytes_required = models.BigIntegerField(default=0)
     view_name = ""  # This is set by the subclass and is used to create the URL for the object via DRF's reverse()
 
+    special_dump_fields = {
+        '_storage_content_type': None,
+        '_storage_object_id': None
+    }
+
     def _get_lab(self):
         """
         Return the Lab that this object belongs to.
@@ -743,6 +748,9 @@ class Team(TimestampedModel):
     def __str__(self):
         return f"{self.name} [Team {self.pk}]"
 
+    def __dump__(self):
+        return self.name
+
     def save(
             self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
@@ -785,6 +793,12 @@ class ResourceModelPermissionsMixin(TimestampedModel):
         default=UserLevel.LAB_MEMBER.value,
         choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_READ]
     )
+
+    special_dump_fields = {
+        'delete_access_level': None,
+        'edit_access_level': None,
+        'read_access_level': None
+    }
 
     def get_user_level(self, request):
         if self.team:
@@ -903,6 +917,11 @@ class CellFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
     energy_density_wh_per_kg = models.FloatField(help_text="Energy density of the cells (in watt hours per kilogram)", null=True, blank=True)
     power_density_w_per_kg = models.FloatField(help_text="Power density of the cells (in watts per kilogram)", null=True, blank=True)
 
+    special_dump_fields = {
+        **ResourceModelPermissionsMixin.special_dump_fields,
+        'cells': lambda v, _m, r, s: s.dump_value(v) if r else None
+    }
+
     def in_use(self) -> bool:
         return self.cells.count() > 0
 
@@ -920,6 +939,11 @@ class CellFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
 class Cell(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
     identifier = models.TextField(unique=False, help_text="Unique identifier (e.g. serial number) for the cell", null=False)
     family = models.ForeignKey(to=CellFamily, on_delete=models.CASCADE, null=False, help_text="Cell type", related_name="cells")
+
+    special_dump_fields = {
+        **ResourceModelPermissionsMixin.special_dump_fields,
+        'cycler_tests': lambda v, _m, r, s: s.dump_value(v) if r else None
+    }
 
     def in_use(self) -> bool:
         return self.cycler_tests.count() > 0
@@ -950,6 +974,11 @@ class EquipmentFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
     manufacturer = models.ForeignKey(to=EquipmentManufacturers, on_delete=models.CASCADE, null=False, help_text="Manufacturer of equipment")
     model = models.ForeignKey(to=EquipmentModels, on_delete=models.CASCADE, null=False, help_text="Model of equipment")
 
+    special_dump_fields = {
+        **ResourceModelPermissionsMixin.special_dump_fields,
+        'equipment': lambda v, _m, r, s: s.dump_value(v) if r else None
+    }
+
     def in_use(self) -> bool:
         return self.equipment.count() > 0
 
@@ -960,6 +989,11 @@ class Equipment(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMix
     identifier = models.TextField(unique=True, help_text="Unique identifier (e.g. serial number) for the equipment", null=False)
     family = models.ForeignKey(to=EquipmentFamily, on_delete=models.CASCADE, null=False, help_text="Equipment type", related_name="equipment")
     calibration_date = models.DateField(help_text="Date of last calibration", null=True, blank=True)
+
+    special_dump_fields = {
+        **ResourceModelPermissionsMixin.special_dump_fields,
+        'cycler_tests': lambda v, _m, r, s: s.dump_value(v) if r else None
+    }
 
     def in_use(self) -> bool:
         return self.cycler_tests.count() > 0
@@ -983,6 +1017,11 @@ class ScheduleFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
     ambient_temperature_c = models.FloatField(help_text="Ambient temperature during the experiment (in degrees Celsius)", null=True, blank=True)
     pybamm_template = ArrayField(base_field=models.TextField(), help_text="Template for the schedule in PyBaMM format", null=True, blank=True)
 
+    special_dump_fields = {
+        **ResourceModelPermissionsMixin.special_dump_fields,
+        'schedules': lambda v, _m, r, s: s.dump_value(v) if r else None
+    }
+
     def pybamm_template_variable_names(self):
         template = "\n".join(self.pybamm_template)
         return re.findall(r"\{([\w_]+)}", template)
@@ -998,6 +1037,12 @@ class Schedule(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixi
     family = models.ForeignKey(to=ScheduleFamily, on_delete=models.CASCADE, null=False, help_text="Schedule type", related_name="schedules")
     schedule_file = models.FileField(help_text="File containing the schedule", null=True, blank=True)
     pybamm_schedule_variables = models.JSONField(help_text="Variables used in the PyBaMM.Experiment representation of the schedule", null=True, blank=True)
+
+    special_dump_fields = {
+        **ResourceModelPermissionsMixin.special_dump_fields,
+        'schedule_file': lambda v, _m, _r, _s: v.url if v else "Not uploaded",
+        'cycler_tests': lambda v, _m, r, s: s.dump_value(v) if r else None
+    }
 
     def in_use(self) -> bool:
         return self.cycler_tests.count() > 0
@@ -1070,6 +1115,9 @@ class Harvester(UUIDModel):
     def __str__(self):
         return f"{self.name} [Harvester {self.id}]"
 
+    def __dump__(self):
+        return str(self.id)
+
     def save(self, *args, **kwargs):
         if self.api_key is None:
             # Create groups for Harvester
@@ -1113,6 +1161,8 @@ class ColumnMapping(UUIDModel, ResourceModelPermissionsMixin):
         )
     )
 
+    special_dump_fields = None  # Exclude from dumping
+
     @property
     def in_use(self) -> bool:
         return self.observed_files.count() > 0
@@ -1152,6 +1202,9 @@ class ColumnMapping(UUIDModel, ResourceModelPermissionsMixin):
 
     def __str__(self):
         return self.name
+
+    def __dump__(self):
+        return str(self.id)
 
 
 class ObservedFile(_StorageTypeConsumerModel, ValidatableBySchemaMixin):
@@ -1237,6 +1290,11 @@ class ObservedFile(_StorageTypeConsumerModel, ValidatableBySchemaMixin):
     )
 
     view_name = "observedfile-png"
+    special_dump_fields = {
+        **_StorageTypeConsumerModel.special_dump_fields,
+        'png': lambda f, _m, _r, _s: f.url or "Not uploaded",
+        'summary': None
+    }
 
     def _get_lab(self):
         return self.harvester.lab
@@ -1329,6 +1387,11 @@ class CyclerTest(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMi
     equipment = models.ManyToManyField(to=Equipment, help_text="Equipment used to test the cell", related_name="cycler_tests")
     files = models.ManyToManyField(to=ObservedFile,  help_text="Test data", related_name="cycler_tests")
 
+    special_dump_fields = {
+        **ResourceModelPermissionsMixin.special_dump_fields,
+        'experiments': lambda v, _m, _r, s: [s.dump_ref_or_str(e) for e in v.all()],
+    }
+
     def __str__(self):
         return f"{self.cell} [CyclerTest {self.id}]"
 
@@ -1347,6 +1410,13 @@ class Experiment(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMi
     protocol = models.JSONField(help_text="Protocol of the experiment", null=True, blank=True)
     protocol_file = models.FileField(help_text="Protocol file of the experiment", null=True, blank=True)
     cycler_tests = models.ManyToManyField(to=CyclerTest, help_text="Cycler tests of the experiment", related_name="experiments")
+
+    special_dump_fields = {
+        **ResourceModelPermissionsMixin.special_dump_fields,
+        'protocol_file': lambda v, _m, _r, _s: v.url if v else "Not uploaded",
+        'authors': lambda v, _m, _r, _s: [str(a) for a in v.all()],
+        'experiments': lambda v, _m, r, s: s.dump_value(v) if r else None
+    }
 
     def __str__(self):
         return self.title
@@ -1436,6 +1506,8 @@ class MonitoredPath(UUIDModel, ResourceModelPermissionsMixin):
         choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_EDIT_PATH]
     )
 
+    special_dump_fields = None
+
     def __str__(self):
         return self.path
 
@@ -1513,6 +1585,8 @@ class DataUnit(ResourceModelPermissionsMixin):
         help_text="Whether the Unit is included in the initial list of Units"
     )
 
+    special_dump_fields = None
+
     @staticmethod
     def has_write_permission(request):
         return True
@@ -1525,6 +1599,9 @@ class DataUnit(ResourceModelPermissionsMixin):
         if self.symbol:
             return f"{self.symbol} | {self.name} - {self.description}"
         return f"{self.name} - {self.description}"
+
+    def __dump__(self):
+        return self.symbol or self.name
 
 
 class DataColumnType(ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
@@ -1684,6 +1761,12 @@ class ValidationSchema(CustomPropertiesModel, ResourceModelPermissionsMixin):
     name = models.TextField(null=False, help_text="Human-friendly identifier")
     schema = models.JSONField(help_text="JSON Schema")
 
+    special_dump_fields = {
+        **ResourceModelPermissionsMixin.special_dump_fields,
+        'schema': None,
+        'schemavalidations': None
+    }
+
     def save(
             self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
@@ -1698,8 +1781,10 @@ class SchemaValidation(TimestampedModel):
     """
     Whether a component is valid according to a ValidationSchema.
     """
-    schema = models.ForeignKey(to=ValidationSchema, on_delete=models.CASCADE, null=False,
-                               help_text="ValidationSchema used to validate the component")
+    schema = models.ForeignKey(
+        to=ValidationSchema, on_delete=models.CASCADE, null=False,
+        help_text="ValidationSchema used to validate the component", related_name="+"
+    )
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.CharField(max_length=36)
     validation_target = GenericForeignKey("content_type", "object_id")
@@ -1800,6 +1885,11 @@ class ArbitraryFile(_StorageTypeConsumerModel, ResourceModelPermissionsMixin):
     description = models.TextField(help_text="The description of the file", null=True, blank=True)
 
     view_name = "arbitraryfile-file"
+    special_dump_fields = {
+        **ResourceModelPermissionsMixin.special_dump_fields,
+        **_StorageTypeConsumerModel.special_dump_fields,
+        'file': None
+    }
 
     def _get_lab(self):
         return self.team.lab
@@ -1844,6 +1934,10 @@ class ParquetPartition(_StorageTypeConsumerModel):
     )
 
     view_name = "parquetpartition-file"
+    special_dump_fields = {
+        **_StorageTypeConsumerModel.special_dump_fields,
+        'parquet_file': lambda f, _m, _r, _s: f.url if f else "Not uploaded",
+    }
 
     def _get_lab(self):
         return self.observed_file.harvester.lab
