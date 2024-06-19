@@ -14,7 +14,9 @@ import os
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect, FileResponse
 from django.urls import NoReverseMatch
+from django.db.models.base import ModelBase
 from django.utils.decorators import method_decorator
+from django.utils.module_loading import import_string
 from django.views.decorators.csrf import csrf_exempt
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
@@ -61,7 +63,7 @@ from .models import Harvester, \
 from .permissions import HarvesterFilterBackend, TeamFilterBackend, LabFilterBackend, GroupFilterBackend, \
     ResourceFilterBackend, ObservedFileFilterBackend, UserFilterBackend, SchemaValidationFilterBackend, \
     ParquetPartitionFilterBackend, LabResourceFilterBackend
-from .serializers.utils import get_GetOrCreateTextStringSerializer
+from .serializers.utils import get_GetOrCreateTextStringSerializer, DumpSerializer
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import viewsets, serializers, permissions
@@ -163,6 +165,30 @@ class _GetOrCreateTextStringViewSet(ListModelMixin, viewsets.GenericViewSet):
     # def details(self, request, pk: int = None):
     #     text_string = get_object_or_404(self.queryset, pk=pk)
     #     return Response(GetOrCreateTextStringSerializer(text_string).data)
+
+
+@extend_schema(responses={200: DumpSerializer})
+@api_view(('GET',))
+@renderer_classes((JSONRenderer,))
+def dump(request, pk):
+    # Iterate over models exported from galv.Models to find one matching the pk
+    models = import_string("galv.models")
+    target = None
+    for model in models.__dict__.values():
+        if isinstance(model, ModelBase) and hasattr(model, 'DoesNotExist'):
+            meta = getattr(model, '_meta', {})
+            if getattr(meta, 'abstract', True):
+                continue
+            try:
+                target = model.objects.get(pk=pk)
+                break
+            except (model.DoesNotExist, ValueError):
+                pass
+    if target is None:
+        return error_response(f"No model with pk {pk}")
+    return Response(DumpSerializer(target, context={'request': request}).data)
+
+
 
 @extend_schema(responses={200: inline_serializer(
     'ActivationResponse',
@@ -473,10 +499,7 @@ class TokenViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         try:
-            token = KnoxAuthToken.objects.get(
-                pk=kwargs.get('pk'),
-                knox_token_key__regex=f"_{request.user.id}$"
-            )
+            token = KnoxAuthToken.objects.get(pk=kwargs.get('pk'), user=request.user)
             self.check_object_permissions(self.request, token)
         except KnoxAuthToken.DoesNotExist:
             return error_response("Token not found")
