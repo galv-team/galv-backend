@@ -16,8 +16,10 @@ from django.http import HttpResponse, HttpResponseRedirect, FileResponse
 from django.urls import NoReverseMatch
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
 from dry_rest_permissions.generics import DRYPermissions
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.mixins import ListModelMixin
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.renderers import JSONRenderer
@@ -498,7 +500,7 @@ Labs are collections of Teams that provide for wider-scale access management and
 )
 class LabViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
-    filter_backends = [LabFilterBackend]
+    filter_backends = [LabFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['name']
     search_fields = ['@name']
     queryset = Lab.objects.all().order_by('-id')
@@ -534,7 +536,7 @@ Teams are groups of Users who share Resources.
 )
 class TeamViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
-    filter_backends = [TeamFilterBackend]
+    filter_backends = [TeamFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     serializer_class = TeamSerializer
     filterset_fields = ['name']
     search_fields = ['@name']
@@ -628,7 +630,7 @@ class HarvesterViewSet(viewsets.ModelViewSet):
     Harvesters are created by a separate software package available within Galv.
     """
     permission_classes = [DRYPermissions]
-    filter_backends = [HarvesterFilterBackend]
+    filter_backends = [HarvesterFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['name', 'lab_id']
     search_fields = ['@name']
     queryset = Harvester.objects.all().order_by('-last_check_in', '-id')
@@ -1092,10 +1094,10 @@ class MonitoredPathViewSet(viewsets.ModelViewSet):
     well as any users who have been given explicit permissions to edit the MonitoredPath.
     """
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend]
+    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     serializer_class = MonitoredPathSerializer
     filterset_fields = ['path', 'harvester__id', 'harvester__name']
-    search_fields = ['@path']
+    search_fields = ['@path', '=harvester__id', '=harvester__name']
     queryset = MonitoredPath.objects.all().order_by('-id')
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
@@ -1151,10 +1153,10 @@ class ObservedFileViewSet(viewsets.ModelViewSet):
     of imported files.
     """
     permission_classes = [DRYPermissions]
-    filter_backends = [ObservedFileFilterBackend]
+    filter_backends = [ObservedFileFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     serializer_class = ObservedFileSerializer
-    filterset_fields = ['harvester__id', 'path', 'state']
-    search_fields = ['@path', 'state']
+    filterset_fields = ['harvester__id', 'path']
+    search_fields = ['@path', 'state', 'name']
     queryset = ObservedFile.objects.all().order_by('-last_observed_time', '-id')
     http_method_names = ['get', 'patch', 'options']
 
@@ -1222,6 +1224,7 @@ class ObservedFileViewSet(viewsets.ModelViewSet):
 
 class ColumnMappingViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
+    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     serializer_class = ColumnMappingSerializer
     queryset = ColumnMapping.objects.all().order_by('-id')
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
@@ -1257,7 +1260,9 @@ Download a file from the API.
 )
 class ParquetPartitionViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [DRYPermissions]
-    filter_backends = [ParquetPartitionFilterBackend]
+    filter_backends = [ParquetPartitionFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_fields = ['observed_file__id', 'observed_file__path']
+    search_fields = ['@observed_file__path']
     serializer_class = ParquetPartitionSerializer
     queryset = ParquetPartition.objects.all().order_by('-observed_file__id', 'partition_number')
 
@@ -1310,7 +1315,7 @@ class HarvestErrorViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [DRYPermissions]
     serializer_class = HarvestErrorSerializer
     filterset_fields = ['file', 'harvester']
-    search_fields = ['@error']
+    search_fields = ['@error', '@file__path', '@harvester__name', '=harvester__id']
     queryset = HarvestError.objects.all().order_by('-timestamp')
 
 
@@ -1431,7 +1436,7 @@ class CellFamilyViewSet(viewsets.ModelViewSet):
     CellFamilies describe types of Cell.
     """
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend]
+    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     serializer_class = CellFamilySerializer
     filterset_fields = [
         'model', 'form_factor', 'chemistry', 'nominal_capacity_ah', 'manufacturer'
@@ -1489,10 +1494,10 @@ class CellViewSet(viewsets.ModelViewSet):
     Cells are specific cells which have generated data stored in Datasets/ObservedFiles.
     """
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend]
+    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     serializer_class = CellSerializer
-    filterset_fields = ['identifier', 'family__id']
-    search_fields = ['@identifier', '@family__model', '@family__manufacturer']
+    filterset_fields = ['identifier', 'family__id', 'family__model', 'family__manufacturer']
+    search_fields = ['@identifier', '@family__model', '@family__manufacturer', '=family__id']
     queryset = Cell.objects.all().order_by('-id')
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
@@ -1555,7 +1560,7 @@ class EquipmentFamilyViewSet(viewsets.ModelViewSet):
     EquipmentFamilies describe types of Equipment.
     """
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend]
+    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     serializer_class = EquipmentFamilySerializer
     filterset_fields = [
         'model', 'type', 'manufacturer'
@@ -1609,11 +1614,11 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     have used similar equipment.
     """
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend]
+    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     serializer_class = EquipmentSerializer
     queryset = Equipment.objects.all()
-    filterset_fields = ['family__type']
-    search_fields = ['@identifier', '@family__type']
+    filterset_fields = ['family__type', 'family__manufacturer', 'family__model']
+    search_fields = ['@identifier', '@family__type', '@family__manufacturer', '@family__model', '=family__id']
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
 
@@ -1667,7 +1672,7 @@ class ScheduleFamilyViewSet(viewsets.ModelViewSet):
     have used similar equipment.
     """
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend]
+    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     serializer_class = ScheduleFamilySerializer
     queryset = ScheduleFamily.objects.all()
     search_fields = ['@identifier', '@description']
@@ -1718,10 +1723,10 @@ class ScheduleViewSet(viewsets.ModelViewSet):
     have used similar equipment.
     """
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend]
+    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     serializer_class = ScheduleSerializer
     queryset = Schedule.objects.all()
-    search_fields = ['@family__identifier']
+    search_fields = ['@family__identifier', '=family__id', '@family__description']
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
 class CyclerTestViewSet(viewsets.ModelViewSet):
@@ -1735,9 +1740,22 @@ class CyclerTestViewSet(viewsets.ModelViewSet):
     """
     serializer_class = CyclerTestSerializer
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend]
+    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     queryset = CyclerTest.objects.all()
-    search_fields = ['@cell__id', '@schedule__identifier']
+    search_fields = [
+        '@cell__id',
+        '@schedule__identifier',
+        '@equipment__identifier',
+        '@experiment__title'
+        '@cell__identifier',
+        '=cell__family__id',
+        '=schedule__family__id',
+        '=equipment__family__id',
+        '=experiment__id',
+        '=cell__id',
+        '=schedule__id',
+        '=files__id'
+    ]
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
 
@@ -1767,9 +1785,20 @@ class ExperimentViewSet(viewsets.ModelViewSet):
     """
     serializer_class = ExperimentSerializer
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend]
+    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     queryset = Experiment.objects.all()
-    search_fields = ['@title', '@description']
+    filter_fields = ['title', 'description', 'authors', 'cycler_tests']
+    search_fields = [
+        '@title',
+        '@description',
+        '=author__id',
+        '=author__username',
+        '=cycler_tests__id',
+        '=cycler_tests__cell__id',
+        '=cycler_tests__schedule__id',
+        '=cycler_tests__equipment__id',
+        '=cycler_tests__files__id'
+    ]
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
 
@@ -1802,7 +1831,7 @@ class DataUnitViewSet(viewsets.ModelViewSet):
     """
     serializer_class = DataUnitSerializer
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend]
+    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['name', 'symbol', 'is_default']
     search_fields = ['@name', '@symbol', '@description']
     queryset = DataUnit.objects.all().order_by('id')
@@ -1846,9 +1875,9 @@ class DataColumnTypeViewSet(viewsets.ModelViewSet):
     """
     serializer_class = DataColumnTypeSerializer
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend]
+    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['name', 'unit__symbol', 'unit__name', 'is_default']
-    search_fields = ['@name', '@description']
+    search_fields = ['@name', '@description', '=unit__name']
     queryset = DataColumnType.objects.all().order_by('id')
     http_method_names = ['get', 'post', 'patch', 'options']
 
@@ -1877,8 +1906,10 @@ class UserViewSet(viewsets.ModelViewSet):
     Users are Django User instances custom-serialized for convenience.
     """
     permission_classes = [DRYPermissions]
-    filter_backends = [UserFilterBackend]
+    filter_backends = [UserFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     serializer_class = UserSerializer
+    filter_fields = ['username', 'email', 'lab__id', 'lab__name', 'team__name']
+    search_fields = ['@username', '@email', '=lab__name', '=team__name']
     queryset = UserProxy.objects.filter(is_active=True).order_by('id')
     http_method_names = ['get', 'post', 'patch', 'options']
 
@@ -1888,7 +1919,7 @@ class GroupViewSet(viewsets.ModelViewSet):
     Groups are Django Group instances custom-serialized for convenience.
     """
     permission_classes = [DRYPermissions]
-    filter_backends = [GroupFilterBackend]
+    filter_backends = [GroupFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     serializer_class = TransparentGroupSerializer
     queryset = GroupProxy.objects.all()
     http_method_names = ['patch', 'options', 'get']
@@ -1960,7 +1991,9 @@ This endpoint provides the names and list URLs for each Galv object that can be 
 )
 class ValidationSchemaViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend]
+    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_fields = ['name']
+    search_fields = ['@name']
     serializer_class = ValidationSchemaSerializer
     queryset = ValidationSchema.objects.all().order_by('-id')
 
@@ -1988,19 +2021,20 @@ class SchemaValidationViewSet(viewsets.ReadOnlyModelViewSet):
     SchemaValidations are the results of validating Galv objects against ValidationSchemas.
     """
     permission_classes = [DRYPermissions]
-    filter_backends = [SchemaValidationFilterBackend]
-    filter_fields = ['schema__id', 'object_id', 'content_type__model']
+    filter_backends = [SchemaValidationFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_fields = ['schema__id', 'object_id', 'content_type__model', 'status']
+    search_fields = ['@schema__name', '=object_id']
     serializer_class = SchemaValidationSerializer
     queryset = SchemaValidation.objects.all().order_by('-last_update')
 
-    def list(self, request, *args, **kwargs):
-        """
-        List SchemaValidations, optionally filtering by schema, object, or content type.
-        """
-        for sv in self.queryset:
-            sv.validate()
-            sv.save()
-        return super().list(request, *args, **kwargs)
+    # def list(self, request, *args, **kwargs):
+    #     """
+    #     List SchemaValidations, optionally filtering by schema, object, or content type.
+    #     """
+    #     for sv in self.queryset:
+    #         sv.validate()
+    #         sv.save()
+    #     return super().list(request, *args, **kwargs)
 
 @extend_schema_view(
     create=extend_schema(
@@ -2042,7 +2076,8 @@ class ArbitraryFileViewSet(viewsets.ModelViewSet):
     Files are stored in an AWS S3 bucket.
     """
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend]
+    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_fields = ['name', 'description']
     queryset = ArbitraryFile.objects.all().order_by('-id')
     search_fields = ['@name', '@description']
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
@@ -2105,7 +2140,9 @@ class GalvStorageTypeViewSet(viewsets.ModelViewSet, _StorageTypeMixin):
     view_prefix = r'galvstoragetype'
     model = GalvStorageType
     permission_classes = [DRYPermissions]
-    filter_backends = [LabResourceFilterBackend]
+    filter_backends = [LabResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_fields = ['lab__id', 'lab__name', 'enabled']
+    search_fields = ['=lab__id', '@lab__name']
     serializer_class = GalvStorageTypeSerializer
     queryset = GalvStorageType.objects.all().order_by('-id')
     http_method_names = ['get', 'patch', 'options']
@@ -2164,7 +2201,18 @@ class AdditionalS3StorageTypeViewSet(viewsets.ModelViewSet, _StorageTypeMixin):
     view_prefix = r'additionals3storagetype'
     model = AdditionalS3StorageType
     permission_classes = [DRYPermissions]
-    filter_backends = [LabResourceFilterBackend]
+    filter_backends = [LabResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_fields = [
+        'lab__id', 'lab__name', 'enabled', 'bucket_name', 'location', 'quota', 'region_name', 'custom_domain'
+    ]
+    search_fields = [
+        '=lab__id',
+        '@lab__name',
+        '@bucket_name',
+        '=location',
+        '=region_name',
+        '=custom_domain'
+    ]
     serializer_class = AdditionalS3StorageTypeSerializer
     queryset = AdditionalS3StorageType.objects.all().order_by('-id')
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
