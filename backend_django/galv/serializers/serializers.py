@@ -1967,10 +1967,9 @@ class KnoxTokenSerializer(serializers.HyperlinkedModelSerializer, PermissionsMix
     url = serializers.SerializerMethodField(help_text=url_help_text)
 
     def knox_token(self, instance):
-        key, id = instance.knox_token_key.split('_')
-        if not int(id) == self.context['request'].user.id:
+        if not instance.user == self.context['request'].user:
             raise ValueError('Bad user ID for token access')
-        return AuthToken.objects.get(user_id=int(id), token_key=key)
+        return AuthToken.objects.get(user=instance.user, token_key=instance.knox_token_key)
 
     def get_created(self, instance) -> timezone.datetime:
         return self.knox_token(instance).created

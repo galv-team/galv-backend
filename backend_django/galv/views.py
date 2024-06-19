@@ -388,19 +388,30 @@ class CreateTokenView(KnoxLoginView):
             return None
 
     def get_post_response_data(self, request, token, instance):
+        # clean up expired user tokens
+        for token in KnoxAuthToken.objects.filter(user=request.user):
+            try:
+                knox_token = AuthToken.objects.get(token_key=token.knox_token_key)
+            except AuthToken.DoesNotExist:
+                token.delete()
+                continue
+            if knox_token.expiry < timezone.now():
+                token.delete()
+
         error = None
         name = request.data.get('name')
         if not name:
-            error = KeyError("Token must have a name")
-        elif KnoxAuthToken.objects.filter(name=name, knox_token_key__regex=f"_{request.user.id}$").exists():
-            error = ValueError("You already have a token with that name")
+            error = "Token must have a name"
+        elif KnoxAuthToken.objects.filter(name=name, user=request.user).exists():
+            error = "You already have a token with that name"
         if error:
             instance.delete()
             return error_response(str(error))
         else:
             token_wrapper = KnoxAuthToken.objects.create(
+                user=request.user,
                 name=name,
-                knox_token_key=f"{instance.token_key}_{request.user.id}"
+                knox_token_key=instance.token_key
             )
         return KnoxTokenFullSerializer(token_wrapper, context={'request': request, 'token': token}).data
 
@@ -450,11 +461,14 @@ class TokenViewSet(viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
 
     def get_queryset(self):
-        token_keys = [f"{t.token_key}_{t.user_id}" for t in AuthToken.objects.filter(user_id=self.request.user.id)]
+        token_keys = [t.token_key for t in AuthToken.objects.filter(user_id=self.request.user.id)]
         # Create entries for temporary browser tokens
         for k in token_keys:
-            if not KnoxAuthToken.objects.filter(knox_token_key=k).exists():
-                KnoxAuthToken.objects.create(knox_token_key=k, name=f"Browser session [{k}]")
+            KnoxAuthToken.objects.get_or_create(
+                user=self.request.user,
+                knox_token_key=k,
+                defaults={'name': f"Browser session [{k}]"}
+            )
         return KnoxAuthToken.objects.filter(knox_token_key__in=token_keys).order_by('-id')
 
     def destroy(self, request, *args, **kwargs):
@@ -466,8 +480,6 @@ class TokenViewSet(viewsets.ModelViewSet):
             self.check_object_permissions(self.request, token)
         except KnoxAuthToken.DoesNotExist:
             return error_response("Token not found")
-        key, id = token.knox_token_key.split("_")
-        AuthToken.objects.filter(user_id=int(id), token_key=key).delete()
         token.delete()
         return Response(status=204)
 

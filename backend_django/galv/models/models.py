@@ -1603,6 +1603,12 @@ class TimeseriesRangeLabel(TimestampedModel):
 
 
 class KnoxAuthToken(TimestampedModel):
+    user = models.ForeignKey(
+        to=UserProxy,
+        on_delete=models.CASCADE,
+        help_text="User to whom the token belongs",
+        null=True  # For migrations
+    )
     knox_token_key = models.TextField(help_text="KnoxToken reference ([token_key]_[user_id]")
     name = models.TextField(help_text="Convenient human-friendly name")
 
@@ -1626,13 +1632,21 @@ class KnoxAuthToken(TimestampedModel):
         return True
 
     def has_object_read_permission(self, request):
-        if not request.user.is_active:
-            return False
-        regex = re.search(f"_{request.user.id}$", self.knox_token_key)
-        return not regex is None
+        return self.user == request.user
 
     def has_object_destroy_permission(self, request):
         return self.has_object_read_permission(request)
+
+    def delete(self, using=None, keep_parents=False):
+        from knox.models import AuthToken
+        AuthToken.objects.filter(token_key=self.knox_token_key).delete()
+        super(KnoxAuthToken, self).delete(using, keep_parents)
+
+    def save(
+        self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        if self.user is None:
+            raise ValueError("User must be set before saving")
 
 
 class HarvesterUser(AnonymousUser):
