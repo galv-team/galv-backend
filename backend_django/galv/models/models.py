@@ -1724,6 +1724,7 @@ class KnoxAuthToken(TimestampedModel):
     ):
         if self.user is None:
             raise ValueError("User must be set before saving")
+        super(KnoxAuthToken, self).save(force_insert, force_update, using, update_fields)
 
 
 class HarvesterUser(AnonymousUser):
