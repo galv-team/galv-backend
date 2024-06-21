@@ -167,10 +167,17 @@ jobs:
         env:
           VERSION: ${{ needs.version.outputs.version-plain }}
         run: |
+          # Create a config json file using EOF notation
+          cat << EOF | sudo tee -a /tmp/typescript-axios-config.json
+          {
+              "useSingleRequestParameter": true
+          }
+          EOF
           JSON_FILE=$(ls .dev/spec/*.json)
           docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v6.6.0 generate \
           -i "/local/$JSON_FILE" \
           -g typescript-axios \
+          -c /tmp/typescript-axios-config.json \
           -o /local/clients/typescript-axios
           
           # Copy LICENCE file to client directory
