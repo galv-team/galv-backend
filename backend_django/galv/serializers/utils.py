@@ -408,9 +408,9 @@ class DumpSerializer(serializers.Serializer):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not self.context or 'request' not in self.context:
-            raise ValueError("DumpSerializer requires a 'request' in the context")
-        self.request = self.context['request']
+        # if not self.context or 'request' not in self.context:
+        #     raise ValueError("DumpSerializer requires a 'request' in the context")
+        self.request = self.context.get('request')
         self.dump = {}
 
     @property
