@@ -1365,7 +1365,7 @@ class MonitoredPathSerializer(serializers.HyperlinkedModelSerializer, Permission
 
     def get_files(self, instance) -> list[OpenApiTypes.URI]:
         """Return only URLs because otherwise it takes _forever_."""
-        files = ObservedFile.objects.filter(harvester__lab=instance.team.lab).values("path", "id")
+        files = ObservedFile.objects.filter(harvester=instance.harvester).values("path", "id")
         file_urls = []
         for file in files:
             if instance.matches(file.get('path')):
