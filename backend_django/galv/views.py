@@ -169,6 +169,7 @@ Each field will have the following information:
 - `required`: Whether the field is required
 - `read_only`: Whether the field is read-only
 - `write_only`: Whether the field is write-only
+- `create_only`: Whether the field is only editable on creation
 - `default`: The default value for the field
 - `help_text`: The help text for the field
 - `choices`: The choices for the field (if the field is a choice field)
