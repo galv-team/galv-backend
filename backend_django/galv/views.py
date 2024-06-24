@@ -63,11 +63,11 @@ from .models import Harvester, \
 from .permissions import HarvesterFilterBackend, TeamFilterBackend, LabFilterBackend, GroupFilterBackend, \
     ResourceFilterBackend, ObservedFileFilterBackend, UserFilterBackend, SchemaValidationFilterBackend, \
     ParquetPartitionFilterBackend, LabResourceFilterBackend
-from .serializers.utils import get_GetOrCreateTextStringSerializer, DumpSerializer
+from .serializers.utils import get_GetOrCreateTextStringSerializer, DumpSerializer, SerializerDescriptionSerializer
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import viewsets, serializers, permissions
-from rest_framework.decorators import action, api_view, renderer_classes, parser_classes
+from rest_framework.decorators import action, api_view, renderer_classes, parser_classes, permission_classes
 from rest_framework.response import Response
 from knox.views import LoginView as KnoxLoginView
 from knox.views import LogoutView as KnoxLogoutView
@@ -143,12 +143,56 @@ def lab_dependent_file_fetcher(
         logger.error(f"Error fetching file: {e}")
     return error_response("File not uploaded")
 
+
+class MethodPermissionMixin(viewsets.GenericViewSet):
+    def get_permissions(self):
+        if hasattr(self, 'action') and self.action is not None and hasattr(self, getattr(self, 'action')):
+            action = getattr(self, getattr(self, 'action'))
+            if hasattr(action, 'permission_classes'):
+                return [p() for p in action.permission_classes]
+        return super().get_permissions()
+
+
+class DescribeSelfMixin(MethodPermissionMixin):
+    # TODO: This method throws an error looking for a DRF form to display when not in JSON format
+    @action(detail=False, methods=['GET'])
+    @permission_classes([permissions.AllowAny])
+    @extend_schema(
+        responses=SerializerDescriptionSerializer,
+        summary="Describe the serializer for this endpoint",
+        description="""
+This endpoint returns a description of the serializer used by this endpoint.
+
+This is a dictionary of field names and their types, with additional information about the fields.
+Each field will have the following information:
+- `type`: The type of the field (one of 'url','number','datetime','boolean','string','choice','json')
+- `required`: Whether the field is required
+- `read_only`: Whether the field is read-only
+- `write_only`: Whether the field is write-only
+- `default`: The default value for the field
+- `help_text`: The help text for the field
+- `choices`: The choices for the field (if the field is a choice field)
+- `allow_null`: Whether the field allows null values
+        """
+    )
+    def describe(self, request):
+        try:
+            serializer_class = self.get_serializer_class()
+        except Exception as e:
+            return error_response(f"Error getting serializer class for {self.__class__.__name__}:\n{e}")
+        try:
+            description = SerializerDescriptionSerializer(serializer_class())
+        except Exception as e:
+            return error_response(f"Error instantiating serializer:\n{e}")
+        return Response(description.data)
+
+
 @extend_schema_view(
     list=extend_schema(responses={
         '200': {'type': 'string'}
     }),
 )
-class _GetOrCreateTextStringViewSet(ListModelMixin, viewsets.GenericViewSet):
+class _GetOrCreateTextStringViewSet(DescribeSelfMixin, ListModelMixin, viewsets.GenericViewSet):
     """
     Abstract base class for ViewSets that allow the creation of TextString objects.
 
@@ -477,7 +521,7 @@ other people cannot use them to access the API under your credentials.
         """
     )
 )
-class TokenViewSet(viewsets.ModelViewSet):
+class TokenViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     View and edit tokens associated with your account.
     """
@@ -533,7 +577,7 @@ Labs are collections of Teams that provide for wider-scale access management and
 """
     )
 )
-class LabViewSet(viewsets.ModelViewSet):
+class LabViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [LabFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['name']
@@ -569,7 +613,7 @@ Teams are groups of Users who share Resources.
 """
     )
 )
-class TeamViewSet(viewsets.ModelViewSet):
+class TeamViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [TeamFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     serializer_class = TeamSerializer
@@ -653,7 +697,7 @@ File parsing reports may contain metadata or data to store.
         }
     )
 )
-class HarvesterViewSet(viewsets.ModelViewSet):
+class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Harvesters monitor a set of MonitoredPaths and send reports about ObservedFiles
     within those paths.
@@ -1119,7 +1163,7 @@ or the time for which files need to be stable before being imported.
         """
     )
 )
-class MonitoredPathViewSet(viewsets.ModelViewSet):
+class MonitoredPathViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     A MonitoredPath refers to a directory accessible by a Harvester in which
     data files will reside. Those files will be scanned periodically by the Harvester,
@@ -1177,7 +1221,7 @@ harvester program to rerun the import process when it next scans the file.
         """
     )
 )
-class ObservedFileViewSet(viewsets.ModelViewSet):
+class ObservedFileViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     ObservedFiles are files that exist (or have existed) in a MonitoredPath and have
     been reported to Galv by the Harvester.
@@ -1257,7 +1301,7 @@ class ObservedFileViewSet(viewsets.ModelViewSet):
         )
 
 
-class ColumnMappingViewSet(viewsets.ModelViewSet):
+class ColumnMappingViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     serializer_class = ColumnMappingSerializer
@@ -1293,7 +1337,7 @@ Download a file from the API.
         responses={200: OpenApiTypes.BINARY}
     )
 )
-class ParquetPartitionViewSet(viewsets.ReadOnlyModelViewSet):
+class ParquetPartitionViewSet(DescribeSelfMixin, viewsets.ReadOnlyModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [ParquetPartitionFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     filter_fields = ['observed_file__id', 'observed_file__path']
@@ -1342,7 +1386,7 @@ View an Error reported by a Harvester.
         """
     )
 )
-class HarvestErrorViewSet(viewsets.ReadOnlyModelViewSet):
+class HarvestErrorViewSet(DescribeSelfMixin, viewsets.ReadOnlyModelViewSet):
     """
     HarvestErrors are problems encountered by Harvesters during the crawling of
     MonitoredPaths or the importing or inspection of ObservedFiles.
@@ -1466,7 +1510,7 @@ to prevent accidental updating.
         """
     )
 )
-class CellFamilyViewSet(viewsets.ModelViewSet):
+class CellFamilyViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     CellFamilies describe types of Cell.
     """
@@ -1524,7 +1568,7 @@ Dump the Cell in RDF (JSON-LD) format.
         """
     )
 )
-class CellViewSet(viewsets.ModelViewSet):
+class CellViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Cells are specific cells which have generated data stored in Datasets/ObservedFiles.
     """
@@ -1590,7 +1634,7 @@ to prevent accidental updating.
         """
     )
 )
-class EquipmentFamilyViewSet(viewsets.ModelViewSet):
+class EquipmentFamilyViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     EquipmentFamilies describe types of Equipment.
     """
@@ -1643,7 +1687,7 @@ Equipment that _is_ used in a Cycler Tests is locked to prevent accidental updat
         """
     )
 )
-class EquipmentViewSet(viewsets.ModelViewSet):
+class EquipmentViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Equipment can be attached to Datasets and used to view Datasets which
     have used similar equipment.
@@ -1701,7 +1745,7 @@ to prevent accidental updating.
         """
     )
 )
-class ScheduleFamilyViewSet(viewsets.ModelViewSet):
+class ScheduleFamilyViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Schedules can be attached to Cycler Tests and used to view Cycler Tests which
     have used similar equipment.
@@ -1752,7 +1796,7 @@ Schedules that _is_ used in a Cycler Tests is locked to prevent accidental updat
         """
     )
 )
-class ScheduleViewSet(viewsets.ModelViewSet):
+class ScheduleViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Schedules can be attached to Cycler Tests and used to view Cycler Tests which
     have used similar equipment.
@@ -1764,7 +1808,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
     search_fields = ['@family__identifier', '=family__id', '@family__description']
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
-class CyclerTestViewSet(viewsets.ModelViewSet):
+class CyclerTestViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Cycler Tests are the primary object in the database.
     They represent a single test conducted on a specific cell using specific equipment,
@@ -1814,7 +1858,7 @@ Experiments are collections of Cycler Tests which are grouped together for analy
         """
     )
 )
-class ExperimentViewSet(viewsets.ModelViewSet):
+class ExperimentViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Experiments are collections of Cycler Tests which are grouped together for analysis.
     """
@@ -1860,7 +1904,7 @@ while others can be defined in experimental data.
         """
     )
 )
-class DataUnitViewSet(viewsets.ModelViewSet):
+class DataUnitViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     DataUnits are units used to characterise data in a DataColumn.
     """
@@ -1903,7 +1947,7 @@ Searchable fields:
         """
     )
 )
-class DataColumnTypeViewSet(viewsets.ModelViewSet):
+class DataColumnTypeViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     DataColumnTypes support reuse of DataColumns over multiple DataSets
     by abstracting their information.
@@ -1936,7 +1980,7 @@ All changes require your current password to be accepted.
         }
     )
 )
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Users are Django User instances custom-serialized for convenience.
     """
@@ -1949,7 +1993,7 @@ class UserViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'options']
 
 
-class GroupViewSet(viewsets.ModelViewSet):
+class GroupViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Groups are Django Group instances custom-serialized for convenience.
     """
@@ -2024,7 +2068,7 @@ This endpoint provides the names and list URLs for each Galv object that can be 
         }
     )
 )
-class ValidationSchemaViewSet(viewsets.ModelViewSet):
+class ValidationSchemaViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
     filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
     filter_fields = ['name']
@@ -2051,7 +2095,7 @@ class ValidationSchemaViewSet(viewsets.ModelViewSet):
         )
 
 
-class SchemaValidationViewSet(viewsets.ReadOnlyModelViewSet):
+class SchemaValidationViewSet(DescribeSelfMixin, viewsets.ReadOnlyModelViewSet):
     """
     SchemaValidations are the results of validating Galv objects against ValidationSchemas.
     """
@@ -2100,7 +2144,7 @@ You can change the visibility of a file and its metadata. Files themselves canno
         description="""Delete a file from the database and from the S3 bucket."""
     )
 )
-class ArbitraryFileViewSet(viewsets.ModelViewSet):
+class ArbitraryFileViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     ArbitraryFiles are files that are not observed by the harvester, and are not
     associated with any specific experiment or dataset. They are used to store
@@ -2168,7 +2212,7 @@ Additional storage can be configured by connecting a new S3 bucket to your Lab.
         """
     ),
 )
-class GalvStorageTypeViewSet(viewsets.ModelViewSet, _StorageTypeMixin):
+class GalvStorageTypeViewSet(DescribeSelfMixin, viewsets.ModelViewSet, _StorageTypeMixin):
     """
     GalvStorageTypes are used to describe the storage available to a Lab.
     """
@@ -2229,7 +2273,7 @@ Use this option with caution, and consider setting the storage to enabled=False 
         """
     )
 )
-class AdditionalS3StorageTypeViewSet(viewsets.ModelViewSet, _StorageTypeMixin):
+class AdditionalS3StorageTypeViewSet(DescribeSelfMixin, viewsets.ModelViewSet, _StorageTypeMixin):
     """
     AdditionalS3Storage is used to describe the storage available to a Lab.
     """

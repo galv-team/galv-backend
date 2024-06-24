@@ -1,8 +1,10 @@
 import json
+import uuid
 from collections import OrderedDict
 
 import django.db.models
 from django.core.serializers.json import DjangoJSONEncoder
+from django.utils.module_loading import import_string
 from drf_spectacular.utils import extend_schema_field
 from dry_rest_permissions.generics import DRYPermissionsField
 from rest_framework import serializers
@@ -11,7 +13,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 
 from galv.models import ValidationSchema, GroupProxy, UserProxy, VALIDATION_MOCK_ENDPOINT
 from rest_framework.fields import DictField
-
+from rest_framework.relations import ManyRelatedField
 
 url_help_text = "Canonical URL for this object"
 
@@ -178,13 +180,13 @@ class CustomPropertiesModelSerializer(serializers.HyperlinkedModelSerializer):
 
 
 @extend_schema_field({
-        'type': 'object',
-        'properties': {
-            'read': {'type': 'boolean'},
-            'write': {'type': 'boolean'},
-            'create': {'type': 'boolean'},
-        }
-    })
+    'type': 'object',
+    'properties': {
+        'read': {'type': 'boolean'},
+        'write': {'type': 'boolean'},
+        'create': {'type': 'boolean'},
+    }
+})
 class DRYPermissionsFieldWrapper(DRYPermissionsField):
     pass
 
@@ -510,3 +512,95 @@ class DumpSerializer(serializers.Serializer):
 
         self.dump_value(instance, root=True)
         return self.dump
+
+
+class SerializerDescriptionSerializer(serializers.Serializer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance:
+            raise ValueError("SerializerDescriptionSerializer requires an instance")
+
+        if not isinstance(self.instance, serializers.BaseSerializer):
+            raise ValueError("SerializerDescriptionSerializer instance must be a Serializer")
+
+    def _get_type(self, field):
+        if isinstance(field, TruncatedHyperlinkedRelatedIdField):
+            ss = import_string(f"galv.serializers")
+            serializer = ss.__dict__[field.child_serializer_class]()
+            return serializer.Meta.model.__name__
+        if isinstance(field, serializers.ModelSerializer):
+            return field.__class__.__name__
+        type_map = {
+            'url': [serializers.HyperlinkedIdentityField, serializers.HyperlinkedRelatedField,
+                    serializers.FileField, serializers.ImageField],
+            'number': [serializers.IntegerField, serializers.FloatField, serializers.DecimalField],
+            'datetime': [serializers.DateTimeField, serializers.DateField, serializers.TimeField],
+            'boolean': [serializers.BooleanField],
+            'string': [serializers.CharField, serializers.EmailField, serializers.URLField,
+                       serializers.SlugField, serializers.IPAddressField, serializers.RegexField,
+                       serializers.UUIDField, serializers.FilePathField],
+            'choice': [serializers.ChoiceField, serializers.MultipleChoiceField],
+            'json': [serializers.JSONField, serializers.DictField]
+        }
+        for key, types in type_map.items():
+            if any(isinstance(field, t) for t in types):
+                return key
+        return f"Unknown[{field.__class__.__name__}]"
+
+    def to_representation(self, instance):
+        """
+        Return a dictionary describing the serializer.
+        Each key will be a field name, and the value will be a dictionary with the following keys:
+        - type: the field type
+        - help_text: the field's help text
+        - required: whether the field is required
+        - read_only: whether the field is read-only
+        - write_only: whether the field is write-only
+        - create_only: whether the field is create-only
+        - default: the field's default value
+        - choices: the field's choices
+        - allow_null: whether the field allows null values
+        """
+        list_classes = [
+            serializers.ListField,
+            serializers.ListSerializer,
+            ManyRelatedField,
+        ]
+        representation = {}
+        for field_name, field in instance.fields.items():
+            for cls in list_classes:
+                if isinstance(field, cls):
+                    child = field.child if hasattr(field, 'child') else field.child_relation
+                    type_properties = {
+                        'type': self._get_type(child),
+                        'many': True
+                    }
+                    break
+            else:
+                type_properties = {'type': self._get_type(field), 'many': False}
+
+            representation[field_name] = {
+                **type_properties,
+                'help_text': field.help_text,
+                'required': field.required,
+                'read_only': field.read_only,
+                'write_only': field.write_only,
+                'allow_null': field.allow_null
+            }
+            if isinstance(field.default, type) and field.default.__name__ == 'empty':
+                representation[field_name]['default'] = None
+            else:
+                representation[field_name]['default'] = field.default
+            if hasattr(field, 'create_only'):
+                representation[field_name]['create_only'] = field.create_only
+            else:
+                representation[field_name]['create_only'] = False
+            if hasattr(field, 'choices') and type_properties['type'] == 'choice':
+                # Only expose choices for literal choice fields to avoid leaking data from related fields
+                representation[field_name]['choices'] = field.choices
+            else:
+                representation[field_name]['choices'] = None
+        return representation
+
+    def to_internal_value(self, _data):
+        raise NotImplementedError("SerializerDescriptionSerializer is read-only")
