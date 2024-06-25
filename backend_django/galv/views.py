@@ -971,7 +971,9 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                         except StorageError as e:
                             partition.bytes_required = old_size
                             partition.save()
-                            return error_response(f"Error updating parquet file: {e}")
+                            file.state = FileState.AWAITING_STORAGE
+                            file.save()
+                            return error_response(f"Error updating parquet file: {e}", status=507)
                         partition.delete()
                     except ParquetPartition.DoesNotExist:
                         pass
@@ -1000,7 +1002,10 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
             def handle_upload_png(file, _, request):
                 upload = request.FILES.get('png_file')
                 if upload.size > settings.MAX_PNG_PREVIEW_SIZE:
-                    return error_response(f"PNG file too large: {upload.size} > {settings.MAX_PNG_PREVIEW_SIZE}")
+                    return error_response(
+                        f"PNG file too large: {upload.size} > {settings.MAX_PNG_PREVIEW_SIZE}",
+                        status=507
+                    )
                 file.bytes_required = upload.size
                 file.save()
                 file.png = upload
