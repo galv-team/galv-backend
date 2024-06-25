@@ -641,19 +641,19 @@ class WithTeamMixin(serializers.Serializer):
         choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_READ],
         help_text="Minimum user level required to read this resource",
         allow_null=True,
-        required=False
+        default=UserLevel.LAB_MEMBER.value
     )
     edit_access_level = serializers.ChoiceField(
         choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_EDIT],
         help_text="Minimum user level required to edit this resource",
         allow_null=True,
-        required=False
+        default=UserLevel.TEAM_MEMBER.value
     )
     delete_access_level = serializers.ChoiceField(
         choices=[(v.value, v.label) for v in ALLOWED_USER_LEVELS_DELETE],
         help_text="Minimum user level required to create this resource",
         allow_null=True,
-        required=False
+        default=UserLevel.TEAM_MEMBER.value
     )
 
     def validate_team(self, value):

@@ -460,14 +460,14 @@ class CreateTokenView(KnoxLoginView):
 
     def get_post_response_data(self, request, token, instance):
         # clean up expired user tokens
-        for token in KnoxAuthToken.objects.filter(user=request.user):
+        for t in KnoxAuthToken.objects.filter(user=request.user):
             try:
-                knox_token = AuthToken.objects.get(token_key=token.knox_token_key)
+                knox_token = AuthToken.objects.get(token_key=t.knox_token_key)
             except AuthToken.DoesNotExist:
-                token.delete()
+                t.delete()
                 continue
-            if knox_token.expiry < timezone.now():
-                token.delete()
+            if knox_token.expiry is not None and knox_token.expiry < timezone.now():
+                t.delete()
 
         error = None
         name = request.data.get('name')

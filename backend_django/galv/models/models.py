@@ -1616,7 +1616,7 @@ class DataColumnType(ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
     data_type = models.TextField(
         null=False,
         choices=[(v, v) for v in DATA_TYPES],
-        help_text="Type of the data in this column",
+        help_text="Type of the data in this column.",
         default="float"
     )
     is_default = models.BooleanField(
