@@ -988,7 +988,9 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                     partition.parquet_file = upload
                     partition.save()
                 except StorageError as e:
-                    return error_response(f"Error uploading file to storage: {e}")
+                    file.state = FileState.AWAITING_STORAGE
+                    file.save()
+                    return error_response(f"Error uploading file to storage: {e}", status=507)
                 return Response(ParquetPartitionSerializer(partition, context={'request': request}).data)
 
             def handle_upload_complete(file, data):
@@ -1254,6 +1256,8 @@ class ObservedFileViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
             return error_response('Requested file not found')
         file.state = FileState.RETRY_IMPORT
         file.storage_urls = []
+        if file.png is not None:
+            file.png.delete()
         file.save()
         for dataset in file.parquet_partitions.all():
             dataset.delete()
