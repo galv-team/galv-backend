@@ -866,6 +866,8 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                         path=path,
                         bytes_required=settings.MAX_PNG_PREVIEW_SIZE
                     )
+                except StorageError as e:
+                    return error_response(f"Error creating File: {e}", status=507)
                 except Exception as e:
                     return error_response(f"Error creating File: {e}")
             file.monitored_paths.add(monitored_path)
@@ -977,20 +979,20 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                         partition.delete()
                     except ParquetPartition.DoesNotExist:
                         pass
-                    try:
-                        partition = ParquetPartition.objects.create(
-                            observed_file=file,
-                            partition_number=data['partition_number'],
-                            bytes_required=upload.size
-                        )
-                    except Exception as e:
-                        return error_response(f"Error creating ParquetPartition: {e}")
+
+                    partition = ParquetPartition.objects.create(
+                        observed_file=file,
+                        partition_number=data['partition_number'],
+                        bytes_required=upload.size
+                    )
                     partition.parquet_file = upload
                     partition.save()
                 except StorageError as e:
                     file.state = FileState.AWAITING_STORAGE
                     file.save()
-                    return error_response(f"Error uploading file to storage: {e}", status=507)
+                    return error_response(f"Error uploading parquet file to storage: {e}", status=507)
+                except Exception as e:
+                    return error_response(f"Error creating Parquet Partition: {e}")
                 return Response(ParquetPartitionSerializer(partition, context={'request': request}).data)
 
             def handle_upload_complete(file, data):
