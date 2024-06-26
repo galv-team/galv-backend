@@ -30,7 +30,7 @@ from ..models import Harvester, \
     render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, \
     SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
     ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, ColumnMapping, \
-    get_user_auth_details, GalvStorageType, AdditionalS3StorageType, PasswordReset
+    get_user_auth_details, GalvStorageType, AdditionalS3StorageType, PasswordReset, StorageError
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
 from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
@@ -2150,9 +2150,12 @@ class ArbitraryFileCreateSerializer(ArbitraryFileSerializer):
         file = validated_data.pop('file', None)
         bytes_required = file.size if file else 0
         with transaction.atomic():
-            arbitrary_file = ArbitraryFile.objects.create(**validated_data, bytes_required=bytes_required)
-            if file:
-                arbitrary_file.bytes_required = file.size
-                arbitrary_file.save()
-                arbitrary_file.file.save(file.name, file, save=True)
+            try:
+                arbitrary_file = ArbitraryFile.objects.create(**validated_data, bytes_required=bytes_required)
+                if file:
+                    arbitrary_file.bytes_required = file.size
+                    arbitrary_file.save()
+                    arbitrary_file.file.save(file.name, file, save=True)
+            except StorageError as e:
+                raise ValidationError(e)
         return arbitrary_file
