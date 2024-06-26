@@ -9,6 +9,67 @@ The entire application has been dockerised, so can in theory be used on
 any major operating system with minimal modification.
 
 **************************************************************************************
+Deploying on fly.io
+**************************************************************************************
+
+The Galv team use fly.io to deploy the Galv application.
+This is a cloud service that allows you to deploy docker containers to a server.
+
+You can find the example configuration file for fly.io in the repository root directory
+``fly.toml``. This file is used to configure the deployment of the Galv application.
+
+To run the application it's easiest to use the prebuilt container which accompanies
+each release on GitHub.
+The containers are stored in GitHub's Container Registry.
+
+To launch with fly.io, you will need to:
+
+1. Install the fly.io CLI tool, which can be found `here <https://fly.io/docs/getting-started/installing-fly/>`_.
+2. Log in to the fly.io CLI tool using the command ``fly login``.
+3. Create a new postgres database using the command ``fly postgres create``. The name you give it will be needed in step 5.
+4. Create a new application using the command ``fly apps create``. The name you give it will be needed in step 5.
+5. Attach the postgres database to the application using the command ``fly postgres attach <postgres_app_name> --app <galv_app_name>``.
+6. Set the environment variables by modifying the ``fly.toml`` file. Most variables have sensible defaults.
+  You will need to ensure that the ``VIRTUAL_HOST_ROOT`` is set to the domain name you wish to use - e.g. ``galv-app.fly.dev``.
+  You will also need to ensure that the ``FRONTEND_VIRTUAL_HOST`` is set to the domain name you wish to use for the frontend - e.g. ``galv-frontend.fly.dev``.
+7. Set the secret environment variables by running the command ``fly secrets set DJANGO_SECRET_KEY=<secret_key>``.
+  Do the same for the superusers's password with ``fly secrets set DJANGO_SUPERUSER_PASSWORD=<superuser_password>``.
+8. Launch the application using the command ``fly deploy``.
+  This will launch the latest version of the Galv backend on the fly.io server by looking for the container image
+  in the GitHub Container Registry. It is possible to build your own version from the source code.
+
+**************************************************************************************
+Deploying on EC2 or other cloud services - single service
+**************************************************************************************
+
+You can deploy Galv on any cloud service that supports docker containers.
+The following instructions are for deploying on an AWS EC2 instance.
+
+1. Launch an EC2 instance with the Amazon Linux 2 AMI.
+2. SSH into the instance.
+3. Install docker.
+.. code-block:: shell
+
+  sudo yum update -y
+  sudo amazon-linux-extras install docker
+  sudo service docker start
+  sudo usermod -a -G docker ec2-user
+
+4. Create a .env file with the environment variables you need.
+  This can have both the normal and secret environment variables.
+  You can use the .env file in the repository as a template.
+  At the very least, you will need to set:
+  * DJANGO_SECRET_KEY
+  * DJANGO_SUPERUSER_PASSWORD
+  * Postgres connection details using either POSTGRES_* variables or DATABASE_URL
+  * VIRTUAL_HOST_ROOT
+  * FRONTEND_VIRTUAL_HOST
+5. Build the container from the GitHub Container Registry.
+.. code-block:: shell
+
+  docker run -d --env-file .env -p 80:80 ghcr.io/galv-team/galv-backend:latest
+
+**************************************************************************************
 Installing required tools
 **************************************************************************************
 
@@ -34,7 +95,7 @@ First you will need to clone the galv repository using ``git``:
 
 .. code-block:: bash
 
-	git clone https://gitlab.com/battery-intelligence-lab/galv-project/galv.git
+	git clone https://gitlab.com/galv-team/galv-project/galv.git
 	cd galv
 
 
@@ -134,7 +195,7 @@ you can skip this step.
 
 .. code-block:: bash
 
-	git clone https://gitlab.com/battery-intelligence-lab/galv-project/galv.git
+	git clone https://gitlab.com/galv-team/galv-project/galv.git
 	cd galv
 
 
