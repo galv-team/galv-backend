@@ -419,7 +419,7 @@ class _StorageTypeConsumerModel(UUIDModel):
 
 
 class _StorageType(UUIDModel):
-    name = models.TextField(null=True, blank=True)
+    name = models.TextField(null=True, blank=True, help_text="Human-friendly identifier for the storage type")
     lab = models.ForeignKey('Lab', related_name="storage_%(class)s", on_delete=models.CASCADE)
     enabled = models.BooleanField(default=True, help_text="Whether this storage type is enabled for writing to")
     quota_bytes = models.BigIntegerField(help_text="Maximum storage capacity in bytes")

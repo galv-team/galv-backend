@@ -488,8 +488,8 @@ class GalvStorageTypeSerializer(serializers.HyperlinkedModelSerializer, Permissi
 ])
 class AdditionalS3StorageTypeSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin, CreateOnlyMixin):
     bytes_used = serializers.SerializerMethodField()
-    secret_key = PasswordField()
-    access_key = PasswordField(show_first_chars=4)
+    secret_key = PasswordField(help_text="Secret key for S3 storage")
+    access_key = PasswordField(show_first_chars=4, help_text="Access key for S3 storage")
 
     lab = TruncatedHyperlinkedRelatedIdField(
         'LabSerializer',
@@ -532,7 +532,7 @@ class AdditionalS3StorageTypeSerializer(serializers.HyperlinkedModelSerializer, 
         fields = [
             'url', 'id',
             'name', 'lab', 'quota_bytes', 'bytes_used', 'priority', 'enabled',
-            'secret_key', 'access_key', 'bucket_name', 'location', 'custom_domain',
+            'secret_key', 'access_key', 'bucket_name', 'location', 'region_name', 'custom_domain',
             'permissions'
         ]
         read_only_fields = ['url', 'id', "permissions"]
