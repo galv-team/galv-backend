@@ -34,10 +34,10 @@ class DjangoModelFactory(factory.django.DjangoModelFactory):
     def create(self, *args, **kwargs):
         try:
             with transaction.atomic():
-                return super().create(*args, **kwargs)
+                return super(DjangoModelFactory, self).create(*args, **kwargs)
         except IntegrityError:
             id = self._meta.model.objects.count() + 100
-            return super().create(*args, **kwargs, pk=id)
+            return super(DjangoModelFactory, self).create(*args, **kwargs, pk=id)
 
 
 def to_type_value_notation(obj):
