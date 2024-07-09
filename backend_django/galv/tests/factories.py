@@ -31,13 +31,13 @@ class DjangoModelFactory(factory.django.DjangoModelFactory):
     A factory for Django models that uses the `django.db.models.Model` class.
     This model will handle IntegrityErrors when trying to create an object that already exists.
     """
-    def create(self, **kwargs):
+    def create(self, *args, **kwargs):
         try:
             with transaction.atomic():
-                return super().create(**kwargs)
+                return super().create(*args, **kwargs)
         except IntegrityError:
             id = self._meta.model.objects.count() + 100
-            return super().create(**kwargs, pk=id)
+            return super().create(*args, **kwargs, pk=id)
 
 
 def to_type_value_notation(obj):
