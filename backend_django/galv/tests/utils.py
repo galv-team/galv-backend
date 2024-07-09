@@ -157,13 +157,7 @@ class _GalvTeamResourceTestCase(GalvTestCase):
         return new_resource_dict
 
     def create_with_perms(self, **perms):
-        # Non-UUID objects suffer occasional id clashes, leading to flakey tests. So try specifying the id.
-        id = self.factory._meta.model.objects.count() + 1
-        try:
-            obj = self.factory.create(team=self.lab_team, **perms, pk=id)
-        except Exception:
-            # Probably a UUID object, so just create it without specifying the id.
-            obj = self.factory.create(team=self.lab_team, **perms)
+        obj = self.factory.create(team=self.lab_team, **perms)
         assert self.factory._meta.model.objects.filter(pk=obj.pk).exists(), \
             f"Could not create {self.factory._meta.model.__name__} with {perms}"
         return obj

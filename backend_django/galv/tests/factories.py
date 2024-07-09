@@ -25,6 +25,21 @@ from ..models.choices import UserLevel
 
 fake = faker.Faker(django.conf.global_settings.LANGUAGE_CODE)
 
+
+class DjangoModelFactory(factory.django.DjangoModelFactory):
+    """
+    A factory for Django models that uses the `django.db.models.Model` class.
+    This model will handle IntegrityErrors when trying to create an object that already exists.
+    """
+    def create(self, **kwargs):
+        try:
+            with transaction.atomic():
+                return super().create(**kwargs)
+        except IntegrityError:
+            id = self._meta.model.objects.count() + 100
+            return super().create(**kwargs, pk=id)
+
+
 def to_type_value_notation(obj):
     if isinstance(obj, dict):
         return {"_type": "object", "_value": {k: to_type_value_notation(v) for k, v in obj.items()}}
@@ -50,42 +65,42 @@ def make_tmp_file():
 class ByValueMixin:
     value = None
 
-class EquipmentTypesFactory(factory.django.DjangoModelFactory):
+class EquipmentTypesFactory(DjangoModelFactory):
     class Meta:
         model = EquipmentTypes
         django_get_or_create = ('value',)
     value = factory.Faker('bs')
-class EquipmentModelsFactory(factory.django.DjangoModelFactory):
+class EquipmentModelsFactory(DjangoModelFactory):
     class Meta:
         model = EquipmentModels
         django_get_or_create = ('value',)
     value = factory.Faker('catch_phrase')
-class EquipmentManufacturersFactory(factory.django.DjangoModelFactory):
+class EquipmentManufacturersFactory(DjangoModelFactory):
     class Meta:
         model = EquipmentManufacturers
         django_get_or_create = ('value',)
     value = factory.Faker('company')
-class CellModelsFactory(factory.django.DjangoModelFactory):
+class CellModelsFactory(DjangoModelFactory):
     class Meta:
         model = CellModels
         django_get_or_create = ('value',)
     value = factory.Faker('catch_phrase')
-class CellManufacturersFactory(factory.django.DjangoModelFactory):
+class CellManufacturersFactory(DjangoModelFactory):
     class Meta:
         model = CellManufacturers
         django_get_or_create = ('value',)
     value = factory.Faker('company')
-class CellChemistriesFactory(factory.django.DjangoModelFactory):
+class CellChemistriesFactory(DjangoModelFactory):
     class Meta:
         model = CellChemistries
         django_get_or_create = ('value',)
     value = factory.Faker('catch_phrase')
-class CellFormFactorsFactory(factory.django.DjangoModelFactory):
+class CellFormFactorsFactory(DjangoModelFactory):
     class Meta:
         model = CellFormFactors
         django_get_or_create = ('value',)
     value = factory.Faker('bs')
-class ScheduleIdentifiersFactory(factory.django.DjangoModelFactory):
+class ScheduleIdentifiersFactory(DjangoModelFactory):
     class Meta:
         model = ScheduleIdentifiers
         django_get_or_create = ('value',)
@@ -120,7 +135,7 @@ def generate_create_dict(root_factory: factory.django.DjangoModelFactory):
     return partial(dict_factory, root_factory)
 
 
-class UserFactory(factory.django.DjangoModelFactory):
+class UserFactory(DjangoModelFactory):
     class Meta:
         model = UserProxy
         django_get_or_create = ('username',)
@@ -128,7 +143,7 @@ class UserFactory(factory.django.DjangoModelFactory):
     username = factory.Faker('user_name')
 
 
-class GroupFactory(factory.django.DjangoModelFactory):
+class GroupFactory(DjangoModelFactory):
     class Meta:
         model = GroupProxy
         django_get_or_create = ('name',)
@@ -138,7 +153,7 @@ class GroupFactory(factory.django.DjangoModelFactory):
     name = factory.LazyAttribute(lambda x: f"group_{x.n}")
 
 
-class GalvStorageTypeFactory(factory.django.DjangoModelFactory):
+class GalvStorageTypeFactory(DjangoModelFactory):
     class Meta:
         model = GalvStorageType
         django_get_or_create = ('lab',)
@@ -146,7 +161,7 @@ class GalvStorageTypeFactory(factory.django.DjangoModelFactory):
     quota_bytes = 1_000_0000
 
 
-class AdditionalS3StorageTypeFactory(factory.django.DjangoModelFactory):
+class AdditionalS3StorageTypeFactory(DjangoModelFactory):
     class Meta:
         model = AdditionalS3StorageType
         django_get_or_create = ('lab', 'priority',)
@@ -158,7 +173,7 @@ class AdditionalS3StorageTypeFactory(factory.django.DjangoModelFactory):
     secret_key = factory.Faker('word')
 
 
-class LabFactory(factory.django.DjangoModelFactory):
+class LabFactory(DjangoModelFactory):
     class Meta:
         model = Lab
         django_get_or_create = ('name',)
@@ -173,7 +188,7 @@ class LabFactory(factory.django.DjangoModelFactory):
             GalvStorageTypeFactory.create(lab=self)
 
 
-class TeamFactory(factory.django.DjangoModelFactory):
+class TeamFactory(DjangoModelFactory):
     class Meta:
         model = Team
         django_get_or_create = ('name', 'lab',)
@@ -182,7 +197,7 @@ class TeamFactory(factory.django.DjangoModelFactory):
     lab = factory.SubFactory(LabFactory)
 
 
-class HarvesterFactory(factory.django.DjangoModelFactory):
+class HarvesterFactory(DjangoModelFactory):
     class Meta:
         model = Harvester
         django_get_or_create = ('name', 'lab',)
@@ -193,7 +208,7 @@ class HarvesterFactory(factory.django.DjangoModelFactory):
     lab = factory.SubFactory(LabFactory)
 
 
-class MonitoredPathFactory(factory.django.DjangoModelFactory):
+class MonitoredPathFactory(DjangoModelFactory):
     class Meta:
         model = MonitoredPath
         django_get_or_create = ('path', 'harvester',)
@@ -206,7 +221,7 @@ class MonitoredPathFactory(factory.django.DjangoModelFactory):
     delete_access_level = UserLevel.TEAM_MEMBER.value
 
 
-class ColumnMappingFactory(factory.django.DjangoModelFactory):
+class ColumnMappingFactory(DjangoModelFactory):
     class Meta:
         model = ColumnMapping
         django_get_or_create = ('name',)
@@ -218,7 +233,7 @@ class ColumnMappingFactory(factory.django.DjangoModelFactory):
     delete_access_level = UserLevel.TEAM_MEMBER.value
 
 
-class ObservedFileFactory(factory.django.DjangoModelFactory):
+class ObservedFileFactory(DjangoModelFactory):
     class Meta:
         model = ObservedFile
         django_get_or_create = ('harvester', 'path')
@@ -235,7 +250,7 @@ class ObservedFileFactory(factory.django.DjangoModelFactory):
     storage_type = factory.SubFactory(GalvStorageTypeFactory, lab=factory.SelfAttribute('..harvester.lab'))
 
 
-class ParquetPartitionFactory(factory.django.DjangoModelFactory):
+class ParquetPartitionFactory(DjangoModelFactory):
     class Meta:
         model = ParquetPartition
         django_get_or_create = ('observed_file', 'partition_number')
@@ -248,7 +263,7 @@ class ParquetPartitionFactory(factory.django.DjangoModelFactory):
     )
 
 
-class CellFamilyFactory(factory.django.DjangoModelFactory):
+class CellFamilyFactory(DjangoModelFactory):
     class Meta:
         model = CellFamily
         exclude = ('ap',)
@@ -269,7 +284,7 @@ class CellFamilyFactory(factory.django.DjangoModelFactory):
     power_density_w_per_kg = factory.Faker('pyfloat', min_value=1.0, max_value=1000000.0)
 
 
-class CellFactory(factory.django.DjangoModelFactory):
+class CellFactory(DjangoModelFactory):
     class Meta:
         model = Cell
         exclude = ('ap',)
@@ -281,7 +296,7 @@ class CellFactory(factory.django.DjangoModelFactory):
     family = factory.SubFactory(CellFamilyFactory)
 
 
-class EquipmentFamilyFactory(factory.django.DjangoModelFactory):
+class EquipmentFamilyFactory(DjangoModelFactory):
     class Meta:
         model = EquipmentFamily
         exclude = ('ap',)
@@ -294,7 +309,7 @@ class EquipmentFamilyFactory(factory.django.DjangoModelFactory):
     model = factory.SubFactory(EquipmentModelsFactory)
 
 
-class EquipmentFactory(factory.django.DjangoModelFactory):
+class EquipmentFactory(DjangoModelFactory):
     class Meta:
         model = Equipment
         exclude = ('ap',)
@@ -307,7 +322,7 @@ class EquipmentFactory(factory.django.DjangoModelFactory):
     calibration_date = factory.Faker('date')
 
 
-class ScheduleFamilyFactory(factory.django.DjangoModelFactory):
+class ScheduleFamilyFactory(DjangoModelFactory):
     class Meta:
         model = ScheduleFamily
         exclude = ('ap',)
@@ -321,7 +336,7 @@ class ScheduleFamilyFactory(factory.django.DjangoModelFactory):
     pybamm_template = None
 
 
-class ScheduleFactory(factory.django.DjangoModelFactory):
+class ScheduleFactory(DjangoModelFactory):
     class Meta:
         model = Schedule
 
@@ -331,7 +346,7 @@ class ScheduleFactory(factory.django.DjangoModelFactory):
     schedule_file = factory.LazyFunction(make_tmp_file)
 
 
-class ArbitraryFileFactory(factory.django.DjangoModelFactory):
+class ArbitraryFileFactory(DjangoModelFactory):
     class Meta:
         model = ArbitraryFile
         django_get_or_create = ('name', 'team',)
@@ -350,7 +365,7 @@ class ArbitraryFileFactory(factory.django.DjangoModelFactory):
         self.storage_type = extracted
 
 
-class CyclerTestFactory(factory.django.DjangoModelFactory):
+class CyclerTestFactory(DjangoModelFactory):
     class Meta:
         model = CyclerTest
         exclude = ('ap',)
@@ -390,7 +405,7 @@ class CyclerTestFactory(factory.django.DjangoModelFactory):
         self.files.add(*extracted)
 
 
-class ExperimentFactory(factory.django.DjangoModelFactory):
+class ExperimentFactory(DjangoModelFactory):
     class Meta:
         model = Experiment
         exclude = ('ap',)
@@ -427,7 +442,7 @@ class ExperimentFactory(factory.django.DjangoModelFactory):
         # Add the iterable of cycler tests using bulk addition
         self.authors.add(*extracted)
 
-class DataUnitFactory(factory.django.DjangoModelFactory):
+class DataUnitFactory(DjangoModelFactory):
     class Meta:
         model = DataUnit
 
@@ -437,7 +452,7 @@ class DataUnitFactory(factory.django.DjangoModelFactory):
     symbol = factory.Faker('pystr', max_chars = 3)
     is_default = False
 
-class DataColumnTypeFactory(factory.django.DjangoModelFactory):
+class DataColumnTypeFactory(DjangoModelFactory):
     class Meta:
         model = DataColumnType
 
@@ -453,7 +468,7 @@ def to_validation_schema(obj):
     obj = {f"x{k}": v for k, v in obj.items()}
     return {'$id': 'abc', '$defs': {}, **obj}
 
-class ValidationSchemaFactory(factory.django.DjangoModelFactory):
+class ValidationSchemaFactory(DjangoModelFactory):
     class Meta:
         model = ValidationSchema
         exclude = ('ap', 's',)
