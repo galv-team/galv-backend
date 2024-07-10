@@ -21,6 +21,7 @@ def assert_response_property(self, response, assertion, *args, **kwargs):
     except AssertionError as e:
         raise AssertionError(f"{e}\nResponse: {response.json()}")
 
+
 class APITestCaseWrapper(APITestCase):
     schema_tester = SchemaTester()
     client = OpenAPIClient(schema_tester=schema_tester)
@@ -32,8 +33,9 @@ class APITestCaseWrapper(APITestCase):
             results.append(r.json())
         return results
 
+
 class GalvTestCase(APITestCaseWrapper):
-    edit_kwargs = None  # a dict of kwargs to send to update calls. Can be overriden with self.get_edit_kwargs()
+    edit_kwargs = None  # a dict of kwargs to send to update calls. Can be overridden with self.get_edit_kwargs()
     stub = None  # the stub name of the resource, e.g. 'cell'
     factory = None  # the factory for creating resources
 
@@ -44,7 +46,9 @@ class GalvTestCase(APITestCaseWrapper):
         if abstract:
             return
         if self.edit_kwargs is None and type(self).get_edit_kwargs == GalvTeamResourceTestCase.get_edit_kwargs:
-            raise AssertionError(f"Children of {self.__class__.__name__} must define self.edit_kwargs or self.get_edit_kwargs()")
+            raise AssertionError(
+                f"Children of {self.__class__.__name__} must define self.edit_kwargs or self.get_edit_kwargs()"
+            )
         if self.stub is None:
             raise AssertionError(f"Children of {self.__class__.__name__} must define a self.stub")
         if self.factory is None:
@@ -153,9 +157,6 @@ class _GalvTeamResourceTestCase(GalvTestCase):
         return new_resource_dict
 
     def create_with_perms(self, **perms):
-        # Pass team prop to the correct object
-        # if self.factory.__name__ in ['CellFactory', 'EquipmentFactory', 'ScheduleFactory']:
-        #     return self.factory.create(family__team=self.lab_team, **perms)
         obj = self.factory.create(team=self.lab_team, **perms)
         assert self.factory._meta.model.objects.filter(pk=obj.pk).exists(), \
             f"Could not create {self.factory._meta.model.__name__} with {perms}"
