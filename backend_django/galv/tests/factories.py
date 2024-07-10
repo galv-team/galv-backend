@@ -7,6 +7,7 @@ from functools import partial
 
 import factory
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import transaction, IntegrityError
 from factory.base import StubObject
 import faker
 import django.conf.global_settings
@@ -31,13 +32,14 @@ class DjangoModelFactory(factory.django.DjangoModelFactory):
     A factory for Django models that uses the `django.db.models.Model` class.
     This model will handle IntegrityErrors when trying to create an object that already exists.
     """
-    def create(self, *args, **kwargs):
+    @classmethod
+    def create(cls, *args, **kwargs):
         try:
             with transaction.atomic():
-                return super(DjangoModelFactory, self).create(*args, **kwargs)
+                return super(DjangoModelFactory, cls).create(*args, **kwargs)
         except IntegrityError:
-            id = self._meta.model.objects.count() + 100
-            return super(DjangoModelFactory, self).create(*args, **kwargs, pk=id)
+            id = cls._meta.model.objects.count() + 100
+            return super(DjangoModelFactory, cls).create(*args, **kwargs, pk=id)
 
 
 def to_type_value_notation(obj):
