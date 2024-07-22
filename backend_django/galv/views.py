@@ -2296,6 +2296,7 @@ class AdditionalS3StorageTypeViewSet(DescribeSelfMixin, viewsets.ModelViewSet, _
     filter_fields = [
         'lab__id', 'lab__name', 'enabled', 'bucket_name', 'location', 'quota', 'region_name', 'custom_domain'
     ]
+    ordering = ['-priority']
     search_fields = [
         '=lab__id',
         '@lab__name',

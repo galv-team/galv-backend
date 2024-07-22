@@ -8,7 +8,7 @@
             "name": "Unknown",
             "unit": null,
             "data_type": "float",
-            "description": "unknown column type",
+            "description": "A column whose details are not known.",
             "is_default": true,
             "read_access_level": 0
         }
@@ -20,7 +20,7 @@
             "created": "2023-12-06T15:10:05+00:00",
             "modified": "2023-12-06T15:10:05+00:00",
             "name": "SampleNumber",
-            "description": "The sample or record number. Is increased by one each time a test machine records a reading. Usually counts from 1 at the start of a test",
+            "description": "The sample or record number. Is increased by one each time a test machine records a reading. Usually counts from 1 at the start of a test.",
             "unit": 1,
             "data_type": "int",
             "is_default": true,
