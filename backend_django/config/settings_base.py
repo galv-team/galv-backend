@@ -20,7 +20,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.3.0"
+API_VERSION = "2.3.1"
 
 try:
     USER_ACTIVATION_TOKEN_EXPIRY_S = int(os.environ.get("DJANGO_USER_ACTIVATION_TOKEN_EXPIRY_S"))
@@ -37,7 +37,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
-ALLOWED_HOSTS = [*os.environ.get("VIRTUAL_HOST", "").split(","), "galv-team.github.io"]
+ALLOWED_HOSTS = [*os.environ.get("VIRTUAL_HOST", "").split(",")]
 
 CORS_ALLOW_HEADERS = list(corsheaders.defaults.default_headers) + [
     "X-CSRF-TOKEN",
@@ -47,7 +47,10 @@ CORS_EXPOSE_HEADERS = [
     "Galv-Storage-Redirect-URL",
     "Content-Disposition",
 ]
-CORS_ALLOWED_ORIGINS = os.environ.get("FRONTEND_VIRTUAL_HOST", "").split(",")
+CORS_ALLOWED_ORIGINS = [
+    *os.environ.get("FRONTEND_VIRTUAL_HOST", "").split(","),
+    "https://galv-team.github.io"
+]
 CORS_ALLOW_CREDENTIALS = True
 
 # Application definition
