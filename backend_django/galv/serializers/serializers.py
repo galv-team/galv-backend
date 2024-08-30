@@ -3,12 +3,17 @@
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 from __future__ import annotations
 
+import json
 import os.path
+from pathlib import Path
 import re
+import tempfile
 from typing import Optional, Union
 
 import jsonschema
 from django.conf import settings
+from django.core.files import File
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import transaction
 from drf_spectacular.types import OpenApiTypes
 from rest_framework.reverse import reverse
@@ -30,12 +35,14 @@ from ..models import Harvester, \
     render_pybamm_schedule, ScheduleFamily, ValidationSchema, Experiment, Lab, Team, GroupProxy, UserProxy, \
     SchemaValidation, UserActivation, UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, \
     ALLOWED_USER_LEVELS_DELETE, ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, ColumnMapping, \
-    get_user_auth_details, GalvStorageType, AdditionalS3StorageType, PasswordReset, StorageError
+    get_user_auth_details, GalvStorageType, AdditionalS3StorageType, PasswordReset, StorageError, FileState
 from ..models.utils import ScheduleRenderError
 from django.utils import timezone
 from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
 from rest_framework import serializers
 from knox.models import AuthToken
+
+from galv_harvester.harvest import InternalHarvestProcessor
 
 from .utils import CustomPropertiesModelSerializer, GetOrCreateTextField, augment_extra_kwargs, url_help_text, \
     PermissionsMixin, TruncatedUserHyperlinkedRelatedIdField, \
@@ -1732,7 +1739,7 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
         model = ObservedFile
         fields = [
             'url', 'id', 'name',
-            'path', 'harvester',
+            'path', 'harvester', 'uploader',
             'state',
             'parser',
             'upload_errors',
@@ -1753,6 +1760,174 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
         extra_kwargs = augment_extra_kwargs({
             'upload_errors': {'help_text': "Errors associated with this File"}
         })
+
+class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
+    file = serializers.FileField(write_only=True, help_text="File to upload")
+    target_file_id = TruncatedHyperlinkedRelatedIdField(
+        'ObservedFileSerializer',
+        ['name', 'path', 'parquet_partitions', 'png'],
+        'observedfile-detail',
+        queryset=ObservedFile.objects.all(),
+        help_text="ID of the ObservedFile to complete creation of",
+        required=False
+    )
+    uploader = TruncatedHyperlinkedRelatedIdField(
+        'UserSerializer',
+        ['username', 'first_name', 'last_name'],
+        'userproxy-detail',
+        queryset=UserProxy.objects.all(),
+        many=False,
+        help_text="Users uploading the data"
+    )
+    mapping = TruncatedHyperlinkedRelatedIdField(
+        'ColumnMappingSerializer',
+        ['name'],
+        'columnmapping-detail',
+        queryset=ColumnMapping.objects.all(),
+        help_text="ColumnMapping applied to this File",
+        required=False
+    )
+    team = TruncatedHyperlinkedRelatedIdField(
+        'TeamSerializer',
+        ['name'],
+        'team-detail',
+        queryset=Team.objects.all(),
+        help_text="Team this File belongs to"
+    )
+
+    def validate_uploader(self, value):
+        user = self.context['request'].user
+        if not self.instance and not value:
+            raise ValidationError("You must provide the `uploader` user id")
+        if self.instance is not None and self.instance.uploader != user and not user.is_superuser:
+            raise ValidationError("You may not change the uploader of a File")
+        if value != user and not value.is_superuser:
+            raise ValidationError("You may only create Files for yourself")
+        if len(self.context['request'].user_auth_details.team_ids) == 0:
+            raise ValidationError("You must be a member of a team to create Files")
+        return value
+
+    def validate_id(self, value):
+        if value is None:
+            return None
+        try:
+            file = ObservedFile.objects.get(pk=value)
+        except ObservedFile.DoesNotExist:
+            file = None
+        if file is None or file.state != FileState.AWAITING_MAP_ASSIGNMENT:
+            raise ValidationError("File must be in AWAITING_MAP_ASSIGNMENT state")
+        if file and file.uploader is self.context['request'].user:
+            raise ValidationError("You may only update your files.")
+        return value
+
+    def validate(self, attrs):
+        if 'file' not in attrs:
+            raise ValidationError("You must provide a file to upload")
+        if 'id' in attrs and 'mapping' not in attrs:
+            raise ValidationError("You must specify the mapping when updating an existing file")
+        return super().validate(attrs)
+
+    def to_representation(self, instance):
+        return super().to_representation(instance)
+
+    def save(self, **kwargs):
+        return super().save(**kwargs)
+
+    def create(self, validated_data):
+        """
+        Create an ObservedFile from a file upload.
+        This happens in two steps:
+        1. Save the uploaded file to a temporary location
+        2. Attempt to process the file using the galv-harvester package
+        3. If successful, create the ObservedFile
+
+        We'll go through this process twice: once to summarise the columns and once to apply the mapping.
+        Even though we have to upload data twice,
+        it's less of a headache than trying to create persistent temporary storage somewhere
+        and police the limits on it.
+        """
+        target_file = validated_data.pop('target_file_id', None)
+        file = validated_data.pop('file')
+        mapping = validated_data.pop('mapping', None)
+        observed_file = None
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            for chunk in file.chunks():
+                temp_file.write(chunk)
+        try:
+            harvester = InternalHarvestProcessor(temp_file.name)
+            summary = harvester.summarise_columns()
+            if target_file is not None:
+                observed_file = target_file
+                if observed_file.summary != json.loads(summary.to_json()):  # apply the same processing to summary
+                    raise ValidationError("Summary does not match existing file")
+            else:
+                observed_file = ObservedFile.objects.create(
+                    **validated_data,
+                    summary=summary.to_dict(),
+                )
+            if mapping is not None:
+                if mapping not in [m['mapping'] for m in observed_file.applicable_mappings(self.context['request'])]:
+                    raise ValidationError("Mapping is not applicable to this file")
+                observed_file.mapping = mapping
+                observed_file.save()
+                # Apply mapping and save the file contents
+                harvester.mapping = ColumnMappingSerializer(
+                    mapping,
+                    context=self.context
+                ).data.get('rendered_map')
+                harvester.process_data()
+                # Save parquet partitions to storage
+                dir, _, partitions = list(os.walk(harvester.data_file_name))[0]
+                for i, name in enumerate([os.path.join(dir, p) for p in partitions]):
+                    if name.endswith('.parquet'):
+                        ParquetPartition.objects.create(
+                            observed_file=observed_file,
+                            partition_number=i,
+                            bytes_required=Path(name).stat().st_size,
+                            parquet_file=File(file=open(name, 'rb'), name=os.path.basename(name))
+                        )
+
+                observed_file.png = File(
+                    file=open(harvester.png_file_name, 'rb'),
+                    name=os.path.basename(harvester.png_file_name)
+                )
+                observed_file.state = FileState.IMPORTED
+            else:
+                observed_file.state = FileState.AWAITING_MAP_ASSIGNMENT
+            observed_file.save()
+            return observed_file
+        except Exception as e:
+            if observed_file:
+                observed_file.state = FileState.IMPORT_FAILED
+                observed_file.save()
+            raise ValidationError(f"Error processing file: {e}")
+        finally:
+            os.unlink(temp_file.name)
+
+    def update(self, instance, validated_data):
+        """
+        The update method is only ever used to do the second half of the double-upload.
+        The first half will have created the ObservedFile instance and its summary,
+        and now the user will have selected a mapping for it.
+
+        Consequently, we simply repeat the create step, knowing that we now have all the required information.
+        The create step will even validate that this looks like the same file by checking the summary
+        against the existing ObservedFile instance's summary.
+        """
+        return self.create(validated_data)
+
+
+    class Meta(ObservedFileSerializer.Meta):
+        fields = [
+            "id", 'target_file_id', "path", "name", "uploader", "file", "mapping", "team", "state",
+            "read_access_level", "edit_access_level", "delete_access_level",
+        ]
+        read_only_fields = []
+        extra_kwargs = {
+            "uploader": {"required": False, "allow_null": True},
+            "team": {"required": True, "allow_null": False},
+        }
+
 
 @extend_schema_serializer(examples = [
     OpenApiExample(

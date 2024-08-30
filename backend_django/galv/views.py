@@ -44,7 +44,7 @@ from .serializers import HarvesterSerializer, \
     ExperimentSerializer, LabSerializer, TeamSerializer, ValidationSchemaSerializer, SchemaValidationSerializer, \
     ArbitraryFileSerializer, ArbitraryFileCreateSerializer, ParquetPartitionSerializer, ColumnMappingSerializer, \
     GalvStorageTypeSerializer, AdditionalS3StorageTypeSerializer, PasswordResetRequestSerializer, \
-    PasswordResetSerializer
+    PasswordResetSerializer, ObservedFileCreateSerializer
 from .models import Harvester, \
     HarvestError, \
     MonitoredPath, \
@@ -1211,6 +1211,14 @@ Searchable fields:
 - state
         """
     ),
+    create=extend_schema(
+        summary="Upload a new File",
+        description="""
+Files can be uploaded to the server.
+Files will be kept temporarily while processed, and then deleted once the import process is complete
+or after a certain period of time.
+"""
+    ),
     retrieve=extend_schema(
         summary="View a File",
         description="""
@@ -1243,11 +1251,15 @@ class ObservedFileViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     permission_classes = [DRYPermissions]
     filter_backends = [ObservedFileFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
-    serializer_class = ObservedFileSerializer
     filterset_fields = ['harvester__id', 'path']
     search_fields = ['@path', 'state', 'name']
     queryset = ObservedFile.objects.all().order_by('-last_observed_time', '-id')
-    http_method_names = ['get', 'patch', 'options']
+    http_method_names = ['get', 'post', 'patch', 'options']
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return ObservedFileCreateSerializer
+        return ObservedFileSerializer
 
     @action(detail=True, methods=['GET'])
     def reimport(self, request, pk = None):

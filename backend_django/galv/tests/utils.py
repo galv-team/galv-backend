@@ -17,7 +17,7 @@ from ..models import UserLevel, Lab, Team, UserProxy, GroupProxy
 
 def assert_response_property(self, response, assertion, *args, **kwargs):
     try:
-        assertion(*args, **kwargs)
+        assertion(*args, **{"msg": response.data, ** kwargs})
     except AssertionError as e:
         raise AssertionError(f"{e}\nResponse: {response.json()}")
 

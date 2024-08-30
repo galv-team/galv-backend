@@ -225,6 +225,28 @@
         }
     },
     {
+        "pk": "e9caa959-f2ef-42b8-9739-ba5c7b2b4efa",
+        "model": "galv.ColumnMapping",
+        "fields": {
+            "created": "2024-04-10T15:39:53.581Z",
+            "modified": "2024-04-10T15:39:53.634Z",
+            "name": "Galv minimal",
+            "map": {
+                "ElapsedTime_s": {
+                    "column_type": 3
+                },
+                "Voltage_V": {
+                    "column_type": 4
+                },
+                "Current_A": {
+                    "column_type": 5
+                }
+            },
+            "read_access_level": 0,
+            "edit_access_level": 4
+        }
+    },
+    {
         "pk": "fd64f179-ca0a-4549-80e3-8b07af10a6d2",
         "model": "galv.ColumnMapping",
         "fields": {
