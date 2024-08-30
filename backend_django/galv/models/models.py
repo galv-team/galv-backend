@@ -1207,12 +1207,19 @@ class ColumnMapping(UUIDModel, ResourceModelPermissionsMixin):
         return str(self.id)
 
 
-class ObservedFile(_StorageTypeConsumerModel, ValidatableBySchemaMixin):
+class ObservedFile(_StorageTypeConsumerModel, ValidatableBySchemaMixin, ResourceModelPermissionsMixin):
     path = models.TextField(help_text="Absolute file path")
     harvester = models.ForeignKey(
         to=Harvester,
         on_delete=models.CASCADE,
-        help_text="Harvester that harvested the File"
+        help_text="Harvester that harvested the File",
+        null=True
+    )
+    uploader = models.ForeignKey(
+        to=UserProxy,
+        on_delete=models.CASCADE,
+        help_text="User that uploaded the File",
+        null=True
     )
     last_observed_size_bytes = models.PositiveBigIntegerField(
         null=False,
@@ -1296,8 +1303,20 @@ class ObservedFile(_StorageTypeConsumerModel, ValidatableBySchemaMixin):
         'summary': None
     }
 
+    @property
+    def orphan(self):
+        return self.harvester is None and self.team is None
+
     def _get_lab(self):
-        return self.harvester.lab
+        if self.orphan:
+            raise RuntimeError("Cannot get lab for orphaned file")
+        if self.harvester is not None:
+            return self.harvester.lab
+        return self.team.lab
+
+    # Expose get_lab as public so it can be retrieved in ParquetPartition
+    def get_lab(self):
+        return self._get_lab()
 
     @property
     def has_required_columns(self) -> bool:
@@ -1316,13 +1335,26 @@ class ObservedFile(_StorageTypeConsumerModel, ValidatableBySchemaMixin):
     def has_write_permission(request):
         return True
 
+    @staticmethod
+    def has_create_permission(request):
+        try:
+            if request.user.is_superuser:
+                return True
+            return Team.objects.filter(pk__in=get_user_auth_details(request).team_ids).exists()
+        except AttributeError:
+            return False
+
     def has_object_read_permission(self, request):
-        if self.harvester.is_valid_harvester(request):
+        if self.team:
+            return super().has_object_read_permission(request)
+        if self.harvester and self.harvester.is_valid_harvester(request):
             return True
         return any([path.has_object_read_permission(request) for path in self.monitored_paths.all()])
 
     def has_object_write_permission(self, request):
-        if self.harvester.is_valid_harvester(request):
+        if self.team:
+            return super().has_object_write_permission(request)
+        if self.harvester and self.harvester.is_valid_harvester(request):
             return True
         return any([path.has_object_write_permission(request) for path in self.monitored_paths.all()])
 
@@ -1378,7 +1410,7 @@ class ObservedFile(_StorageTypeConsumerModel, ValidatableBySchemaMixin):
         return self.path
 
     class Meta(UUIDModel.Meta):
-        unique_together = [['path', 'harvester']]
+        unique_together = [['path', 'harvester', 'uploader']]
 
 
 class CyclerTest(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
@@ -1941,7 +1973,7 @@ class ParquetPartition(_StorageTypeConsumerModel):
     }
 
     def _get_lab(self):
-        return self.observed_file.harvester.lab
+        return self.observed_file.get_lab()
 
     @staticmethod
     def has_read_permission(request):
