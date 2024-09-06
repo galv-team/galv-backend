@@ -1761,7 +1761,22 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
             'upload_errors': {'help_text': "Errors associated with this File"}
         })
 
+
 class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
+    """
+    The ObservedFileCreateSerializer is used to create ObservedFiles from uploaded files.
+    This can be done in a one- or two-step process.
+
+    In the one-step process, a file is supplied along with a `mapping` that is applicable to that file.
+    An ObservedFile is created with the supplied mapping applied to the file.
+    Its data and preview image are extracted and stored in Storage.
+
+    In the two-stage process, a file is supplied without a `mapping`.
+    The `summary` of the file is extracted and stored in a new ObservedFile.
+    The user can then apply a mapping to that file in the usual manner.
+    Once a mapping has been applied, the file can be re-uploaded citing its `id` to complete the process.
+    The data and preview image will be extracted and stored in Storage.
+    """
     file = serializers.FileField(write_only=True, help_text="File to upload")
     target_file_id = TruncatedHyperlinkedRelatedIdField(
         'ObservedFileSerializer',
