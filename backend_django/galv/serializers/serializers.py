@@ -1839,7 +1839,8 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
         if 'file' not in attrs:
             raise ValidationError("You must provide a file to upload")
         if 'id' in attrs and 'mapping' not in attrs:
-            raise ValidationError("You must specify the mapping when updating an existing file")
+            if self.instance is None or self.instance.mapping is None:
+                raise ValidationError("You must specify the mapping when updating an existing file")
         return super().validate(attrs)
 
     def to_representation(self, instance):
@@ -1875,6 +1876,8 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
                 observed_file = target_file
                 if observed_file.summary != json.loads(summary.to_json()):  # apply the same processing to summary
                     raise ValidationError("Summary does not match existing file")
+                if mapping is None:
+                    mapping = observed_file.mapping
             else:
                 observed_file = ObservedFile.objects.create(
                     **validated_data,
