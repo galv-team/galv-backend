@@ -1215,8 +1215,15 @@ Searchable fields:
         summary="Upload a new File",
         description="""
 Files can be uploaded to the server.
-Files will be kept temporarily while processed, and then deleted once the import process is complete
-or after a certain period of time.
+If you know the `mapping` of a file, the file can be uploaded in a single step.
+
+If you do not know the `mapping` of a file, upload the file without a Mapping and then assign it a `mapping` using the 
+mapping interface. 
+You may create a Mapping using the mapping interface and the `summary` data extracted from the file if necessary.
+
+Once a `mapping` has been selected for the file, upload the file again, specifying the `id` of the partially-uploaded
+file as `target_file_id`.
+The file will then be uploaded in full.
 """
     ),
     retrieve=extend_schema(
