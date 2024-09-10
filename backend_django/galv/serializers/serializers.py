@@ -1818,7 +1818,7 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
             raise ValidationError("You may not change the uploader of a File")
         if value != user and not value.is_superuser:
             raise ValidationError("You may only create Files for yourself")
-        if len(self.context['request'].user_auth_details.team_ids) == 0:
+        if len(get_user_auth_details(self.context['request']).team_ids) == 0:
             raise ValidationError("You must be a member of a team to create Files")
         return value
 

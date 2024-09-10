@@ -1263,6 +1263,11 @@ class ObservedFileViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     queryset = ObservedFile.objects.all().order_by('-last_observed_time', '-id')
     http_method_names = ['get', 'post', 'patch', 'options']
 
+    def get_parsers(self):
+        if self.request is not None and self.action_map.get(self.request.method.lower()) == 'create':
+            return [MultiPartParser(), FormParser()]
+        return super().get_parsers()
+
     def get_serializer_class(self):
         if self.action == "create":
             return ObservedFileCreateSerializer

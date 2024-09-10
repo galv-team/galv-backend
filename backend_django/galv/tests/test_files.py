@@ -173,6 +173,15 @@ class ObservedFileTests(GalvTestCase):
                     response = self.client.post(reverse(f'{self.stub}-list'), data=data, format='multipart')
                     assert_response_property(self, response, self.assertEqual, response.status_code, details['code'])
 
+        with self.subTest("JSON not allowed"):
+            with tempfile.TemporaryFile() as f:
+                f.write(b"ElapsedTime_s,Current_A,Voltage_V\n1,2,3\n2,2,3\n3,2,3\n4,2,3\n5,2,3\n6,2,3\n7,2,3\n8,2,3\n9,2,3\n10,2,3\n11,3,3\n")
+                f.seek(0)
+                self.client.force_authenticate(self.user)
+                data = {**get_upload_data(self.user.id), "file": f}
+                response = self.client.post(reverse(f'{self.stub}-list'), data=data, format='json')
+                assert_response_property(self, response, self.assertEqual, response.status_code, 415)
+
         with self.subTest("Two-stage upload"):
             observed_file = None
             with self.subTest("Stage one - no mapping"):
