@@ -1922,9 +1922,6 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
             observed_file.save()
             return observed_file
         except Exception as e:
-            if observed_file:
-                observed_file.state = FileState.IMPORT_FAILED
-                observed_file.save()
             raise ValidationError(f"Error processing file: {e}")
         finally:
             os.unlink(temp_file.name)
