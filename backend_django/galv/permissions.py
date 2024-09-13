@@ -74,12 +74,6 @@ class UserFilterBackend(DRYPermissionFiltersBase):
         return queryset.filter(pk__in=[u.pk for u in users_to_return])
 
 
-class ObservedFileFilterBackend(DRYPermissionFiltersBase):
-    action_routing = True
-    def filter_list_queryset(self, request, queryset, view):
-        return queryset.filter(monitored_paths__team__pk__in=get_user_auth_details(request).team_ids)
-
-
 class ParquetPartitionFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
     def filter_list_queryset(self, request, queryset, view):
@@ -96,6 +90,16 @@ class ResourceFilterBackend(DRYPermissionFiltersBase):
             # Bit of a hack to chain True/False with Q object
             (Q(read_access_level=UserLevel.REGISTERED_USER.value) & Q(pk__isnull=not auth_details.is_approved)) |
             Q(read_access_level=UserLevel.ANONYMOUS.value)
+        )
+
+
+class ObservedFileFilterBackend(ResourceFilterBackend):
+    action_routing = True
+    def filter_list_queryset(self, request, queryset, view):
+        rf_results = super().filter_list_queryset(request, queryset, view).values_list('id', flat=True)
+        return queryset.filter(
+            Q(id__in=rf_results) |
+            Q(monitored_paths__team__pk__in=get_user_auth_details(request).team_ids)
         )
 
 class SchemaValidationFilterBackend(ResourceFilterBackend):

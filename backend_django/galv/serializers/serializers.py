@@ -1681,7 +1681,7 @@ class ParquetPartitionSerializer(serializers.HyperlinkedModelSerializer, Permiss
         response_only=True, # signal that example only applies to responses
     ),
 ])
-class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
+class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, WithTeamMixin, PermissionsMixin):
     parquet_partitions = TruncatedHyperlinkedRelatedIdField(
         'ParquetPartitionSerializer',
         ['parquet_file', 'partition_number', 'uploaded', 'upload_errors'],
@@ -1740,6 +1740,7 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
         fields = [
             'url', 'id', 'name',
             'path', 'harvester', 'uploader',
+            "team",
             'state',
             'parser',
             'upload_errors',
@@ -1754,7 +1755,10 @@ class ObservedFileSerializer(serializers.HyperlinkedModelSerializer, Permissions
             'summary',
             'png',
             'applicable_mappings',
-            'permissions'
+            'permissions',
+            "read_access_level",
+            "edit_access_level",
+            "delete_access_level",
         ]
         read_only_fields = list(set(fields) - {'name', 'mapping'})
         extra_kwargs = augment_extra_kwargs({
@@ -1882,6 +1886,7 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
                 observed_file = ObservedFile.objects.create(
                     **validated_data,
                     summary=summary.to_dict(),
+                    parser=harvester.input_file.__class__.__name__,
                 )
             if mapping is not None:
                 if mapping not in [m['mapping'] for m in observed_file.applicable_mappings(self.context['request'])]:
@@ -1894,6 +1899,8 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
                     context=self.context
                 ).data.get('rendered_map')
                 harvester.process_data()
+                # Delete any existing partitions
+                observed_file.parquet_partitions.all().delete()
                 # Save parquet partitions to storage
                 dir, _, partitions = list(os.walk(harvester.data_file_name))[0]
                 for i, name in enumerate([os.path.join(dir, p) for p in partitions]):
@@ -1915,9 +1922,6 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
             observed_file.save()
             return observed_file
         except Exception as e:
-            if observed_file:
-                observed_file.state = FileState.IMPORT_FAILED
-                observed_file.save()
             raise ValidationError(f"Error processing file: {e}")
         finally:
             os.unlink(temp_file.name)
