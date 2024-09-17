@@ -108,7 +108,7 @@ jobs:
           patch = lambda s: int(s.split('.')[2].split('-')[0])
           note = lambda s: s.split('.')[2].split('-')[1] if '-' in s.split('.')[2] else ''
           tags.sort(key=lambda s: (major(s[1:]), minor(s), patch(s), note(s)))  # strip 'v' prefix for major
-          i = tags.index('v${{ steps.scrape.outputs.version }}')
+          i = tags.index('${{ steps.scrape.outputs.version }}')
           if i == 0:
             os.system('echo prev-version-tag= >> $GITHUB_OUTPUT')
           else:
