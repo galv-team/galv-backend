@@ -16,6 +16,7 @@ from django.core.files import File
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import transaction
 from drf_spectacular.types import OpenApiTypes
+from galv_harvester.parse.exceptions import UnsupportedFileTypeError
 from rest_framework.reverse import reverse
 from drf_spectacular.utils import extend_schema_field, extend_schema_serializer, OpenApiExample
 from rest_framework.exceptions import ValidationError
@@ -1870,7 +1871,12 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
         file = validated_data.pop('file')
         mapping = validated_data.pop('mapping', None)
         observed_file = None
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        try:
+            # Use the same extension as the uploaded file because the Parsers usually check extension to determine type
+            ext = os.path.splitext(file.name)[1]
+        except IndexError:
+            ext = ""
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as temp_file:
             for chunk in file.chunks():
                 temp_file.write(chunk)
         try:
@@ -1921,6 +1927,8 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
                 observed_file.state = FileState.AWAITING_MAP_ASSIGNMENT
             observed_file.save()
             return observed_file
+        except UnsupportedFileTypeError:
+            raise ValidationError("Unsupported file type")
         except Exception as e:
             raise ValidationError(f"Error processing file: {e}")
         finally:
