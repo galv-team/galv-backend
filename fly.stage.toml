@@ -7,6 +7,7 @@
 # fly <command> <flags> <options> --config fly.stage.toml --app galv-backend-stage
 #
 # For example, to deploy a new version of the app, use
+# [deploy a new version of the app by pushing a release tag to the repo]
 # fly deploy --config fly.stage.toml --app galv-backend-stage
 # fly storage create --config fly.stage.toml --app galv-backend-stage
 
@@ -48,7 +49,7 @@ console_command = "/code/backend_django/manage.py shell"
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
-  memory_mb = 512
+  memory_mb = 1024
 
 #[[statics]]
 #  guest_path = "/static/"
