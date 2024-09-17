@@ -1,0 +1,55 @@
+# fly.toml app configuration file generated for galv-backend-dev-debug on 2023-12-30T07:23:48Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+# To launch a new deployment/manage stuff, use the pattern
+# fly <command> <flags> <options> --config fly.stage.toml --app galv-backend-stage
+#
+# For example, to deploy a new version of the app, use
+# fly deploy --config fly.stage.toml --app galv-backend-stage
+# fly storage create --config fly.stage.toml --app galv-backend-stage
+
+app = "galv-backend-stage"
+primary_region = "lhr"
+console_command = "/code/backend_django/manage.py shell"
+
+[build]
+  image = "ghcr.io/galv-team/galv-backend:latest"
+
+[deploy]
+#  release_command = "/code/fly_setup.sh"
+
+[env]
+#  PORT = "80"
+  VIRTUAL_HOST = "galv-backend-stage.fly.dev"
+  FRONTEND_VIRTUAL_HOST = "http://galv-frontend-stage.fly.dev,https://galv-frontend-stage.fly.dev"
+  DJANGO_SETTINGS_MODULE = "config.settings"
+#  DJANGO_SETTINGS = "dev"
+  DJANGO_EMAIL_HOST = 'smtp.gmail.com'
+  DJANGO_EMAIL_USE_TLS = "False"
+  DJANGO_EMAIL_PORT = "465"
+  DJANGO_EMAIL_USE_SSL = "True"
+  DJANGO_EMAIL_HOST_USER = 'oxfordbatterymodelling@gmail.com'
+  DJANGO_DEFAULT_FROM_EMAIL = 'oxfordbatterymodelling@gmail.com'
+  DJANGO_LAB_STORAGE_QUOTA_BYTES = "10_000_000_000"  # 1GB
+  DJANGO_AWS_STORAGE_BUCKET_NAME = "galv"
+  DJANGO_AWS_S3_REGION_NAME = "eu-west-2"
+  # Other AWS stuff set in secrets by Fly's Tigris service
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
+
+#[[statics]]
+#  guest_path = "/static/"
+#  url_prefix = "/django_static/"
