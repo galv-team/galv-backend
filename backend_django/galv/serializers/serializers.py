@@ -1917,11 +1917,13 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
                             bytes_required=Path(name).stat().st_size,
                             parquet_file=File(file=open(name, 'rb'), name=os.path.basename(name))
                         )
-
-                observed_file.png = File(
-                    file=open(harvester.png_file_name, 'rb'),
-                    name=os.path.basename(harvester.png_file_name)
-                )
+                try:
+                    observed_file.png = File(
+                        file=open(harvester.png_file_name, 'rb'),
+                        name=os.path.basename(harvester.png_file_name)
+                    )
+                except FileNotFoundError:  # don't fail the whole process if the PNG can't be saved
+                    pass
                 observed_file.state = FileState.IMPORTED
             else:
                 observed_file.state = FileState.AWAITING_MAP_ASSIGNMENT
