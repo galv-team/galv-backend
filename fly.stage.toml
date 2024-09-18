@@ -16,7 +16,7 @@ primary_region = "lhr"
 console_command = "/code/backend_django/manage.py shell"
 
 [build]
-  image = "ghcr.io/galv-team/galv-backend:latest"
+#  image = "ghcr.io/galv-team/galv-backend:latest"
 
 [deploy]
 #  release_command = "/code/fly_setup.sh"
