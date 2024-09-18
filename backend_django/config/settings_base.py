@@ -220,10 +220,13 @@ AWS_S3_OBJECT_PARAMETERS = {
     "CacheControl": "max-age=2592000",
 }
 AWS_S3_SIGNATURE_VERSION = 's3v4'
-AWS_S3_CUSTOM_DOMAIN = os.environ.get(
-    "AWS_ENDPOINT_URL_S3",  # for Fly's Tigris service
-    f"https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
-)
+# AWS_S3_CUSTOM_DOMAIN = os.environ.get("AWS_ENDPOINT_URL_S3")  # for Fly's Tigris service
+AWS_S3_CUSTOM_DOMAIN = os.environ.get("DJANGO_AWS_S3_CUSTOM_DOMAIN")
+if AWS_S3_CUSTOM_DOMAIN is not None:
+    AWS_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}"
+else:
+    AWS_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+
 DATA_STORAGE_UPLOAD_URL_EXPIRY_S = int(os.environ.get("DJANGO_DATA_STORAGE_UPLOAD_URL_EXPIRY_S", 60 * 60))  # 1 hour
 
 # If Labs exceed their storage quota (or if the quota is set to 0),
@@ -240,15 +243,15 @@ MEDIAFILES_LOCATION = "media"
 DATAFILES_LOCATION = "data"
 
 S3_ENABLED = bool(AWS_S3_REGION_NAME) and bool(AWS_STORAGE_BUCKET_NAME) and bool(AWS_DEFAULT_ACL)
-if S3_ENABLED and not os.environ.get("AWS_SECRET_ACCESS_KEY"):
+if S3_ENABLED and not (os.environ.get("AWS_SECRET_ACCESS_KEY") and os.environ.get("AWS_ACCESS_KEY_ID")):
     print(os.system('env'))
-    raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")
+    raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY and/or AWS_ACCESS_KEY_ID.")
 
 STORAGES = {}
 
 if S3_ENABLED and os.environ.get("DJANGO_STORE_MEDIA_FILES_ON_S3", False) == "True":
     STORAGES["default"] = {"BACKEND": "galv.storages.MediaStorage"}  # for media
-    MEDIA_URL = f"{AWS_S3_CUSTOM_DOMAIN}/{MEDIAFILES_LOCATION}/"
+    MEDIA_URL = f"{AWS_URL}/{MEDIAFILES_LOCATION}/"
 else:
     STORAGES["default"] = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -259,7 +262,7 @@ else:
 
 if S3_ENABLED and os.environ.get("DJANGO_STORE_STATIC_FILES_ON_S3", False) == "True":
     STORAGES["staticfiles"] = {"BACKEND": "galv.storages.StaticStorage"}  # for static
-    STATIC_URL = f"{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/"
+    STATIC_URL = f"{AWS_URL}/{STATICFILES_LOCATION}/"
     STATICFILES_DIRS = [f"/{STATICFILES_LOCATION}"]
 else:
     STORAGES["staticfiles"] = {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}
