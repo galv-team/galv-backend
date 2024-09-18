@@ -20,7 +20,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.4.4-dev"
+API_VERSION = "2.4.5-dev"
 
 try:
     USER_ACTIVATION_TOKEN_EXPIRY_S = int(os.environ.get("DJANGO_USER_ACTIVATION_TOKEN_EXPIRY_S"))
@@ -213,9 +213,9 @@ DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_DEFAULT_FROM_EMAIL", "admin@galv")
 AWS_S3_REGION_NAME = os.environ.get("DJANGO_AWS_S3_REGION_NAME")
 AWS_STORAGE_BUCKET_NAME = os.environ.get(
     "DJANGO_AWS_STORAGE_BUCKET_NAME",
-    os.environ.get("AWS_SECRET_ACCESS_KEY")  # compatability with Fly's Tigris service
+    os.environ.get("BUCKET_NAME")  # compatability with Fly's Tigris service
 )
-AWS_DEFAULT_ACL = os.environ.get("DJANGO_AWS_DEFAULT_ACL")
+AWS_DEFAULT_ACL = os.environ.get("DJANGO_AWS_DEFAULT_ACL", "private")
 AWS_S3_OBJECT_PARAMETERS = {
     "CacheControl": "max-age=2592000",
 }
@@ -239,7 +239,7 @@ STATICFILES_LOCATION = "static"
 MEDIAFILES_LOCATION = "media"
 DATAFILES_LOCATION = "data"
 
-S3_ENABLED = AWS_S3_REGION_NAME and AWS_STORAGE_BUCKET_NAME and AWS_DEFAULT_ACL
+S3_ENABLED = bool(AWS_S3_REGION_NAME) and bool(AWS_STORAGE_BUCKET_NAME) and bool(AWS_DEFAULT_ACL)
 if S3_ENABLED and not os.environ.get("AWS_SECRET_ACCESS_KEY"):
     print(os.system('env'))
     raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")

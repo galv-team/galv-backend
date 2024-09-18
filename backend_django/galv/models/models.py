@@ -541,8 +541,7 @@ class GalvStorageType(_StorageType):
         try:
             if settings.S3_ENABLED and settings.LABS_USE_OUR_S3_STORAGE:
                 return S3DataStorage(
-                    access_key=settings.AWS_ACCESS_KEY_ID,
-                    secret_key=settings.AWS_SECRET_ACCESS_KEY,
+                    # AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set in the environment
                     bucket_name=settings.AWS_STORAGE_BUCKET_NAME,
                     region_name=settings.AWS_S3_REGION_NAME,
                     location=self.location,
