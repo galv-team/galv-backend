@@ -13,9 +13,10 @@ logger.setLevel(logging.INFO)
 
 
 class ExperimentTests(GalvTeamResourceTestCase):
-    stub = 'experiment'
+    stub = "experiment"
     factory = ExperimentFactory
-    edit_kwargs = {'description': 'test'}
+    edit_kwargs = {"description": "test"}
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

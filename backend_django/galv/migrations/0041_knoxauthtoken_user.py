@@ -5,15 +5,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0040_rename_quota_additionals3storagetype_quota_bytes_and_more'),
+        ("galv", "0040_rename_quota_additionals3storagetype_quota_bytes_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='knoxauthtoken',
-            name='user',
-            field=models.ForeignKey(help_text='User to whom the token belongs', null=True, on_delete=django.db.models.deletion.CASCADE, to='galv.userproxy'),
+            model_name="knoxauthtoken",
+            name="user",
+            field=models.ForeignKey(
+                help_text="User to whom the token belongs",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="galv.userproxy",
+            ),
         ),
     ]

@@ -13,7 +13,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            
+
             await core.group(`Env vars`, async () => {
               const envs = Object.keys(process.env).sort().reduce(
                 (obj, key) => {
@@ -23,7 +23,7 @@ jobs:
               );
               core.info(JSON.stringify(Object.fromEntries(Object.entries(envs).filter(([key]) => !key.startsWith('GHACTION_DCTX_') && !key.startsWith('INPUT_'))), null, 2));
             });
-  
+
             await core.group(`GitHub context`, async () => {
               core.info(JSON.stringify(JSON.parse(`${process.env.GHACTION_DCTX_GITHUB_CONTEXT}`), null, 2));
             });
@@ -42,7 +42,7 @@ jobs:
             await core.group(`Matrix context`, async () => {
               core.info(JSON.stringify(JSON.parse(`${process.env.GHACTION_DCTX_MATRIX_CONTEXT}`), null, 2));
             });
-  
+
             await core.group(`Docker info`, async () => {
               await exec.exec('docker', ['info'], {ignoreReturnCode: true}).catch(error => {
                 core.info(error);
@@ -58,7 +58,7 @@ jobs:
                 core.info(error);
               });
             });
-  
+
             if (`${process.env.RUNNER_OS}` == 'Linux') {
               await core.group(`Install deps`, async () => {
                 const sudo = await exec.getExecOutput('which sudo', [], {silent: true, ignoreReturnCode: true})
@@ -116,7 +116,7 @@ jobs:
                 }
               });
             }
-            
+
             await core.group(`GitHub needs`, async () => {
               core.info(JSON.stringify(JSON.parse(`${process.env.NEEDS}`), null, 2));
             });

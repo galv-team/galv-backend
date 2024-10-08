@@ -13,11 +13,11 @@ logger.setLevel(logging.INFO)
 
 
 class DataColumnTypeTests(GalvTeamResourceTestCase):
-    stub = 'datacolumntype'
+    stub = "datacolumntype"
     factory = DataColumnTypeFactory
 
     def get_edit_kwargs(self):
-        return {'name': fake.word()}
+        return {"name": fake.word()}
 
     def test_destroy_non_team_member(self):
         pass
@@ -25,5 +25,6 @@ class DataColumnTypeTests(GalvTeamResourceTestCase):
     def test_destroy_team_member(self):
         pass
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

@@ -5,15 +5,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0006_presigneddatafile_observed_file_and_more'),
+        ("galv", "0006_presigneddatafile_observed_file_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='datacolumn',
-            name='type',
-            field=models.ForeignKey(blank=True, help_text='Column Type which this Column instantiates', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='columns', to='galv.datacolumntype'),
+            model_name="datacolumn",
+            name="type",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Column Type which this Column instantiates",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="columns",
+                to="galv.datacolumntype",
+            ),
         ),
     ]

@@ -1,5 +1,4 @@
 import json
-import uuid
 from collections import OrderedDict
 
 import django.db.models
@@ -11,42 +10,72 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from django.core.exceptions import ValidationError as DjangoValidationError
 
-from galv.models import ValidationSchema, GroupProxy, UserProxy, VALIDATION_MOCK_ENDPOINT
+from galv.models import GroupProxy, UserProxy, VALIDATION_MOCK_ENDPOINT
 from rest_framework.fields import DictField
 from rest_framework.relations import ManyRelatedField
 
 url_help_text = "Canonical URL for this object"
 
-OUTPUT_STYLE_FLAT = 'flat'
-OUTPUT_STYLE_CONTEXT = 'context'
+OUTPUT_STYLE_FLAT = "flat"
+OUTPUT_STYLE_CONTEXT = "context"
+
 
 def get_output_style(request):
     if request.path == VALIDATION_MOCK_ENDPOINT:
         return OUTPUT_STYLE_FLAT
-    if request.query_params.get('style') in [OUTPUT_STYLE_FLAT, OUTPUT_STYLE_CONTEXT]:
-        return request.query_params['style']
-    if 'html' in request.accepted_media_type or request.query_params.get('format') == 'html':
+    if request.query_params.get("style") in [OUTPUT_STYLE_FLAT, OUTPUT_STYLE_CONTEXT]:
+        return request.query_params["style"]
+    if (
+        "html" in request.accepted_media_type
+        or request.query_params.get("format") == "html"
+    ):
         return OUTPUT_STYLE_CONTEXT
     return OUTPUT_STYLE_FLAT
+
 
 def serializer_class_from_string(class_name: str):
     """
     Get a class from a string.
     """
     if class_name not in [
-        'UserSerializer', 'TransparentGroupSerializer', 'LabSerializer', 'TeamSerializer', 'HarvesterSerializer',
-        'HarvestErrorSerializer', 'MonitoredPathSerializer', 'ObservedFileSerializer', 'DataColumnSerializer',
-        'DataColumnTypeSerializer', 'DataUnitSerializer', 'CellFamilySerializer', 'CellSerializer',
-        'EquipmentFamilySerializer', 'EquipmentSerializer', 'ScheduleFamilySerializer', 'ScheduleSerializer',
-        'CyclerTestSerializer', 'ExperimentSerializer', 'ValidationSchemaSerializer', 'EquipmentTypesSerializer',
-        'EquipmentModelsSerializer', 'EquipmentManufacturersSerializer', 'CellModelsSerializer',
-        'CellManufacturersSerializer', 'CellChemistriesSerializer', 'CellFormFactorsSerializer',
-        'ScheduleIdentifiersSerializer', 'ParquetPartitionSerializer', 'ArbitraryFileSerializer',
-        'ColumnMappingSerializer'
+        "UserSerializer",
+        "TransparentGroupSerializer",
+        "LabSerializer",
+        "TeamSerializer",
+        "HarvesterSerializer",
+        "HarvestErrorSerializer",
+        "MonitoredPathSerializer",
+        "ObservedFileSerializer",
+        "DataColumnSerializer",
+        "DataColumnTypeSerializer",
+        "DataUnitSerializer",
+        "CellFamilySerializer",
+        "CellSerializer",
+        "EquipmentFamilySerializer",
+        "EquipmentSerializer",
+        "ScheduleFamilySerializer",
+        "ScheduleSerializer",
+        "CyclerTestSerializer",
+        "ExperimentSerializer",
+        "ValidationSchemaSerializer",
+        "EquipmentTypesSerializer",
+        "EquipmentModelsSerializer",
+        "EquipmentManufacturersSerializer",
+        "CellModelsSerializer",
+        "CellManufacturersSerializer",
+        "CellChemistriesSerializer",
+        "CellFormFactorsSerializer",
+        "ScheduleIdentifiersSerializer",
+        "ParquetPartitionSerializer",
+        "ArbitraryFileSerializer",
+        "ColumnMappingSerializer",
     ]:
-        raise ValueError(f"serializer_class_from_string will only retrieve custom Serializers, not {class_name}")
-    s = __import__('galv.serializers', fromlist=[class_name])
+        raise ValueError(
+            f"serializer_class_from_string will only retrieve custom Serializers, not {class_name}"
+        )
+    s = __import__("galv.serializers", fromlist=[class_name])
     return getattr(s, class_name)
+
 
 class CreateOnlyMixin(serializers.ModelSerializer):
     """
@@ -54,12 +83,13 @@ class CreateOnlyMixin(serializers.ModelSerializer):
     create_only fields will be marked as 'read_only' if the view.action is not 'create'.
     Otherwise, they will retain their original keywords such as 'required' and 'allow_null'.
     """
+
     def get_extra_kwargs(self):
         extra_kwargs_for_edit = super().get_extra_kwargs()
-        if "view" not in self.context or self.context['view'].action != 'create':
+        if "view" not in self.context or self.context["view"].action != "create":
             for field_name in extra_kwargs_for_edit:
                 kwargs = extra_kwargs_for_edit.get(field_name, {})
-                kwargs['read_only'] = True
+                kwargs["read_only"] = True
                 extra_kwargs_for_edit[field_name] = kwargs
 
         return extra_kwargs_for_edit
@@ -67,19 +97,25 @@ class CreateOnlyMixin(serializers.ModelSerializer):
 
 def augment_extra_kwargs(extra_kwargs: dict[str, dict] = None):
     def _augment(name: str, content: dict):
-        if name == 'url':
-            return {'help_text': url_help_text, 'read_only': True, **content}
-        if name == 'id':
-            return {'help_text': "Auto-assigned object identifier", 'read_only': True, **content}
+        if name == "url":
+            return {"help_text": url_help_text, "read_only": True, **content}
+        if name == "id":
+            return {
+                "help_text": "Auto-assigned object identifier",
+                "read_only": True,
+                **content,
+            }
         return {**content}
 
     if extra_kwargs is None:
         extra_kwargs = {}
-    extra_kwargs = {'url': {}, 'id': {}, **extra_kwargs}
+    extra_kwargs = {"url": {}, "id": {}, **extra_kwargs}
     return {k: _augment(k, v) for k, v in extra_kwargs.items()}
 
 
-def get_model_field(model: django.db.models.Model, field_name: str) -> django.db.models.Field:
+def get_model_field(
+    model: django.db.models.Model, field_name: str
+) -> django.db.models.Field:
     """
     Get a field from a Model.
     Works, but generates type warnings because Django uses hidden Metaclass ModelBase for models.
@@ -92,21 +128,23 @@ class GetOrCreateTextSerializer(serializers.HyperlinkedModelSerializer):
     """
     Expose a full AutoCompleteEntry model.
     """
+
     def __init__(self, model):
         super().__init__()
         self.Meta.model = model
 
     class Meta:
         model = None
-        fields = ['url', 'id', 'value', 'ld_value']
+        fields = ["url", "id", "value", "ld_value"]
 
 
 class GetOrCreateTextStringSerializer(serializers.ModelSerializer):
     """
     For use with AutoCompleteEntry models: Simply returns the value field. Read-only.
     """
+
     def to_representation(self, instance):
-        if get_output_style(self.context['request']) != OUTPUT_STYLE_CONTEXT:
+        if get_output_style(self.context["request"]) != OUTPUT_STYLE_CONTEXT:
             return super().to_representation(instance)
         return instance.value
 
@@ -114,7 +152,8 @@ class GetOrCreateTextStringSerializer(serializers.ModelSerializer):
         raise RuntimeError("GetOrCreateTextStringSerializer is read-only")
 
     class Meta:
-        fields = '__all__'
+        fields = "__all__"
+
 
 def get_GetOrCreateTextStringSerializer(django_model):
     """
@@ -124,8 +163,12 @@ def get_GetOrCreateTextStringSerializer(django_model):
         f"{django_model.__name__}TextSerializer",
         (GetOrCreateTextStringSerializer,),
         {
-            'Meta': type('Meta', (GetOrCreateTextStringSerializer.Meta,), {'model': django_model})
-        })
+            "Meta": type(
+                "Meta", (GetOrCreateTextStringSerializer.Meta,), {"model": django_model}
+            )
+        },
+    )
+
 
 class GetOrCreateTextField(serializers.CharField):
     """
@@ -137,7 +180,8 @@ class GetOrCreateTextField(serializers.CharField):
 
     If the table uses a different field name for the value, specify it with `foreign_model_field`.
     """
-    def __init__(self, foreign_model, foreign_model_field: str = 'value', **kwargs):
+
+    def __init__(self, foreign_model, foreign_model_field: str = "value", **kwargs):
         super().__init__(**kwargs)
         self.foreign_model = foreign_model
         self.foreign_model_field = foreign_model_field
@@ -145,7 +189,10 @@ class GetOrCreateTextField(serializers.CharField):
     def to_internal_value(self, data):
         # Let CharField do the basic validation
         data = super().to_internal_value(data)
-        return self.foreign_model.objects.get_or_create(**{self.foreign_model_field: data})[0]
+        return self.foreign_model.objects.get_or_create(
+            **{self.foreign_model_field: data}
+        )[0]
+
     def to_representation(self, value):
         return getattr(value, self.foreign_model_field)
 
@@ -157,6 +204,7 @@ class GetOrCreateTextFieldList(serializers.ListField):
 
     Use to support ManyToMany relationships with AutoCompleteEntry models.
     """
+
     def to_representation(self, data):
         return super().to_representation(data.all())
 
@@ -168,6 +216,7 @@ class CustomPropertiesModelSerializer(serializers.HyperlinkedModelSerializer):
 
     The Meta.model must have a custom_properties JSONField.
     """
+
     class Meta:
         model: django.db.models.Model
         include_custom_properties = True
@@ -175,20 +224,25 @@ class CustomPropertiesModelSerializer(serializers.HyperlinkedModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         model_fields = {f.name for f in self.Meta.model._meta.fields}
-        if 'custom_properties' not in model_fields:
-            raise ValueError("CustomPropertiesModelSerializer must define custom_properties")
+        if "custom_properties" not in model_fields:
+            raise ValueError(
+                "CustomPropertiesModelSerializer must define custom_properties"
+            )
 
 
-@extend_schema_field({
-    'type': 'object',
-    'properties': {
-        'read': {'type': 'boolean'},
-        'write': {'type': 'boolean'},
-        'create': {'type': 'boolean'},
+@extend_schema_field(
+    {
+        "type": "object",
+        "properties": {
+            "read": {"type": "boolean"},
+            "write": {"type": "boolean"},
+            "create": {"type": "boolean"},
+        },
     }
-})
+)
 class DRYPermissionsFieldWrapper(DRYPermissionsField):
     pass
+
 
 class PermissionsMixin(serializers.Serializer):
     permissions: DictField = DRYPermissionsFieldWrapper()
@@ -198,15 +252,18 @@ class GroupProxyField(serializers.Field):
     """
     Fetch proxied User/Group objects.
     """
+
     def to_internal_value(self, data):
         target = super().to_internal_value(data)
         target.__class__ = GroupProxy
         return target
 
+
 class UserProxyField(serializers.Field):
     """
     Fetch proxied User/Group objects.
     """
+
     def to_internal_value(self, data):
         target = super().to_internal_value(data)
         target.__class__ = UserProxy
@@ -222,16 +279,19 @@ class HyperlinkedRelatedIdField(serializers.HyperlinkedRelatedField):
     An object with a 'url' property
     A URL string
     """
+
     def to_internal_value(self, data):
         if isinstance(data, dict):
-            if 'pk' in data:
-                data = data['pk']
-            elif 'id' in data:
-                data = data['id']
-            elif 'url' in data:
-                data = data['url']
+            if "pk" in data:
+                data = data["pk"]
+            elif "id" in data:
+                data = data["id"]
+            elif "url" in data:
+                data = data["url"]
             else:
-                raise ValidationError("Object must have a 'pk', 'id', or 'url' property")
+                raise ValidationError(
+                    "Object must have a 'pk', 'id', or 'url' property"
+                )
         elif isinstance(data, str):
             # Try to parse as an integer, but don't fail if it's not because uuids are stringy
             try:
@@ -240,17 +300,25 @@ class HyperlinkedRelatedIdField(serializers.HyperlinkedRelatedField):
                 pass
         try:
             return self.get_queryset().get(pk=data)
-        except (TypeError, ValueError, DjangoValidationError, self.queryset.model.DoesNotExist):
+        except (
+            TypeError,
+            ValueError,
+            DjangoValidationError,
+            self.queryset.model.DoesNotExist,
+        ):
             return super().to_internal_value(data)
 
     def to_representation(self, value):
         return super().to_representation(value)
 
+
 class GroupHyperlinkedRelatedIdListField(HyperlinkedRelatedIdField, GroupProxyField):
     pass
 
+
 class UserHyperlinkedRelatedIdListField(HyperlinkedRelatedIdField, UserProxyField):
     pass
+
 
 class TruncatedHyperlinkedRelatedIdField(HyperlinkedRelatedIdField):
     """
@@ -260,6 +328,7 @@ class TruncatedHyperlinkedRelatedIdField(HyperlinkedRelatedIdField):
     The 'url' and 'id' fields are always included.
     Other fields are specified by the 'fields' argument to the constructor.
     """
+
     def __init__(self, child_serializer_class, fields, *args, **kwargs):
         self.child_serializer_class = child_serializer_class
         if isinstance(fields, str):
@@ -268,18 +337,22 @@ class TruncatedHyperlinkedRelatedIdField(HyperlinkedRelatedIdField):
             raise ValueError("fields must be a list")
         self.child_fields = fields
         # Support create_only=True by removing queryset and applying read_only=True
-        self.create_only = kwargs.pop('create_only', False)
+        self.create_only = kwargs.pop("create_only", False)
         super().__init__(*args, **kwargs)
 
     def bind(self, field_name, parent):
         super().bind(field_name, parent)
-        if self.create_only and 'view' in self.context and self.context['view'].action != 'create':
+        if (
+            self.create_only
+            and "view" in self.context
+            and self.context["view"].action != "create"
+        ):
             self.read_only = True
             self.queryset = None
 
     def to_representation(self, instance):
         try:
-            if get_output_style(self.context['request']) != OUTPUT_STYLE_CONTEXT:
+            if get_output_style(self.context["request"]) != OUTPUT_STYLE_CONTEXT:
                 return super().to_representation(instance)
         except (AttributeError, KeyError):
             pass
@@ -288,16 +361,23 @@ class TruncatedHyperlinkedRelatedIdField(HyperlinkedRelatedIdField):
             self.child_serializer_class = child  # cache result
         else:
             child = self.child_serializer_class
-        fields = list({
-            *[f for f in self.child_serializer_class.Meta.fields if f in ['url', 'id']],# 'permissions']],
-            *self.child_fields
-        })
+        fields = list(
+            {
+                *[
+                    f
+                    for f in self.child_serializer_class.Meta.fields
+                    if f in ["url", "id"]
+                ],  # 'permissions']],
+                *self.child_fields,
+            }
+        )
 
         class TruncatedSerializer(child):
             def __init__(self, obj, include_fields, *args, **kwargs):
                 self.Meta.fields = include_fields
                 self.Meta.read_only_fields = include_fields
                 super().__init__(obj, *args, **kwargs)
+
             class Meta(child.Meta):
                 include_custom_properties = False
                 include_validation = False
@@ -315,24 +395,23 @@ class TruncatedHyperlinkedRelatedIdField(HyperlinkedRelatedIdField):
         if cutoff is not None:
             queryset = queryset[:cutoff]
 
-        return OrderedDict([
-            (
-                item.pk,
-                self.display_value(item)
-            )
-            for item in queryset
-        ])
+        return OrderedDict([(item.pk, self.display_value(item)) for item in queryset])
 
     def use_pk_only_optimization(self):
         return False
 
 
-class TruncatedGroupHyperlinkedRelatedIdField(TruncatedHyperlinkedRelatedIdField, GroupProxyField):
+class TruncatedGroupHyperlinkedRelatedIdField(
+    TruncatedHyperlinkedRelatedIdField, GroupProxyField
+):
     def to_representation(self, instance):
         instance.__class__ = GroupProxy
         return super().to_representation(instance)
 
-class TruncatedUserHyperlinkedRelatedIdField(TruncatedHyperlinkedRelatedIdField, UserProxyField):
+
+class TruncatedUserHyperlinkedRelatedIdField(
+    TruncatedHyperlinkedRelatedIdField, UserProxyField
+):
     def to_representation(self, instance):
         instance.__class__ = UserProxy
         return super().to_representation(instance)
@@ -342,15 +421,21 @@ class ValidationPresentationMixin(serializers.Serializer):
     """
     Resources with families perform inline expansion of family properties during validation.
     """
+
     def to_representation(self, instance):
         try:
-            if self.context['request'].path == VALIDATION_MOCK_ENDPOINT and hasattr(instance, 'family'):
+            if self.context["request"].path == VALIDATION_MOCK_ENDPOINT and hasattr(
+                instance, "family"
+            ):
                 representation = super().to_representation(instance)
-                family_serializer = self.fields['family'].child_serializer_class
+                family_serializer = self.fields["family"].child_serializer_class
                 if isinstance(family_serializer, str):
                     family_serializer = serializer_class_from_string(family_serializer)
-                representation.pop('family')
-                return {**family_serializer(instance.family, context=self.context).data, **representation}
+                representation.pop("family")
+                return {
+                    **family_serializer(instance.family, context=self.context).data,
+                    **representation,
+                }
         except Exception as e:
             print(e)
             pass
@@ -361,6 +446,7 @@ class PasswordField(serializers.CharField):
     """
     A CharField that will hash the input value.
     """
+
     def __init__(self, show_first_chars=0, min_length=10, **kwargs):
         super().__init__(**kwargs)
         self.show_first_chars = show_first_chars
@@ -373,7 +459,7 @@ class PasswordField(serializers.CharField):
         v = super().to_representation(value)
         if v is None:
             return None
-        stars = '*' * max(max(self.min_length, 1), len(v))
+        stars = "*" * max(max(self.min_length, 1), len(v))
         if self.show_first_chars:
             return f"{v[:self.show_first_chars]}{stars[self.show_first_chars:]}"
         return stars
@@ -408,11 +494,12 @@ class DumpSerializer(serializers.Serializer):
 
     A model that does not allow read permissions will be redacted.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # if not self.context or 'request' not in self.context:
         #     raise ValueError("DumpSerializer requires a 'request' in the context")
-        self.request = self.context.get('request')
+        self.request = self.context.get("request")
         self.dump = {}
 
     @property
@@ -432,17 +519,20 @@ class DumpSerializer(serializers.Serializer):
 
     @staticmethod
     def special_dump_fields(obj):
-        if hasattr(obj, 'special_dump_fields'):
+        if hasattr(obj, "special_dump_fields"):
             if isinstance(obj.special_dump_fields, set):
                 return [{k: None} for k in obj.special_dump_fields]
-            if not isinstance(obj.special_dump_fields, dict) and obj.special_dump_fields is not None:
+            if (
+                not isinstance(obj.special_dump_fields, dict)
+                and obj.special_dump_fields is not None
+            ):
                 raise ValueError("special_dump_fields must be a dictionary")
             return obj.special_dump_fields
         return None
 
     @staticmethod
     def model_dump_value(model):
-        if hasattr(model, '__dump__') and callable(model.__dump__):
+        if hasattr(model, "__dump__") and callable(model.__dump__):
             return str(model.__dump__())
         return str(model.pk)
 
@@ -454,19 +544,19 @@ class DumpSerializer(serializers.Serializer):
             return dump_value
 
         if dump_value not in self.dumped_object_ids:
-            representation = {
-                'resource_type': rel.__class__.__name__
-            }
+            representation = {"resource_type": rel.__class__.__name__}
             # Check permissions
             allowed = True
-            if hasattr(rel, 'has_read_permission'):
-                allowed = rel.has_read_permission(self.context['request'])
-                if allowed and hasattr(rel, 'has_object_read_permission'):
+            if hasattr(rel, "has_read_permission"):
+                allowed = rel.has_read_permission(self.context["request"])
+                if allowed and hasattr(rel, "has_object_read_permission"):
                     allowed = rel.has_object_read_permission(self.request)
             if not allowed:
-                representation['redacted'] = True
+                representation["redacted"] = True
             else:
-                self.dump[dump_value] = representation  # adding to dump here to prevent infinite recursion
+                self.dump[dump_value] = (
+                    representation  # adding to dump here to prevent infinite recursion
+                )
 
                 for field in rel._meta.get_fields():
                     if field.name in special_fields:
@@ -480,7 +570,9 @@ class DumpSerializer(serializers.Serializer):
                                 representation[field.name] = x
                         continue
 
-                    representation[field.name] = self.dump_value(getattr(rel, field.name))
+                    representation[field.name] = self.dump_value(
+                        getattr(rel, field.name)
+                    )
 
             self.dump[dump_value] = representation  # updating with full representation
 
@@ -503,7 +595,7 @@ class DumpSerializer(serializers.Serializer):
             return [self.dump_value(o, root) for o in value]
         return self.dump_other(value)
 
-    def to_representation(self, instance, accumulator = None, nest_level = 0):
+    def to_representation(self, instance, accumulator=None, nest_level=0):
         """
         Crawl through the object graph, dumping objects to a dictionary.
         """
@@ -521,26 +613,47 @@ class SerializerDescriptionSerializer(serializers.Serializer):
             raise ValueError("SerializerDescriptionSerializer requires an instance")
 
         if not isinstance(self.instance, serializers.BaseSerializer):
-            raise ValueError("SerializerDescriptionSerializer instance must be a Serializer")
+            raise ValueError(
+                "SerializerDescriptionSerializer instance must be a Serializer"
+            )
 
     def _get_type(self, field):
         if isinstance(field, TruncatedHyperlinkedRelatedIdField):
-            ss = import_string(f"galv.serializers")
+            ss = import_string("galv.serializers")
             serializer = ss.__dict__[field.child_serializer_class]()
             return serializer.Meta.model.__name__
         if isinstance(field, serializers.ModelSerializer):
             return field.__class__.__name__
         type_map = {
-            'url': [serializers.HyperlinkedIdentityField, serializers.HyperlinkedRelatedField,
-                    serializers.FileField, serializers.ImageField],
-            'number': [serializers.IntegerField, serializers.FloatField, serializers.DecimalField],
-            'datetime': [serializers.DateTimeField, serializers.DateField, serializers.TimeField],
-            'boolean': [serializers.BooleanField],
-            'string': [serializers.CharField, serializers.EmailField, serializers.URLField,
-                       serializers.SlugField, serializers.IPAddressField, serializers.RegexField,
-                       serializers.UUIDField, serializers.FilePathField],
-            'choice': [serializers.ChoiceField, serializers.MultipleChoiceField],
-            'json': [serializers.JSONField, serializers.DictField]
+            "url": [
+                serializers.HyperlinkedIdentityField,
+                serializers.HyperlinkedRelatedField,
+                serializers.FileField,
+                serializers.ImageField,
+            ],
+            "number": [
+                serializers.IntegerField,
+                serializers.FloatField,
+                serializers.DecimalField,
+            ],
+            "datetime": [
+                serializers.DateTimeField,
+                serializers.DateField,
+                serializers.TimeField,
+            ],
+            "boolean": [serializers.BooleanField],
+            "string": [
+                serializers.CharField,
+                serializers.EmailField,
+                serializers.URLField,
+                serializers.SlugField,
+                serializers.IPAddressField,
+                serializers.RegexField,
+                serializers.UUIDField,
+                serializers.FilePathField,
+            ],
+            "choice": [serializers.ChoiceField, serializers.MultipleChoiceField],
+            "json": [serializers.JSONField, serializers.DictField],
         }
         for key, types in type_map.items():
             if any(isinstance(field, t) for t in types):
@@ -570,36 +683,35 @@ class SerializerDescriptionSerializer(serializers.Serializer):
         for field_name, field in instance.fields.items():
             for cls in list_classes:
                 if isinstance(field, cls):
-                    child = field.child if hasattr(field, 'child') else field.child_relation
-                    type_properties = {
-                        'type': self._get_type(child),
-                        'many': True
-                    }
+                    child = (
+                        field.child if hasattr(field, "child") else field.child_relation
+                    )
+                    type_properties = {"type": self._get_type(child), "many": True}
                     break
             else:
-                type_properties = {'type': self._get_type(field), 'many': False}
+                type_properties = {"type": self._get_type(field), "many": False}
 
             representation[field_name] = {
                 **type_properties,
-                'help_text': field.help_text,
-                'required': field.required,
-                'read_only': field.read_only,
-                'write_only': field.write_only,
-                'allow_null': field.allow_null
+                "help_text": field.help_text,
+                "required": field.required,
+                "read_only": field.read_only,
+                "write_only": field.write_only,
+                "allow_null": field.allow_null,
             }
-            if isinstance(field.default, type) and field.default.__name__ == 'empty':
-                representation[field_name]['default'] = None
+            if isinstance(field.default, type) and field.default.__name__ == "empty":
+                representation[field_name]["default"] = None
             else:
-                representation[field_name]['default'] = field.default
-            if hasattr(field, 'create_only'):
-                representation[field_name]['create_only'] = field.create_only
+                representation[field_name]["default"] = field.default
+            if hasattr(field, "create_only"):
+                representation[field_name]["create_only"] = field.create_only
             else:
-                representation[field_name]['create_only'] = False
-            if hasattr(field, 'choices') and type_properties['type'] == 'choice':
+                representation[field_name]["create_only"] = False
+            if hasattr(field, "choices") and type_properties["type"] == "choice":
                 # Only expose choices for literal choice fields to avoid leaking data from related fields
-                representation[field_name]['choices'] = field.choices
+                representation[field_name]["choices"] = field.choices
             else:
-                representation[field_name]['choices'] = None
+                representation[field_name]["choices"] = None
         return representation
 
     def to_internal_value(self, _data):

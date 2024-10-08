@@ -6,20 +6,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0011_remove_observedfile_storage_urls_and_more'),
+        ("galv", "0011_remove_observedfile_storage_urls_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='parquetpartition',
-            name='storage_class_name',
+            model_name="parquetpartition",
+            name="storage_class_name",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='parquetpartition',
-            name='parquet_file',
-            field=galv.fields.LabDependentStorageFileField(blank=True, help_text='Parquet file', null=True, upload_to=''),
+            model_name="parquetpartition",
+            name="parquet_file",
+            field=galv.fields.LabDependentStorageFileField(
+                blank=True, help_text="Parquet file", null=True, upload_to=""
+            ),
         ),
     ]

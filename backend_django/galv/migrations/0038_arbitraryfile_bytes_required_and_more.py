@@ -4,30 +4,33 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0037_alter_additionals3storagetype_location'),
+        ("galv", "0037_alter_additionals3storagetype_location"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='arbitraryfile',
-            name='bytes_required',
+            model_name="arbitraryfile",
+            name="bytes_required",
             field=models.BigIntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='observedfile',
-            name='bytes_required',
+            model_name="observedfile",
+            name="bytes_required",
             field=models.BigIntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='parquetpartition',
-            name='bytes_required',
+            model_name="parquetpartition",
+            name="bytes_required",
             field=models.BigIntegerField(default=0),
         ),
         migrations.AlterField(
-            model_name='additionals3storagetype',
-            name='location',
-            field=models.TextField(blank=True, help_text='Directory within the S3 bucket to store files in', null=True),
+            model_name="additionals3storagetype",
+            name="location",
+            field=models.TextField(
+                blank=True,
+                help_text="Directory within the S3 bucket to store files in",
+                null=True,
+            ),
         ),
     ]

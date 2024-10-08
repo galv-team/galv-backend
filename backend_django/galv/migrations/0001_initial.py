@@ -12,659 +12,3146 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
-        ('contenttypes', '0002_remove_content_type_name'),
+        ("auth", "0012_alter_user_first_name_max_length"),
+        ("contenttypes", "0002_remove_content_type_name"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='CellChemistries',
+            name="CellChemistries",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('value', models.TextField(unique=True)),
-                ('ld_value', models.JSONField(blank=True, null=True)),
-                ('include_in_autocomplete', models.BooleanField(default=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("value", models.TextField(unique=True)),
+                ("ld_value", models.JSONField(blank=True, null=True)),
+                ("include_in_autocomplete", models.BooleanField(default=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='CellFormFactors',
+            name="CellFormFactors",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('value', models.TextField(unique=True)),
-                ('ld_value', models.JSONField(blank=True, null=True)),
-                ('include_in_autocomplete', models.BooleanField(default=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("value", models.TextField(unique=True)),
+                ("ld_value", models.JSONField(blank=True, null=True)),
+                ("include_in_autocomplete", models.BooleanField(default=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='CellManufacturers',
+            name="CellManufacturers",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('value', models.TextField(unique=True)),
-                ('ld_value', models.JSONField(blank=True, null=True)),
-                ('include_in_autocomplete', models.BooleanField(default=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("value", models.TextField(unique=True)),
+                ("ld_value", models.JSONField(blank=True, null=True)),
+                ("include_in_autocomplete", models.BooleanField(default=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='CellModels',
+            name="CellModels",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('value', models.TextField(unique=True)),
-                ('ld_value', models.JSONField(blank=True, null=True)),
-                ('include_in_autocomplete', models.BooleanField(default=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("value", models.TextField(unique=True)),
+                ("ld_value", models.JSONField(blank=True, null=True)),
+                ("include_in_autocomplete", models.BooleanField(default=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='DataUnit',
+            name="DataUnit",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('name', models.TextField(help_text='Common name')),
-                ('symbol', models.TextField(help_text='Symbol')),
-                ('description', models.TextField(help_text='What the Unit signifies, and how it is used')),
-                ('is_default', models.BooleanField(default=False, help_text='Whether the Unit is included in the initial list of Units')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("name", models.TextField(help_text="Common name")),
+                ("symbol", models.TextField(help_text="Symbol")),
+                (
+                    "description",
+                    models.TextField(
+                        help_text="What the Unit signifies, and how it is used"
+                    ),
+                ),
+                (
+                    "is_default",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Whether the Unit is included in the initial list of Units",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='EquipmentManufacturers',
+            name="EquipmentManufacturers",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('value', models.TextField(unique=True)),
-                ('ld_value', models.JSONField(blank=True, null=True)),
-                ('include_in_autocomplete', models.BooleanField(default=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("value", models.TextField(unique=True)),
+                ("ld_value", models.JSONField(blank=True, null=True)),
+                ("include_in_autocomplete", models.BooleanField(default=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='EquipmentModels',
+            name="EquipmentModels",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('value', models.TextField(unique=True)),
-                ('ld_value', models.JSONField(blank=True, null=True)),
-                ('include_in_autocomplete', models.BooleanField(default=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("value", models.TextField(unique=True)),
+                ("ld_value", models.JSONField(blank=True, null=True)),
+                ("include_in_autocomplete", models.BooleanField(default=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='EquipmentTypes',
+            name="EquipmentTypes",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('value', models.TextField(unique=True)),
-                ('ld_value', models.JSONField(blank=True, null=True)),
-                ('include_in_autocomplete', models.BooleanField(default=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("value", models.TextField(unique=True)),
+                ("ld_value", models.JSONField(blank=True, null=True)),
+                ("include_in_autocomplete", models.BooleanField(default=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='KnoxAuthToken',
+            name="KnoxAuthToken",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('knox_token_key', models.TextField(help_text='KnoxToken reference ([token_key]_[user_id]')),
-                ('name', models.TextField(help_text='Convenient human-friendly name')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "knox_token_key",
+                    models.TextField(
+                        help_text="KnoxToken reference ([token_key]_[user_id]"
+                    ),
+                ),
+                ("name", models.TextField(help_text="Convenient human-friendly name")),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='Lab',
+            name="Lab",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('name', models.TextField(help_text='Human-friendly Lab identifier', unique=True)),
-                ('description', models.TextField(help_text='Description of the Lab', null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "name",
+                    models.TextField(
+                        help_text="Human-friendly Lab identifier", unique=True
+                    ),
+                ),
+                (
+                    "description",
+                    models.TextField(help_text="Description of the Lab", null=True),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='ScheduleIdentifiers',
+            name="ScheduleIdentifiers",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('value', models.TextField(unique=True)),
-                ('ld_value', models.JSONField(blank=True, null=True)),
-                ('include_in_autocomplete', models.BooleanField(default=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("value", models.TextField(unique=True)),
+                ("ld_value", models.JSONField(blank=True, null=True)),
+                ("include_in_autocomplete", models.BooleanField(default=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='GroupProxy',
-            fields=[
-            ],
+            name="GroupProxy",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
-                'constraints': [],
+                "proxy": True,
+                "indexes": [],
+                "constraints": [],
             },
-            bases=('auth.group',),
+            bases=("auth.group",),
             managers=[
-                ('objects', django.contrib.auth.models.GroupManager()),
+                ("objects", django.contrib.auth.models.GroupManager()),
             ],
         ),
         migrations.CreateModel(
-            name='UserProxy',
-            fields=[
-            ],
+            name="UserProxy",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
-                'constraints': [],
+                "proxy": True,
+                "indexes": [],
+                "constraints": [],
             },
-            bases=('auth.user',),
+            bases=("auth.user",),
             managers=[
-                ('objects', django.contrib.auth.models.UserManager()),
+                ("objects", django.contrib.auth.models.UserManager()),
             ],
         ),
         migrations.CreateModel(
-            name='CellFamily',
+            name="CellFamily",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('uuid', galv.models.utils.UUIDFieldLD(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('custom_properties', models.JSONField(default=dict, validators=[django_json_field_schema_validator.validators.JSONFieldSchemaValidator({'$defs': {'typedArray': {'additionalProperties': False, 'properties': {'_type': {'const': 'array'}, '_value': {'$comment': 'Array items are objects with _type and _value fields only, so each item in the array is individually typed.', 'items': {'$ref': '#/$defs/typedObjectProperty'}, 'type': 'array'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedBoolean': {'additionalProperties': False, 'properties': {'_type': {'const': 'boolean'}, '_value': {'type': 'boolean'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNull': {'additionalProperties': False, 'properties': {'_type': {'const': 'null'}, '_value': {'type': 'null'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNumber': {'additionalProperties': False, 'properties': {'_type': {'const': 'number'}, '_value': {'type': 'number'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObject': {'additionalProperties': False, 'properties': {'_type': {'const': 'object'}, '_value': {'$ref': '#'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObjectProperty': {'$comment': 'typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.', 'anyOf': [{'$ref': '#/$defs/typedString'}, {'$ref': '#/$defs/typedNumber'}, {'$ref': '#/$defs/typedBoolean'}, {'$ref': '#/$defs/typedNull'}, {'$ref': '#/$defs/typedObject'}, {'$ref': '#/$defs/typedArray'}, {'$ref': '#/$defs/typedUnknown'}]}, 'typedString': {'additionalProperties': False, 'properties': {'_type': {'const': 'string'}, '_value': {'type': 'string'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedUnknown': {'$comment': "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'additionalProperties': False, 'properties': {'_type': {'type': 'string'}, '_value': {'anyOf': [{'$ref': '#/$defs/typedObjectProperty'}, {'$ref': '#'}, {'type': ['string', 'number', 'boolean', 'null']}]}}, 'required': ['_type', '_value'], 'type': 'object'}}, '$schema': 'https://json-schema.org/draft/2020-12/schema#', 'additionalProperties': {'$ref': '#/$defs/typedObjectProperty'}, 'description': "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'title': 'Galv typed JSON - strict', 'type': 'object'})])),
-                ('delete_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member')], default=3)),
-                ('edit_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User')], default=3)),
-                ('read_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User'), (0, 'Anonymous')], default=2)),
-                ('datasheet', models.URLField(blank=True, help_text='Link to the datasheet', null=True)),
-                ('nominal_voltage', models.FloatField(blank=True, help_text='Nominal voltage of the cells (in volts)', null=True)),
-                ('nominal_capacity', models.FloatField(blank=True, help_text='Nominal capacity of the cells (in amp hours)', null=True)),
-                ('initial_ac_impedance', models.FloatField(blank=True, help_text='Initial AC impedance of the cells (in ohms)', null=True)),
-                ('initial_dc_resistance', models.FloatField(blank=True, help_text='Initial DC resistance of the cells (in ohms)', null=True)),
-                ('energy_density', models.FloatField(blank=True, help_text='Energy density of the cells (in watt hours per kilogram)', null=True)),
-                ('power_density', models.FloatField(blank=True, help_text='Power density of the cells (in watts per kilogram)', null=True)),
-                ('chemistry', models.ForeignKey(blank=True, help_text='Chemistry of the cells', null=True, on_delete=django.db.models.deletion.CASCADE, to='galv.cellchemistries')),
-                ('form_factor', models.ForeignKey(blank=True, help_text='Physical shape of the cells', null=True, on_delete=django.db.models.deletion.CASCADE, to='galv.cellformfactors')),
-                ('manufacturer', models.ForeignKey(blank=True, help_text='Name of the manufacturer', null=True, on_delete=django.db.models.deletion.CASCADE, to='galv.cellmanufacturers')),
-                ('model', models.ForeignKey(help_text='Model number for the cells', on_delete=django.db.models.deletion.CASCADE, to='galv.cellmodels')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "uuid",
+                    galv.models.utils.UUIDFieldLD(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "custom_properties",
+                    models.JSONField(
+                        default=dict,
+                        validators=[
+                            django_json_field_schema_validator.validators.JSONFieldSchemaValidator(
+                                {
+                                    "$defs": {
+                                        "typedArray": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "array"},
+                                                "_value": {
+                                                    "$comment": "Array items are objects with _type and _value fields only, so each item in the array is individually typed.",
+                                                    "items": {
+                                                        "$ref": "#/$defs/typedObjectProperty"
+                                                    },
+                                                    "type": "array",
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedBoolean": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "boolean"},
+                                                "_value": {"type": "boolean"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNull": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "null"},
+                                                "_value": {"type": "null"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNumber": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "number"},
+                                                "_value": {"type": "number"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObject": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "object"},
+                                                "_value": {"$ref": "#"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObjectProperty": {
+                                            "$comment": "typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.",
+                                            "anyOf": [
+                                                {"$ref": "#/$defs/typedString"},
+                                                {"$ref": "#/$defs/typedNumber"},
+                                                {"$ref": "#/$defs/typedBoolean"},
+                                                {"$ref": "#/$defs/typedNull"},
+                                                {"$ref": "#/$defs/typedObject"},
+                                                {"$ref": "#/$defs/typedArray"},
+                                                {"$ref": "#/$defs/typedUnknown"},
+                                            ],
+                                        },
+                                        "typedString": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "string"},
+                                                "_value": {"type": "string"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedUnknown": {
+                                            "$comment": "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"type": "string"},
+                                                "_value": {
+                                                    "anyOf": [
+                                                        {
+                                                            "$ref": "#/$defs/typedObjectProperty"
+                                                        },
+                                                        {"$ref": "#"},
+                                                        {
+                                                            "type": [
+                                                                "string",
+                                                                "number",
+                                                                "boolean",
+                                                                "null",
+                                                            ]
+                                                        },
+                                                    ]
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                    },
+                                    "$schema": "https://json-schema.org/draft/2020-12/schema#",
+                                    "additionalProperties": {
+                                        "$ref": "#/$defs/typedObjectProperty"
+                                    },
+                                    "description": "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                    "title": "Galv typed JSON - strict",
+                                    "type": "object",
+                                }
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "delete_access_level",
+                    models.IntegerField(
+                        choices=[(4, "Team Admin"), (3, "Team Member")], default=3
+                    ),
+                ),
+                (
+                    "edit_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                        ],
+                        default=3,
+                    ),
+                ),
+                (
+                    "read_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                            (0, "Anonymous"),
+                        ],
+                        default=2,
+                    ),
+                ),
+                (
+                    "datasheet",
+                    models.URLField(
+                        blank=True, help_text="Link to the datasheet", null=True
+                    ),
+                ),
+                (
+                    "nominal_voltage",
+                    models.FloatField(
+                        blank=True,
+                        help_text="Nominal voltage of the cells (in volts)",
+                        null=True,
+                    ),
+                ),
+                (
+                    "nominal_capacity",
+                    models.FloatField(
+                        blank=True,
+                        help_text="Nominal capacity of the cells (in amp hours)",
+                        null=True,
+                    ),
+                ),
+                (
+                    "initial_ac_impedance",
+                    models.FloatField(
+                        blank=True,
+                        help_text="Initial AC impedance of the cells (in ohms)",
+                        null=True,
+                    ),
+                ),
+                (
+                    "initial_dc_resistance",
+                    models.FloatField(
+                        blank=True,
+                        help_text="Initial DC resistance of the cells (in ohms)",
+                        null=True,
+                    ),
+                ),
+                (
+                    "energy_density",
+                    models.FloatField(
+                        blank=True,
+                        help_text="Energy density of the cells (in watt hours per kilogram)",
+                        null=True,
+                    ),
+                ),
+                (
+                    "power_density",
+                    models.FloatField(
+                        blank=True,
+                        help_text="Power density of the cells (in watts per kilogram)",
+                        null=True,
+                    ),
+                ),
+                (
+                    "chemistry",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="Chemistry of the cells",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="galv.cellchemistries",
+                    ),
+                ),
+                (
+                    "form_factor",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="Physical shape of the cells",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="galv.cellformfactors",
+                    ),
+                ),
+                (
+                    "manufacturer",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="Name of the manufacturer",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="galv.cellmanufacturers",
+                    ),
+                ),
+                (
+                    "model",
+                    models.ForeignKey(
+                        help_text="Model number for the cells",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="galv.cellmodels",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='Cell',
+            name="Cell",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('uuid', galv.models.utils.UUIDFieldLD(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('custom_properties', models.JSONField(default=dict, validators=[django_json_field_schema_validator.validators.JSONFieldSchemaValidator({'$defs': {'typedArray': {'additionalProperties': False, 'properties': {'_type': {'const': 'array'}, '_value': {'$comment': 'Array items are objects with _type and _value fields only, so each item in the array is individually typed.', 'items': {'$ref': '#/$defs/typedObjectProperty'}, 'type': 'array'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedBoolean': {'additionalProperties': False, 'properties': {'_type': {'const': 'boolean'}, '_value': {'type': 'boolean'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNull': {'additionalProperties': False, 'properties': {'_type': {'const': 'null'}, '_value': {'type': 'null'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNumber': {'additionalProperties': False, 'properties': {'_type': {'const': 'number'}, '_value': {'type': 'number'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObject': {'additionalProperties': False, 'properties': {'_type': {'const': 'object'}, '_value': {'$ref': '#'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObjectProperty': {'$comment': 'typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.', 'anyOf': [{'$ref': '#/$defs/typedString'}, {'$ref': '#/$defs/typedNumber'}, {'$ref': '#/$defs/typedBoolean'}, {'$ref': '#/$defs/typedNull'}, {'$ref': '#/$defs/typedObject'}, {'$ref': '#/$defs/typedArray'}, {'$ref': '#/$defs/typedUnknown'}]}, 'typedString': {'additionalProperties': False, 'properties': {'_type': {'const': 'string'}, '_value': {'type': 'string'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedUnknown': {'$comment': "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'additionalProperties': False, 'properties': {'_type': {'type': 'string'}, '_value': {'anyOf': [{'$ref': '#/$defs/typedObjectProperty'}, {'$ref': '#'}, {'type': ['string', 'number', 'boolean', 'null']}]}}, 'required': ['_type', '_value'], 'type': 'object'}}, '$schema': 'https://json-schema.org/draft/2020-12/schema#', 'additionalProperties': {'$ref': '#/$defs/typedObjectProperty'}, 'description': "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'title': 'Galv typed JSON - strict', 'type': 'object'})])),
-                ('delete_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member')], default=3)),
-                ('edit_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User')], default=3)),
-                ('read_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User'), (0, 'Anonymous')], default=2)),
-                ('identifier', models.TextField(help_text='Unique identifier (e.g. serial number) for the cell')),
-                ('family', models.ForeignKey(help_text='Cell type', on_delete=django.db.models.deletion.CASCADE, related_name='cells', to='galv.cellfamily')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "uuid",
+                    galv.models.utils.UUIDFieldLD(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "custom_properties",
+                    models.JSONField(
+                        default=dict,
+                        validators=[
+                            django_json_field_schema_validator.validators.JSONFieldSchemaValidator(
+                                {
+                                    "$defs": {
+                                        "typedArray": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "array"},
+                                                "_value": {
+                                                    "$comment": "Array items are objects with _type and _value fields only, so each item in the array is individually typed.",
+                                                    "items": {
+                                                        "$ref": "#/$defs/typedObjectProperty"
+                                                    },
+                                                    "type": "array",
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedBoolean": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "boolean"},
+                                                "_value": {"type": "boolean"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNull": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "null"},
+                                                "_value": {"type": "null"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNumber": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "number"},
+                                                "_value": {"type": "number"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObject": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "object"},
+                                                "_value": {"$ref": "#"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObjectProperty": {
+                                            "$comment": "typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.",
+                                            "anyOf": [
+                                                {"$ref": "#/$defs/typedString"},
+                                                {"$ref": "#/$defs/typedNumber"},
+                                                {"$ref": "#/$defs/typedBoolean"},
+                                                {"$ref": "#/$defs/typedNull"},
+                                                {"$ref": "#/$defs/typedObject"},
+                                                {"$ref": "#/$defs/typedArray"},
+                                                {"$ref": "#/$defs/typedUnknown"},
+                                            ],
+                                        },
+                                        "typedString": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "string"},
+                                                "_value": {"type": "string"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedUnknown": {
+                                            "$comment": "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"type": "string"},
+                                                "_value": {
+                                                    "anyOf": [
+                                                        {
+                                                            "$ref": "#/$defs/typedObjectProperty"
+                                                        },
+                                                        {"$ref": "#"},
+                                                        {
+                                                            "type": [
+                                                                "string",
+                                                                "number",
+                                                                "boolean",
+                                                                "null",
+                                                            ]
+                                                        },
+                                                    ]
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                    },
+                                    "$schema": "https://json-schema.org/draft/2020-12/schema#",
+                                    "additionalProperties": {
+                                        "$ref": "#/$defs/typedObjectProperty"
+                                    },
+                                    "description": "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                    "title": "Galv typed JSON - strict",
+                                    "type": "object",
+                                }
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "delete_access_level",
+                    models.IntegerField(
+                        choices=[(4, "Team Admin"), (3, "Team Member")], default=3
+                    ),
+                ),
+                (
+                    "edit_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                        ],
+                        default=3,
+                    ),
+                ),
+                (
+                    "read_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                            (0, "Anonymous"),
+                        ],
+                        default=2,
+                    ),
+                ),
+                (
+                    "identifier",
+                    models.TextField(
+                        help_text="Unique identifier (e.g. serial number) for the cell"
+                    ),
+                ),
+                (
+                    "family",
+                    models.ForeignKey(
+                        help_text="Cell type",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="cells",
+                        to="galv.cellfamily",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='DataColumnType',
+            name="DataColumnType",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('name', models.TextField(help_text='Human-friendly identifier')),
-                ('description', models.TextField(help_text='Origins and purpose')),
-                ('is_default', models.BooleanField(default=False, help_text='Whether the Column is included in the initial list of known Column Types')),
-                ('is_required', models.BooleanField(default=False, help_text='Whether the Column must be present in every Dataset')),
-                ('override_child_name', models.TextField(blank=True, help_text='If set, this name will be used instead of the Column name in Dataframes', null=True)),
-                ('unit', models.ForeignKey(help_text='Unit used for measuring the values in this column', null=True, on_delete=django.db.models.deletion.SET_NULL, to='galv.dataunit')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("name", models.TextField(help_text="Human-friendly identifier")),
+                ("description", models.TextField(help_text="Origins and purpose")),
+                (
+                    "is_default",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Whether the Column is included in the initial list of known Column Types",
+                    ),
+                ),
+                (
+                    "is_required",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Whether the Column must be present in every Dataset",
+                    ),
+                ),
+                (
+                    "override_child_name",
+                    models.TextField(
+                        blank=True,
+                        help_text="If set, this name will be used instead of the Column name in Dataframes",
+                        null=True,
+                    ),
+                ),
+                (
+                    "unit",
+                    models.ForeignKey(
+                        help_text="Unit used for measuring the values in this column",
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="galv.dataunit",
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('unit', 'name')},
+                "unique_together": {("unit", "name")},
             },
         ),
         migrations.CreateModel(
-            name='Harvester',
+            name="Harvester",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('uuid', galv.models.utils.UUIDFieldLD(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('name', models.TextField(help_text='Human-friendly Harvester identifier')),
-                ('api_key', models.TextField(help_text='API access token for the Harvester', null=True)),
-                ('last_check_in', models.DateTimeField(help_text='Date and time of last Harvester contact', null=True)),
-                ('sleep_time', models.IntegerField(default=120, help_text='Seconds to sleep between Harvester cycles')),
-                ('active', models.BooleanField(default=True, help_text='Whether the Harvester is active')),
-                ('lab', models.ForeignKey(help_text='Lab to which this Harvester belongs', on_delete=django.db.models.deletion.CASCADE, related_name='harvesters', to='galv.lab')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "uuid",
+                    galv.models.utils.UUIDFieldLD(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "name",
+                    models.TextField(help_text="Human-friendly Harvester identifier"),
+                ),
+                (
+                    "api_key",
+                    models.TextField(
+                        help_text="API access token for the Harvester", null=True
+                    ),
+                ),
+                (
+                    "last_check_in",
+                    models.DateTimeField(
+                        help_text="Date and time of last Harvester contact", null=True
+                    ),
+                ),
+                (
+                    "sleep_time",
+                    models.IntegerField(
+                        default=120,
+                        help_text="Seconds to sleep between Harvester cycles",
+                    ),
+                ),
+                (
+                    "active",
+                    models.BooleanField(
+                        default=True, help_text="Whether the Harvester is active"
+                    ),
+                ),
+                (
+                    "lab",
+                    models.ForeignKey(
+                        help_text="Lab to which this Harvester belongs",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="harvesters",
+                        to="galv.lab",
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('name', 'lab')},
+                "unique_together": {("name", "lab")},
             },
         ),
         migrations.CreateModel(
-            name='ObservedFile',
+            name="ObservedFile",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('uuid', galv.models.utils.UUIDFieldLD(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('path', models.TextField(help_text='Absolute file path')),
-                ('last_observed_size', models.PositiveBigIntegerField(default=0, help_text='Size of the file as last reported by Harvester')),
-                ('last_observed_time', models.DateTimeField(help_text='Date and time of last Harvester report on file', null=True)),
-                ('state', models.TextField(choices=[('RETRY IMPORT', 'Retry Import'), ('IMPORT FAILED', 'Import Failed'), ('UNSTABLE', 'Unstable'), ('GROWING', 'Growing'), ('STABLE', 'Stable'), ('IMPORTING', 'Importing'), ('IMPORTED', 'Imported')], default='UNSTABLE', help_text='File status; autogenerated but can be manually set to RETRY IMPORT')),
-                ('data_generation_date', models.DateTimeField(help_text='Date and time of generated data. Time will be midnight if not specified in raw data', null=True)),
-                ('inferred_format', models.TextField(help_text='Format of the raw data', null=True)),
-                ('name', models.TextField(help_text='Name of the file', null=True)),
-                ('parser', models.TextField(help_text='Parser used by the harvester', null=True)),
-                ('num_rows', models.PositiveIntegerField(help_text='Number of rows in the file', null=True)),
-                ('first_sample_no', models.PositiveIntegerField(help_text='Number of the first sample in the file', null=True)),
-                ('last_sample_no', models.PositiveIntegerField(help_text='Number of the last sample in the file', null=True)),
-                ('extra_metadata', models.JSONField(help_text='Extra metadata from the harvester', null=True)),
-                ('harvester', models.ForeignKey(help_text='Harvester that harvested the File', on_delete=django.db.models.deletion.CASCADE, to='galv.harvester')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "uuid",
+                    galv.models.utils.UUIDFieldLD(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                ("path", models.TextField(help_text="Absolute file path")),
+                (
+                    "last_observed_size",
+                    models.PositiveBigIntegerField(
+                        default=0,
+                        help_text="Size of the file as last reported by Harvester",
+                    ),
+                ),
+                (
+                    "last_observed_time",
+                    models.DateTimeField(
+                        help_text="Date and time of last Harvester report on file",
+                        null=True,
+                    ),
+                ),
+                (
+                    "state",
+                    models.TextField(
+                        choices=[
+                            ("RETRY IMPORT", "Retry Import"),
+                            ("IMPORT FAILED", "Import Failed"),
+                            ("UNSTABLE", "Unstable"),
+                            ("GROWING", "Growing"),
+                            ("STABLE", "Stable"),
+                            ("IMPORTING", "Importing"),
+                            ("IMPORTED", "Imported"),
+                        ],
+                        default="UNSTABLE",
+                        help_text="File status; autogenerated but can be manually set to RETRY IMPORT",
+                    ),
+                ),
+                (
+                    "data_generation_date",
+                    models.DateTimeField(
+                        help_text="Date and time of generated data. Time will be midnight if not specified in raw data",
+                        null=True,
+                    ),
+                ),
+                (
+                    "inferred_format",
+                    models.TextField(help_text="Format of the raw data", null=True),
+                ),
+                ("name", models.TextField(help_text="Name of the file", null=True)),
+                (
+                    "parser",
+                    models.TextField(
+                        help_text="Parser used by the harvester", null=True
+                    ),
+                ),
+                (
+                    "num_rows",
+                    models.PositiveIntegerField(
+                        help_text="Number of rows in the file", null=True
+                    ),
+                ),
+                (
+                    "first_sample_no",
+                    models.PositiveIntegerField(
+                        help_text="Number of the first sample in the file", null=True
+                    ),
+                ),
+                (
+                    "last_sample_no",
+                    models.PositiveIntegerField(
+                        help_text="Number of the last sample in the file", null=True
+                    ),
+                ),
+                (
+                    "extra_metadata",
+                    models.JSONField(
+                        help_text="Extra metadata from the harvester", null=True
+                    ),
+                ),
+                (
+                    "harvester",
+                    models.ForeignKey(
+                        help_text="Harvester that harvested the File",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="galv.harvester",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
-                'unique_together': {('path', 'harvester')},
+                "abstract": False,
+                "unique_together": {("path", "harvester")},
             },
         ),
         migrations.CreateModel(
-            name='HarvestError',
+            name="HarvestError",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('error', models.TextField(help_text='Text of the error report')),
-                ('timestamp', models.DateTimeField(auto_now=True, help_text='Date and time error was logged in the database', null=True)),
-                ('harvester', models.ForeignKey(help_text='Harvester which reported the error', on_delete=django.db.models.deletion.CASCADE, related_name='upload_errors', to='galv.harvester')),
-                ('file', models.ForeignKey(help_text='File where error originated', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='upload_errors', to='galv.observedfile')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("error", models.TextField(help_text="Text of the error report")),
+                (
+                    "timestamp",
+                    models.DateTimeField(
+                        auto_now=True,
+                        help_text="Date and time error was logged in the database",
+                        null=True,
+                    ),
+                ),
+                (
+                    "harvester",
+                    models.ForeignKey(
+                        help_text="Harvester which reported the error",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="upload_errors",
+                        to="galv.harvester",
+                    ),
+                ),
+                (
+                    "file",
+                    models.ForeignKey(
+                        help_text="File where error originated",
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="upload_errors",
+                        to="galv.observedfile",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='DataColumn',
+            name="DataColumn",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('data_type', models.TextField(help_text='Type of the data in this column')),
-                ('name_in_file', models.TextField(help_text='Column title e.g. in .tsv file headers')),
-                ('type', models.ForeignKey(help_text='Column Type which this Column instantiates', on_delete=django.db.models.deletion.CASCADE, to='galv.datacolumntype')),
-                ('file', models.ForeignKey(help_text='File in which this Column appears', on_delete=django.db.models.deletion.CASCADE, related_name='columns', to='galv.observedfile')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "data_type",
+                    models.TextField(help_text="Type of the data in this column"),
+                ),
+                (
+                    "name_in_file",
+                    models.TextField(
+                        help_text="Column title e.g. in .tsv file headers"
+                    ),
+                ),
+                (
+                    "type",
+                    models.ForeignKey(
+                        help_text="Column Type which this Column instantiates",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="galv.datacolumntype",
+                    ),
+                ),
+                (
+                    "file",
+                    models.ForeignKey(
+                        help_text="File in which this Column appears",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="columns",
+                        to="galv.observedfile",
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('file', 'name_in_file')},
+                "unique_together": {("file", "name_in_file")},
             },
         ),
         migrations.CreateModel(
-            name='Team',
+            name="Team",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('name', models.TextField(help_text='Human-friendly Team identifier')),
-                ('description', models.TextField(help_text='Description of the Team', null=True)),
-                ('lab', models.ForeignKey(help_text='Lab to which this Team belongs', on_delete=django.db.models.deletion.CASCADE, related_name='teams', to='galv.lab')),
-                ('admin_group', models.OneToOneField(help_text='Users authorised to make changes to the Team', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='editable_team', to='galv.groupproxy')),
-                ('member_group', models.OneToOneField(help_text="Users authorised to view this Team's Experiments", null=True, on_delete=django.db.models.deletion.CASCADE, related_name='readable_team', to='galv.groupproxy')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("name", models.TextField(help_text="Human-friendly Team identifier")),
+                (
+                    "description",
+                    models.TextField(help_text="Description of the Team", null=True),
+                ),
+                (
+                    "lab",
+                    models.ForeignKey(
+                        help_text="Lab to which this Team belongs",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="teams",
+                        to="galv.lab",
+                    ),
+                ),
+                (
+                    "admin_group",
+                    models.OneToOneField(
+                        help_text="Users authorised to make changes to the Team",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="editable_team",
+                        to="galv.groupproxy",
+                    ),
+                ),
+                (
+                    "member_group",
+                    models.OneToOneField(
+                        help_text="Users authorised to view this Team's Experiments",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="readable_team",
+                        to="galv.groupproxy",
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('name', 'lab')},
+                "unique_together": {("name", "lab")},
             },
         ),
         migrations.CreateModel(
-            name='ScheduleFamily',
+            name="ScheduleFamily",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('uuid', galv.models.utils.UUIDFieldLD(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('custom_properties', models.JSONField(default=dict, validators=[django_json_field_schema_validator.validators.JSONFieldSchemaValidator({'$defs': {'typedArray': {'additionalProperties': False, 'properties': {'_type': {'const': 'array'}, '_value': {'$comment': 'Array items are objects with _type and _value fields only, so each item in the array is individually typed.', 'items': {'$ref': '#/$defs/typedObjectProperty'}, 'type': 'array'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedBoolean': {'additionalProperties': False, 'properties': {'_type': {'const': 'boolean'}, '_value': {'type': 'boolean'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNull': {'additionalProperties': False, 'properties': {'_type': {'const': 'null'}, '_value': {'type': 'null'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNumber': {'additionalProperties': False, 'properties': {'_type': {'const': 'number'}, '_value': {'type': 'number'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObject': {'additionalProperties': False, 'properties': {'_type': {'const': 'object'}, '_value': {'$ref': '#'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObjectProperty': {'$comment': 'typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.', 'anyOf': [{'$ref': '#/$defs/typedString'}, {'$ref': '#/$defs/typedNumber'}, {'$ref': '#/$defs/typedBoolean'}, {'$ref': '#/$defs/typedNull'}, {'$ref': '#/$defs/typedObject'}, {'$ref': '#/$defs/typedArray'}, {'$ref': '#/$defs/typedUnknown'}]}, 'typedString': {'additionalProperties': False, 'properties': {'_type': {'const': 'string'}, '_value': {'type': 'string'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedUnknown': {'$comment': "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'additionalProperties': False, 'properties': {'_type': {'type': 'string'}, '_value': {'anyOf': [{'$ref': '#/$defs/typedObjectProperty'}, {'$ref': '#'}, {'type': ['string', 'number', 'boolean', 'null']}]}}, 'required': ['_type', '_value'], 'type': 'object'}}, '$schema': 'https://json-schema.org/draft/2020-12/schema#', 'additionalProperties': {'$ref': '#/$defs/typedObjectProperty'}, 'description': "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'title': 'Galv typed JSON - strict', 'type': 'object'})])),
-                ('delete_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member')], default=3)),
-                ('edit_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User')], default=3)),
-                ('read_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User'), (0, 'Anonymous')], default=2)),
-                ('description', models.TextField(help_text='Description of the schedule')),
-                ('ambient_temperature', models.FloatField(blank=True, help_text='Ambient temperature during the experiment (in degrees Celsius)', null=True)),
-                ('pybamm_template', django.contrib.postgres.fields.ArrayField(base_field=models.TextField(), blank=True, help_text='Template for the schedule in PyBaMM format', null=True, size=None)),
-                ('identifier', models.OneToOneField(help_text='Type of experiment, e.g. Constant-Current Discharge', on_delete=django.db.models.deletion.CASCADE, to='galv.scheduleidentifiers')),
-                ('team', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_resources', to='galv.team')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "uuid",
+                    galv.models.utils.UUIDFieldLD(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "custom_properties",
+                    models.JSONField(
+                        default=dict,
+                        validators=[
+                            django_json_field_schema_validator.validators.JSONFieldSchemaValidator(
+                                {
+                                    "$defs": {
+                                        "typedArray": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "array"},
+                                                "_value": {
+                                                    "$comment": "Array items are objects with _type and _value fields only, so each item in the array is individually typed.",
+                                                    "items": {
+                                                        "$ref": "#/$defs/typedObjectProperty"
+                                                    },
+                                                    "type": "array",
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedBoolean": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "boolean"},
+                                                "_value": {"type": "boolean"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNull": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "null"},
+                                                "_value": {"type": "null"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNumber": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "number"},
+                                                "_value": {"type": "number"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObject": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "object"},
+                                                "_value": {"$ref": "#"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObjectProperty": {
+                                            "$comment": "typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.",
+                                            "anyOf": [
+                                                {"$ref": "#/$defs/typedString"},
+                                                {"$ref": "#/$defs/typedNumber"},
+                                                {"$ref": "#/$defs/typedBoolean"},
+                                                {"$ref": "#/$defs/typedNull"},
+                                                {"$ref": "#/$defs/typedObject"},
+                                                {"$ref": "#/$defs/typedArray"},
+                                                {"$ref": "#/$defs/typedUnknown"},
+                                            ],
+                                        },
+                                        "typedString": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "string"},
+                                                "_value": {"type": "string"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedUnknown": {
+                                            "$comment": "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"type": "string"},
+                                                "_value": {
+                                                    "anyOf": [
+                                                        {
+                                                            "$ref": "#/$defs/typedObjectProperty"
+                                                        },
+                                                        {"$ref": "#"},
+                                                        {
+                                                            "type": [
+                                                                "string",
+                                                                "number",
+                                                                "boolean",
+                                                                "null",
+                                                            ]
+                                                        },
+                                                    ]
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                    },
+                                    "$schema": "https://json-schema.org/draft/2020-12/schema#",
+                                    "additionalProperties": {
+                                        "$ref": "#/$defs/typedObjectProperty"
+                                    },
+                                    "description": "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                    "title": "Galv typed JSON - strict",
+                                    "type": "object",
+                                }
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "delete_access_level",
+                    models.IntegerField(
+                        choices=[(4, "Team Admin"), (3, "Team Member")], default=3
+                    ),
+                ),
+                (
+                    "edit_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                        ],
+                        default=3,
+                    ),
+                ),
+                (
+                    "read_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                            (0, "Anonymous"),
+                        ],
+                        default=2,
+                    ),
+                ),
+                (
+                    "description",
+                    models.TextField(help_text="Description of the schedule"),
+                ),
+                (
+                    "ambient_temperature",
+                    models.FloatField(
+                        blank=True,
+                        help_text="Ambient temperature during the experiment (in degrees Celsius)",
+                        null=True,
+                    ),
+                ),
+                (
+                    "pybamm_template",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.TextField(),
+                        blank=True,
+                        help_text="Template for the schedule in PyBaMM format",
+                        null=True,
+                        size=None,
+                    ),
+                ),
+                (
+                    "identifier",
+                    models.OneToOneField(
+                        help_text="Type of experiment, e.g. Constant-Current Discharge",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="galv.scheduleidentifiers",
+                    ),
+                ),
+                (
+                    "team",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="%(class)s_resources",
+                        to="galv.team",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='Schedule',
+            name="Schedule",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('uuid', galv.models.utils.UUIDFieldLD(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('custom_properties', models.JSONField(default=dict, validators=[django_json_field_schema_validator.validators.JSONFieldSchemaValidator({'$defs': {'typedArray': {'additionalProperties': False, 'properties': {'_type': {'const': 'array'}, '_value': {'$comment': 'Array items are objects with _type and _value fields only, so each item in the array is individually typed.', 'items': {'$ref': '#/$defs/typedObjectProperty'}, 'type': 'array'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedBoolean': {'additionalProperties': False, 'properties': {'_type': {'const': 'boolean'}, '_value': {'type': 'boolean'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNull': {'additionalProperties': False, 'properties': {'_type': {'const': 'null'}, '_value': {'type': 'null'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNumber': {'additionalProperties': False, 'properties': {'_type': {'const': 'number'}, '_value': {'type': 'number'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObject': {'additionalProperties': False, 'properties': {'_type': {'const': 'object'}, '_value': {'$ref': '#'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObjectProperty': {'$comment': 'typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.', 'anyOf': [{'$ref': '#/$defs/typedString'}, {'$ref': '#/$defs/typedNumber'}, {'$ref': '#/$defs/typedBoolean'}, {'$ref': '#/$defs/typedNull'}, {'$ref': '#/$defs/typedObject'}, {'$ref': '#/$defs/typedArray'}, {'$ref': '#/$defs/typedUnknown'}]}, 'typedString': {'additionalProperties': False, 'properties': {'_type': {'const': 'string'}, '_value': {'type': 'string'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedUnknown': {'$comment': "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'additionalProperties': False, 'properties': {'_type': {'type': 'string'}, '_value': {'anyOf': [{'$ref': '#/$defs/typedObjectProperty'}, {'$ref': '#'}, {'type': ['string', 'number', 'boolean', 'null']}]}}, 'required': ['_type', '_value'], 'type': 'object'}}, '$schema': 'https://json-schema.org/draft/2020-12/schema#', 'additionalProperties': {'$ref': '#/$defs/typedObjectProperty'}, 'description': "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'title': 'Galv typed JSON - strict', 'type': 'object'})])),
-                ('delete_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member')], default=3)),
-                ('edit_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User')], default=3)),
-                ('read_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User'), (0, 'Anonymous')], default=2)),
-                ('schedule_file', models.FileField(blank=True, help_text='File containing the schedule', null=True, upload_to='')),
-                ('pybamm_schedule_variables', models.JSONField(blank=True, help_text='Variables used in the PyBaMM.Experiment representation of the schedule', null=True)),
-                ('family', models.ForeignKey(help_text='Schedule type', on_delete=django.db.models.deletion.CASCADE, related_name='schedules', to='galv.schedulefamily')),
-                ('team', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_resources', to='galv.team')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "uuid",
+                    galv.models.utils.UUIDFieldLD(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "custom_properties",
+                    models.JSONField(
+                        default=dict,
+                        validators=[
+                            django_json_field_schema_validator.validators.JSONFieldSchemaValidator(
+                                {
+                                    "$defs": {
+                                        "typedArray": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "array"},
+                                                "_value": {
+                                                    "$comment": "Array items are objects with _type and _value fields only, so each item in the array is individually typed.",
+                                                    "items": {
+                                                        "$ref": "#/$defs/typedObjectProperty"
+                                                    },
+                                                    "type": "array",
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedBoolean": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "boolean"},
+                                                "_value": {"type": "boolean"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNull": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "null"},
+                                                "_value": {"type": "null"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNumber": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "number"},
+                                                "_value": {"type": "number"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObject": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "object"},
+                                                "_value": {"$ref": "#"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObjectProperty": {
+                                            "$comment": "typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.",
+                                            "anyOf": [
+                                                {"$ref": "#/$defs/typedString"},
+                                                {"$ref": "#/$defs/typedNumber"},
+                                                {"$ref": "#/$defs/typedBoolean"},
+                                                {"$ref": "#/$defs/typedNull"},
+                                                {"$ref": "#/$defs/typedObject"},
+                                                {"$ref": "#/$defs/typedArray"},
+                                                {"$ref": "#/$defs/typedUnknown"},
+                                            ],
+                                        },
+                                        "typedString": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "string"},
+                                                "_value": {"type": "string"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedUnknown": {
+                                            "$comment": "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"type": "string"},
+                                                "_value": {
+                                                    "anyOf": [
+                                                        {
+                                                            "$ref": "#/$defs/typedObjectProperty"
+                                                        },
+                                                        {"$ref": "#"},
+                                                        {
+                                                            "type": [
+                                                                "string",
+                                                                "number",
+                                                                "boolean",
+                                                                "null",
+                                                            ]
+                                                        },
+                                                    ]
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                    },
+                                    "$schema": "https://json-schema.org/draft/2020-12/schema#",
+                                    "additionalProperties": {
+                                        "$ref": "#/$defs/typedObjectProperty"
+                                    },
+                                    "description": "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                    "title": "Galv typed JSON - strict",
+                                    "type": "object",
+                                }
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "delete_access_level",
+                    models.IntegerField(
+                        choices=[(4, "Team Admin"), (3, "Team Member")], default=3
+                    ),
+                ),
+                (
+                    "edit_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                        ],
+                        default=3,
+                    ),
+                ),
+                (
+                    "read_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                            (0, "Anonymous"),
+                        ],
+                        default=2,
+                    ),
+                ),
+                (
+                    "schedule_file",
+                    models.FileField(
+                        blank=True,
+                        help_text="File containing the schedule",
+                        null=True,
+                        upload_to="",
+                    ),
+                ),
+                (
+                    "pybamm_schedule_variables",
+                    models.JSONField(
+                        blank=True,
+                        help_text="Variables used in the PyBaMM.Experiment representation of the schedule",
+                        null=True,
+                    ),
+                ),
+                (
+                    "family",
+                    models.ForeignKey(
+                        help_text="Schedule type",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="schedules",
+                        to="galv.schedulefamily",
+                    ),
+                ),
+                (
+                    "team",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="%(class)s_resources",
+                        to="galv.team",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='EquipmentFamily',
+            name="EquipmentFamily",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('uuid', galv.models.utils.UUIDFieldLD(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('custom_properties', models.JSONField(default=dict, validators=[django_json_field_schema_validator.validators.JSONFieldSchemaValidator({'$defs': {'typedArray': {'additionalProperties': False, 'properties': {'_type': {'const': 'array'}, '_value': {'$comment': 'Array items are objects with _type and _value fields only, so each item in the array is individually typed.', 'items': {'$ref': '#/$defs/typedObjectProperty'}, 'type': 'array'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedBoolean': {'additionalProperties': False, 'properties': {'_type': {'const': 'boolean'}, '_value': {'type': 'boolean'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNull': {'additionalProperties': False, 'properties': {'_type': {'const': 'null'}, '_value': {'type': 'null'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNumber': {'additionalProperties': False, 'properties': {'_type': {'const': 'number'}, '_value': {'type': 'number'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObject': {'additionalProperties': False, 'properties': {'_type': {'const': 'object'}, '_value': {'$ref': '#'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObjectProperty': {'$comment': 'typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.', 'anyOf': [{'$ref': '#/$defs/typedString'}, {'$ref': '#/$defs/typedNumber'}, {'$ref': '#/$defs/typedBoolean'}, {'$ref': '#/$defs/typedNull'}, {'$ref': '#/$defs/typedObject'}, {'$ref': '#/$defs/typedArray'}, {'$ref': '#/$defs/typedUnknown'}]}, 'typedString': {'additionalProperties': False, 'properties': {'_type': {'const': 'string'}, '_value': {'type': 'string'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedUnknown': {'$comment': "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'additionalProperties': False, 'properties': {'_type': {'type': 'string'}, '_value': {'anyOf': [{'$ref': '#/$defs/typedObjectProperty'}, {'$ref': '#'}, {'type': ['string', 'number', 'boolean', 'null']}]}}, 'required': ['_type', '_value'], 'type': 'object'}}, '$schema': 'https://json-schema.org/draft/2020-12/schema#', 'additionalProperties': {'$ref': '#/$defs/typedObjectProperty'}, 'description': "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'title': 'Galv typed JSON - strict', 'type': 'object'})])),
-                ('delete_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member')], default=3)),
-                ('edit_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User')], default=3)),
-                ('read_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User'), (0, 'Anonymous')], default=2)),
-                ('manufacturer', models.ForeignKey(help_text='Manufacturer of equipment', on_delete=django.db.models.deletion.CASCADE, to='galv.equipmentmanufacturers')),
-                ('model', models.ForeignKey(help_text='Model of equipment', on_delete=django.db.models.deletion.CASCADE, to='galv.equipmentmodels')),
-                ('type', models.ForeignKey(help_text='Type of equipment', on_delete=django.db.models.deletion.CASCADE, to='galv.equipmenttypes')),
-                ('team', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_resources', to='galv.team')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "uuid",
+                    galv.models.utils.UUIDFieldLD(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "custom_properties",
+                    models.JSONField(
+                        default=dict,
+                        validators=[
+                            django_json_field_schema_validator.validators.JSONFieldSchemaValidator(
+                                {
+                                    "$defs": {
+                                        "typedArray": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "array"},
+                                                "_value": {
+                                                    "$comment": "Array items are objects with _type and _value fields only, so each item in the array is individually typed.",
+                                                    "items": {
+                                                        "$ref": "#/$defs/typedObjectProperty"
+                                                    },
+                                                    "type": "array",
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedBoolean": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "boolean"},
+                                                "_value": {"type": "boolean"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNull": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "null"},
+                                                "_value": {"type": "null"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNumber": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "number"},
+                                                "_value": {"type": "number"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObject": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "object"},
+                                                "_value": {"$ref": "#"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObjectProperty": {
+                                            "$comment": "typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.",
+                                            "anyOf": [
+                                                {"$ref": "#/$defs/typedString"},
+                                                {"$ref": "#/$defs/typedNumber"},
+                                                {"$ref": "#/$defs/typedBoolean"},
+                                                {"$ref": "#/$defs/typedNull"},
+                                                {"$ref": "#/$defs/typedObject"},
+                                                {"$ref": "#/$defs/typedArray"},
+                                                {"$ref": "#/$defs/typedUnknown"},
+                                            ],
+                                        },
+                                        "typedString": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "string"},
+                                                "_value": {"type": "string"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedUnknown": {
+                                            "$comment": "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"type": "string"},
+                                                "_value": {
+                                                    "anyOf": [
+                                                        {
+                                                            "$ref": "#/$defs/typedObjectProperty"
+                                                        },
+                                                        {"$ref": "#"},
+                                                        {
+                                                            "type": [
+                                                                "string",
+                                                                "number",
+                                                                "boolean",
+                                                                "null",
+                                                            ]
+                                                        },
+                                                    ]
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                    },
+                                    "$schema": "https://json-schema.org/draft/2020-12/schema#",
+                                    "additionalProperties": {
+                                        "$ref": "#/$defs/typedObjectProperty"
+                                    },
+                                    "description": "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                    "title": "Galv typed JSON - strict",
+                                    "type": "object",
+                                }
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "delete_access_level",
+                    models.IntegerField(
+                        choices=[(4, "Team Admin"), (3, "Team Member")], default=3
+                    ),
+                ),
+                (
+                    "edit_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                        ],
+                        default=3,
+                    ),
+                ),
+                (
+                    "read_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                            (0, "Anonymous"),
+                        ],
+                        default=2,
+                    ),
+                ),
+                (
+                    "manufacturer",
+                    models.ForeignKey(
+                        help_text="Manufacturer of equipment",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="galv.equipmentmanufacturers",
+                    ),
+                ),
+                (
+                    "model",
+                    models.ForeignKey(
+                        help_text="Model of equipment",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="galv.equipmentmodels",
+                    ),
+                ),
+                (
+                    "type",
+                    models.ForeignKey(
+                        help_text="Type of equipment",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="galv.equipmenttypes",
+                    ),
+                ),
+                (
+                    "team",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="%(class)s_resources",
+                        to="galv.team",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='Equipment',
+            name="Equipment",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('uuid', galv.models.utils.UUIDFieldLD(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('custom_properties', models.JSONField(default=dict, validators=[django_json_field_schema_validator.validators.JSONFieldSchemaValidator({'$defs': {'typedArray': {'additionalProperties': False, 'properties': {'_type': {'const': 'array'}, '_value': {'$comment': 'Array items are objects with _type and _value fields only, so each item in the array is individually typed.', 'items': {'$ref': '#/$defs/typedObjectProperty'}, 'type': 'array'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedBoolean': {'additionalProperties': False, 'properties': {'_type': {'const': 'boolean'}, '_value': {'type': 'boolean'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNull': {'additionalProperties': False, 'properties': {'_type': {'const': 'null'}, '_value': {'type': 'null'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNumber': {'additionalProperties': False, 'properties': {'_type': {'const': 'number'}, '_value': {'type': 'number'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObject': {'additionalProperties': False, 'properties': {'_type': {'const': 'object'}, '_value': {'$ref': '#'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObjectProperty': {'$comment': 'typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.', 'anyOf': [{'$ref': '#/$defs/typedString'}, {'$ref': '#/$defs/typedNumber'}, {'$ref': '#/$defs/typedBoolean'}, {'$ref': '#/$defs/typedNull'}, {'$ref': '#/$defs/typedObject'}, {'$ref': '#/$defs/typedArray'}, {'$ref': '#/$defs/typedUnknown'}]}, 'typedString': {'additionalProperties': False, 'properties': {'_type': {'const': 'string'}, '_value': {'type': 'string'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedUnknown': {'$comment': "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'additionalProperties': False, 'properties': {'_type': {'type': 'string'}, '_value': {'anyOf': [{'$ref': '#/$defs/typedObjectProperty'}, {'$ref': '#'}, {'type': ['string', 'number', 'boolean', 'null']}]}}, 'required': ['_type', '_value'], 'type': 'object'}}, '$schema': 'https://json-schema.org/draft/2020-12/schema#', 'additionalProperties': {'$ref': '#/$defs/typedObjectProperty'}, 'description': "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'title': 'Galv typed JSON - strict', 'type': 'object'})])),
-                ('delete_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member')], default=3)),
-                ('edit_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User')], default=3)),
-                ('read_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User'), (0, 'Anonymous')], default=2)),
-                ('identifier', models.TextField(help_text='Unique identifier (e.g. serial number) for the equipment', unique=True)),
-                ('calibration_date', models.DateField(blank=True, help_text='Date of last calibration', null=True)),
-                ('family', models.ForeignKey(help_text='Equipment type', on_delete=django.db.models.deletion.CASCADE, related_name='equipment', to='galv.equipmentfamily')),
-                ('team', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_resources', to='galv.team')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "uuid",
+                    galv.models.utils.UUIDFieldLD(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "custom_properties",
+                    models.JSONField(
+                        default=dict,
+                        validators=[
+                            django_json_field_schema_validator.validators.JSONFieldSchemaValidator(
+                                {
+                                    "$defs": {
+                                        "typedArray": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "array"},
+                                                "_value": {
+                                                    "$comment": "Array items are objects with _type and _value fields only, so each item in the array is individually typed.",
+                                                    "items": {
+                                                        "$ref": "#/$defs/typedObjectProperty"
+                                                    },
+                                                    "type": "array",
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedBoolean": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "boolean"},
+                                                "_value": {"type": "boolean"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNull": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "null"},
+                                                "_value": {"type": "null"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNumber": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "number"},
+                                                "_value": {"type": "number"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObject": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "object"},
+                                                "_value": {"$ref": "#"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObjectProperty": {
+                                            "$comment": "typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.",
+                                            "anyOf": [
+                                                {"$ref": "#/$defs/typedString"},
+                                                {"$ref": "#/$defs/typedNumber"},
+                                                {"$ref": "#/$defs/typedBoolean"},
+                                                {"$ref": "#/$defs/typedNull"},
+                                                {"$ref": "#/$defs/typedObject"},
+                                                {"$ref": "#/$defs/typedArray"},
+                                                {"$ref": "#/$defs/typedUnknown"},
+                                            ],
+                                        },
+                                        "typedString": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "string"},
+                                                "_value": {"type": "string"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedUnknown": {
+                                            "$comment": "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"type": "string"},
+                                                "_value": {
+                                                    "anyOf": [
+                                                        {
+                                                            "$ref": "#/$defs/typedObjectProperty"
+                                                        },
+                                                        {"$ref": "#"},
+                                                        {
+                                                            "type": [
+                                                                "string",
+                                                                "number",
+                                                                "boolean",
+                                                                "null",
+                                                            ]
+                                                        },
+                                                    ]
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                    },
+                                    "$schema": "https://json-schema.org/draft/2020-12/schema#",
+                                    "additionalProperties": {
+                                        "$ref": "#/$defs/typedObjectProperty"
+                                    },
+                                    "description": "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                    "title": "Galv typed JSON - strict",
+                                    "type": "object",
+                                }
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "delete_access_level",
+                    models.IntegerField(
+                        choices=[(4, "Team Admin"), (3, "Team Member")], default=3
+                    ),
+                ),
+                (
+                    "edit_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                        ],
+                        default=3,
+                    ),
+                ),
+                (
+                    "read_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                            (0, "Anonymous"),
+                        ],
+                        default=2,
+                    ),
+                ),
+                (
+                    "identifier",
+                    models.TextField(
+                        help_text="Unique identifier (e.g. serial number) for the equipment",
+                        unique=True,
+                    ),
+                ),
+                (
+                    "calibration_date",
+                    models.DateField(
+                        blank=True, help_text="Date of last calibration", null=True
+                    ),
+                ),
+                (
+                    "family",
+                    models.ForeignKey(
+                        help_text="Equipment type",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="equipment",
+                        to="galv.equipmentfamily",
+                    ),
+                ),
+                (
+                    "team",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="%(class)s_resources",
+                        to="galv.team",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='CyclerTest',
+            name="CyclerTest",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('uuid', galv.models.utils.UUIDFieldLD(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('custom_properties', models.JSONField(default=dict, validators=[django_json_field_schema_validator.validators.JSONFieldSchemaValidator({'$defs': {'typedArray': {'additionalProperties': False, 'properties': {'_type': {'const': 'array'}, '_value': {'$comment': 'Array items are objects with _type and _value fields only, so each item in the array is individually typed.', 'items': {'$ref': '#/$defs/typedObjectProperty'}, 'type': 'array'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedBoolean': {'additionalProperties': False, 'properties': {'_type': {'const': 'boolean'}, '_value': {'type': 'boolean'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNull': {'additionalProperties': False, 'properties': {'_type': {'const': 'null'}, '_value': {'type': 'null'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNumber': {'additionalProperties': False, 'properties': {'_type': {'const': 'number'}, '_value': {'type': 'number'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObject': {'additionalProperties': False, 'properties': {'_type': {'const': 'object'}, '_value': {'$ref': '#'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObjectProperty': {'$comment': 'typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.', 'anyOf': [{'$ref': '#/$defs/typedString'}, {'$ref': '#/$defs/typedNumber'}, {'$ref': '#/$defs/typedBoolean'}, {'$ref': '#/$defs/typedNull'}, {'$ref': '#/$defs/typedObject'}, {'$ref': '#/$defs/typedArray'}, {'$ref': '#/$defs/typedUnknown'}]}, 'typedString': {'additionalProperties': False, 'properties': {'_type': {'const': 'string'}, '_value': {'type': 'string'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedUnknown': {'$comment': "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'additionalProperties': False, 'properties': {'_type': {'type': 'string'}, '_value': {'anyOf': [{'$ref': '#/$defs/typedObjectProperty'}, {'$ref': '#'}, {'type': ['string', 'number', 'boolean', 'null']}]}}, 'required': ['_type', '_value'], 'type': 'object'}}, '$schema': 'https://json-schema.org/draft/2020-12/schema#', 'additionalProperties': {'$ref': '#/$defs/typedObjectProperty'}, 'description': "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'title': 'Galv typed JSON - strict', 'type': 'object'})])),
-                ('delete_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member')], default=3)),
-                ('edit_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User')], default=3)),
-                ('read_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User'), (0, 'Anonymous')], default=2)),
-                ('cell', models.ForeignKey(help_text='Cell that was tested', on_delete=django.db.models.deletion.CASCADE, related_name='cycler_tests', to='galv.cell')),
-                ('equipment', models.ManyToManyField(help_text='Equipment used to test the cell', related_name='cycler_tests', to='galv.equipment')),
-                ('file', models.ManyToManyField(help_text='Columns of data in the test', related_name='cycler_tests', to='galv.observedfile')),
-                ('schedule', models.ForeignKey(blank=True, help_text='Schedule used to test the cell', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='cycler_tests', to='galv.schedule')),
-                ('team', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_resources', to='galv.team')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "uuid",
+                    galv.models.utils.UUIDFieldLD(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "custom_properties",
+                    models.JSONField(
+                        default=dict,
+                        validators=[
+                            django_json_field_schema_validator.validators.JSONFieldSchemaValidator(
+                                {
+                                    "$defs": {
+                                        "typedArray": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "array"},
+                                                "_value": {
+                                                    "$comment": "Array items are objects with _type and _value fields only, so each item in the array is individually typed.",
+                                                    "items": {
+                                                        "$ref": "#/$defs/typedObjectProperty"
+                                                    },
+                                                    "type": "array",
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedBoolean": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "boolean"},
+                                                "_value": {"type": "boolean"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNull": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "null"},
+                                                "_value": {"type": "null"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNumber": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "number"},
+                                                "_value": {"type": "number"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObject": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "object"},
+                                                "_value": {"$ref": "#"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObjectProperty": {
+                                            "$comment": "typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.",
+                                            "anyOf": [
+                                                {"$ref": "#/$defs/typedString"},
+                                                {"$ref": "#/$defs/typedNumber"},
+                                                {"$ref": "#/$defs/typedBoolean"},
+                                                {"$ref": "#/$defs/typedNull"},
+                                                {"$ref": "#/$defs/typedObject"},
+                                                {"$ref": "#/$defs/typedArray"},
+                                                {"$ref": "#/$defs/typedUnknown"},
+                                            ],
+                                        },
+                                        "typedString": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "string"},
+                                                "_value": {"type": "string"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedUnknown": {
+                                            "$comment": "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"type": "string"},
+                                                "_value": {
+                                                    "anyOf": [
+                                                        {
+                                                            "$ref": "#/$defs/typedObjectProperty"
+                                                        },
+                                                        {"$ref": "#"},
+                                                        {
+                                                            "type": [
+                                                                "string",
+                                                                "number",
+                                                                "boolean",
+                                                                "null",
+                                                            ]
+                                                        },
+                                                    ]
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                    },
+                                    "$schema": "https://json-schema.org/draft/2020-12/schema#",
+                                    "additionalProperties": {
+                                        "$ref": "#/$defs/typedObjectProperty"
+                                    },
+                                    "description": "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                    "title": "Galv typed JSON - strict",
+                                    "type": "object",
+                                }
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "delete_access_level",
+                    models.IntegerField(
+                        choices=[(4, "Team Admin"), (3, "Team Member")], default=3
+                    ),
+                ),
+                (
+                    "edit_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                        ],
+                        default=3,
+                    ),
+                ),
+                (
+                    "read_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                            (0, "Anonymous"),
+                        ],
+                        default=2,
+                    ),
+                ),
+                (
+                    "cell",
+                    models.ForeignKey(
+                        help_text="Cell that was tested",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="cycler_tests",
+                        to="galv.cell",
+                    ),
+                ),
+                (
+                    "equipment",
+                    models.ManyToManyField(
+                        help_text="Equipment used to test the cell",
+                        related_name="cycler_tests",
+                        to="galv.equipment",
+                    ),
+                ),
+                (
+                    "file",
+                    models.ManyToManyField(
+                        help_text="Columns of data in the test",
+                        related_name="cycler_tests",
+                        to="galv.observedfile",
+                    ),
+                ),
+                (
+                    "schedule",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="Schedule used to test the cell",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="cycler_tests",
+                        to="galv.schedule",
+                    ),
+                ),
+                (
+                    "team",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="%(class)s_resources",
+                        to="galv.team",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.AddField(
-            model_name='cellfamily',
-            name='team',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_resources', to='galv.team'),
+            model_name="cellfamily",
+            name="team",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="%(class)s_resources",
+                to="galv.team",
+            ),
         ),
         migrations.AddField(
-            model_name='cell',
-            name='team',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_resources', to='galv.team'),
+            model_name="cell",
+            name="team",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="%(class)s_resources",
+                to="galv.team",
+            ),
         ),
         migrations.CreateModel(
-            name='ArbitraryFile',
+            name="ArbitraryFile",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('uuid', galv.models.utils.UUIDFieldLD(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('custom_properties', models.JSONField(default=dict, validators=[django_json_field_schema_validator.validators.JSONFieldSchemaValidator({'$defs': {'typedArray': {'additionalProperties': False, 'properties': {'_type': {'const': 'array'}, '_value': {'$comment': 'Array items are objects with _type and _value fields only, so each item in the array is individually typed.', 'items': {'$ref': '#/$defs/typedObjectProperty'}, 'type': 'array'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedBoolean': {'additionalProperties': False, 'properties': {'_type': {'const': 'boolean'}, '_value': {'type': 'boolean'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNull': {'additionalProperties': False, 'properties': {'_type': {'const': 'null'}, '_value': {'type': 'null'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNumber': {'additionalProperties': False, 'properties': {'_type': {'const': 'number'}, '_value': {'type': 'number'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObject': {'additionalProperties': False, 'properties': {'_type': {'const': 'object'}, '_value': {'$ref': '#'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObjectProperty': {'$comment': 'typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.', 'anyOf': [{'$ref': '#/$defs/typedString'}, {'$ref': '#/$defs/typedNumber'}, {'$ref': '#/$defs/typedBoolean'}, {'$ref': '#/$defs/typedNull'}, {'$ref': '#/$defs/typedObject'}, {'$ref': '#/$defs/typedArray'}, {'$ref': '#/$defs/typedUnknown'}]}, 'typedString': {'additionalProperties': False, 'properties': {'_type': {'const': 'string'}, '_value': {'type': 'string'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedUnknown': {'$comment': "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'additionalProperties': False, 'properties': {'_type': {'type': 'string'}, '_value': {'anyOf': [{'$ref': '#/$defs/typedObjectProperty'}, {'$ref': '#'}, {'type': ['string', 'number', 'boolean', 'null']}]}}, 'required': ['_type', '_value'], 'type': 'object'}}, '$schema': 'https://json-schema.org/draft/2020-12/schema#', 'additionalProperties': {'$ref': '#/$defs/typedObjectProperty'}, 'description': "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'title': 'Galv typed JSON - strict', 'type': 'object'})])),
-                ('delete_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member')], default=3)),
-                ('edit_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User')], default=3)),
-                ('read_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User'), (0, 'Anonymous')], default=2)),
-                ('file', galv.fields.DynamicStorageFileField(unique=True, upload_to='')),
-                ('is_public', models.BooleanField(default=False, help_text='Whether the file is public')),
-                ('name', models.TextField(help_text='The name of the file', unique=True)),
-                ('description', models.TextField(blank=True, help_text='The description of the file', null=True)),
-                ('team', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_resources', to='galv.team')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "uuid",
+                    galv.models.utils.UUIDFieldLD(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "custom_properties",
+                    models.JSONField(
+                        default=dict,
+                        validators=[
+                            django_json_field_schema_validator.validators.JSONFieldSchemaValidator(
+                                {
+                                    "$defs": {
+                                        "typedArray": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "array"},
+                                                "_value": {
+                                                    "$comment": "Array items are objects with _type and _value fields only, so each item in the array is individually typed.",
+                                                    "items": {
+                                                        "$ref": "#/$defs/typedObjectProperty"
+                                                    },
+                                                    "type": "array",
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedBoolean": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "boolean"},
+                                                "_value": {"type": "boolean"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNull": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "null"},
+                                                "_value": {"type": "null"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNumber": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "number"},
+                                                "_value": {"type": "number"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObject": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "object"},
+                                                "_value": {"$ref": "#"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObjectProperty": {
+                                            "$comment": "typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.",
+                                            "anyOf": [
+                                                {"$ref": "#/$defs/typedString"},
+                                                {"$ref": "#/$defs/typedNumber"},
+                                                {"$ref": "#/$defs/typedBoolean"},
+                                                {"$ref": "#/$defs/typedNull"},
+                                                {"$ref": "#/$defs/typedObject"},
+                                                {"$ref": "#/$defs/typedArray"},
+                                                {"$ref": "#/$defs/typedUnknown"},
+                                            ],
+                                        },
+                                        "typedString": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "string"},
+                                                "_value": {"type": "string"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedUnknown": {
+                                            "$comment": "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"type": "string"},
+                                                "_value": {
+                                                    "anyOf": [
+                                                        {
+                                                            "$ref": "#/$defs/typedObjectProperty"
+                                                        },
+                                                        {"$ref": "#"},
+                                                        {
+                                                            "type": [
+                                                                "string",
+                                                                "number",
+                                                                "boolean",
+                                                                "null",
+                                                            ]
+                                                        },
+                                                    ]
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                    },
+                                    "$schema": "https://json-schema.org/draft/2020-12/schema#",
+                                    "additionalProperties": {
+                                        "$ref": "#/$defs/typedObjectProperty"
+                                    },
+                                    "description": "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                    "title": "Galv typed JSON - strict",
+                                    "type": "object",
+                                }
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "delete_access_level",
+                    models.IntegerField(
+                        choices=[(4, "Team Admin"), (3, "Team Member")], default=3
+                    ),
+                ),
+                (
+                    "edit_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                        ],
+                        default=3,
+                    ),
+                ),
+                (
+                    "read_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                            (0, "Anonymous"),
+                        ],
+                        default=2,
+                    ),
+                ),
+                (
+                    "file",
+                    galv.fields.DynamicStorageFileField(unique=True, upload_to=""),
+                ),
+                (
+                    "is_public",
+                    models.BooleanField(
+                        default=False, help_text="Whether the file is public"
+                    ),
+                ),
+                (
+                    "name",
+                    models.TextField(help_text="The name of the file", unique=True),
+                ),
+                (
+                    "description",
+                    models.TextField(
+                        blank=True, help_text="The description of the file", null=True
+                    ),
+                ),
+                (
+                    "team",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="%(class)s_resources",
+                        to="galv.team",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='TimeseriesDataFloat',
+            name="TimeseriesDataFloat",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('values', django.contrib.postgres.fields.ArrayField(base_field=models.FloatField(null=True), help_text='Row values (floats) for Column', null=True, size=None)),
-                ('column', models.OneToOneField(help_text='Column whose data are listed', on_delete=django.db.models.deletion.CASCADE, to='galv.datacolumn')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "values",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.FloatField(null=True),
+                        help_text="Row values (floats) for Column",
+                        null=True,
+                        size=None,
+                    ),
+                ),
+                (
+                    "column",
+                    models.OneToOneField(
+                        help_text="Column whose data are listed",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="galv.datacolumn",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='TimeseriesDataInt',
+            name="TimeseriesDataInt",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('values', django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(null=True), help_text='Row values (integers) for Column', null=True, size=None)),
-                ('column', models.OneToOneField(help_text='Column whose data are listed', on_delete=django.db.models.deletion.CASCADE, to='galv.datacolumn')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "values",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.IntegerField(null=True),
+                        help_text="Row values (integers) for Column",
+                        null=True,
+                        size=None,
+                    ),
+                ),
+                (
+                    "column",
+                    models.OneToOneField(
+                        help_text="Column whose data are listed",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="galv.datacolumn",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='TimeseriesDataStr',
+            name="TimeseriesDataStr",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('values', django.contrib.postgres.fields.ArrayField(base_field=models.TextField(null=True), help_text='Row values (str) for Column', null=True, size=None)),
-                ('column', models.OneToOneField(help_text='Column whose data are listed', on_delete=django.db.models.deletion.CASCADE, to='galv.datacolumn')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "values",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.TextField(null=True),
+                        help_text="Row values (str) for Column",
+                        null=True,
+                        size=None,
+                    ),
+                ),
+                (
+                    "column",
+                    models.OneToOneField(
+                        help_text="Column whose data are listed",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="galv.datacolumn",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='TimeseriesRangeLabel',
+            name="TimeseriesRangeLabel",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('label', models.TextField(help_text='Human-friendly identifier')),
-                ('range_start', models.PositiveBigIntegerField(help_text='Row (sample number) at which the range starts')),
-                ('range_end', models.PositiveBigIntegerField(help_text='Row (sample number) at which the range ends')),
-                ('info', models.TextField(help_text='Additional information')),
-                ('file', models.ForeignKey(help_text='Dataset to which the Range applies', on_delete=django.db.models.deletion.CASCADE, related_name='range_labels', to='galv.observedfile')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("label", models.TextField(help_text="Human-friendly identifier")),
+                (
+                    "range_start",
+                    models.PositiveBigIntegerField(
+                        help_text="Row (sample number) at which the range starts"
+                    ),
+                ),
+                (
+                    "range_end",
+                    models.PositiveBigIntegerField(
+                        help_text="Row (sample number) at which the range ends"
+                    ),
+                ),
+                ("info", models.TextField(help_text="Additional information")),
+                (
+                    "file",
+                    models.ForeignKey(
+                        help_text="Dataset to which the Range applies",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="range_labels",
+                        to="galv.observedfile",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='UserActivation',
+            name="UserActivation",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('token', models.CharField(blank=True, max_length=8, null=True)),
-                ('token_update_date', models.DateTimeField(blank=True, null=True)),
-                ('redemption_date', models.DateTimeField(blank=True, null=True)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='activation', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("token", models.CharField(blank=True, max_length=8, null=True)),
+                ("token_update_date", models.DateTimeField(blank=True, null=True)),
+                ("redemption_date", models.DateTimeField(blank=True, null=True)),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="activation",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='ValidationSchema',
+            name="ValidationSchema",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('uuid', galv.models.utils.UUIDFieldLD(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('custom_properties', models.JSONField(default=dict, validators=[django_json_field_schema_validator.validators.JSONFieldSchemaValidator({'$defs': {'typedArray': {'additionalProperties': False, 'properties': {'_type': {'const': 'array'}, '_value': {'$comment': 'Array items are objects with _type and _value fields only, so each item in the array is individually typed.', 'items': {'$ref': '#/$defs/typedObjectProperty'}, 'type': 'array'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedBoolean': {'additionalProperties': False, 'properties': {'_type': {'const': 'boolean'}, '_value': {'type': 'boolean'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNull': {'additionalProperties': False, 'properties': {'_type': {'const': 'null'}, '_value': {'type': 'null'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNumber': {'additionalProperties': False, 'properties': {'_type': {'const': 'number'}, '_value': {'type': 'number'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObject': {'additionalProperties': False, 'properties': {'_type': {'const': 'object'}, '_value': {'$ref': '#'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObjectProperty': {'$comment': 'typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.', 'anyOf': [{'$ref': '#/$defs/typedString'}, {'$ref': '#/$defs/typedNumber'}, {'$ref': '#/$defs/typedBoolean'}, {'$ref': '#/$defs/typedNull'}, {'$ref': '#/$defs/typedObject'}, {'$ref': '#/$defs/typedArray'}, {'$ref': '#/$defs/typedUnknown'}]}, 'typedString': {'additionalProperties': False, 'properties': {'_type': {'const': 'string'}, '_value': {'type': 'string'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedUnknown': {'$comment': "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'additionalProperties': False, 'properties': {'_type': {'type': 'string'}, '_value': {'anyOf': [{'$ref': '#/$defs/typedObjectProperty'}, {'$ref': '#'}, {'type': ['string', 'number', 'boolean', 'null']}]}}, 'required': ['_type', '_value'], 'type': 'object'}}, '$schema': 'https://json-schema.org/draft/2020-12/schema#', 'additionalProperties': {'$ref': '#/$defs/typedObjectProperty'}, 'description': "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'title': 'Galv typed JSON - strict', 'type': 'object'})])),
-                ('delete_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member')], default=3)),
-                ('edit_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User')], default=3)),
-                ('read_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User'), (0, 'Anonymous')], default=2)),
-                ('name', models.TextField(help_text='Human-friendly identifier')),
-                ('schema', models.JSONField(help_text='JSON Schema')),
-                ('team', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_resources', to='galv.team')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "uuid",
+                    galv.models.utils.UUIDFieldLD(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "custom_properties",
+                    models.JSONField(
+                        default=dict,
+                        validators=[
+                            django_json_field_schema_validator.validators.JSONFieldSchemaValidator(
+                                {
+                                    "$defs": {
+                                        "typedArray": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "array"},
+                                                "_value": {
+                                                    "$comment": "Array items are objects with _type and _value fields only, so each item in the array is individually typed.",
+                                                    "items": {
+                                                        "$ref": "#/$defs/typedObjectProperty"
+                                                    },
+                                                    "type": "array",
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedBoolean": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "boolean"},
+                                                "_value": {"type": "boolean"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNull": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "null"},
+                                                "_value": {"type": "null"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNumber": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "number"},
+                                                "_value": {"type": "number"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObject": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "object"},
+                                                "_value": {"$ref": "#"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObjectProperty": {
+                                            "$comment": "typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.",
+                                            "anyOf": [
+                                                {"$ref": "#/$defs/typedString"},
+                                                {"$ref": "#/$defs/typedNumber"},
+                                                {"$ref": "#/$defs/typedBoolean"},
+                                                {"$ref": "#/$defs/typedNull"},
+                                                {"$ref": "#/$defs/typedObject"},
+                                                {"$ref": "#/$defs/typedArray"},
+                                                {"$ref": "#/$defs/typedUnknown"},
+                                            ],
+                                        },
+                                        "typedString": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "string"},
+                                                "_value": {"type": "string"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedUnknown": {
+                                            "$comment": "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"type": "string"},
+                                                "_value": {
+                                                    "anyOf": [
+                                                        {
+                                                            "$ref": "#/$defs/typedObjectProperty"
+                                                        },
+                                                        {"$ref": "#"},
+                                                        {
+                                                            "type": [
+                                                                "string",
+                                                                "number",
+                                                                "boolean",
+                                                                "null",
+                                                            ]
+                                                        },
+                                                    ]
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                    },
+                                    "$schema": "https://json-schema.org/draft/2020-12/schema#",
+                                    "additionalProperties": {
+                                        "$ref": "#/$defs/typedObjectProperty"
+                                    },
+                                    "description": "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                    "title": "Galv typed JSON - strict",
+                                    "type": "object",
+                                }
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "delete_access_level",
+                    models.IntegerField(
+                        choices=[(4, "Team Admin"), (3, "Team Member")], default=3
+                    ),
+                ),
+                (
+                    "edit_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                        ],
+                        default=3,
+                    ),
+                ),
+                (
+                    "read_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                            (0, "Anonymous"),
+                        ],
+                        default=2,
+                    ),
+                ),
+                ("name", models.TextField(help_text="Human-friendly identifier")),
+                ("schema", models.JSONField(help_text="JSON Schema")),
+                (
+                    "team",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="%(class)s_resources",
+                        to="galv.team",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.AddField(
-            model_name='lab',
-            name='admin_group',
-            field=models.OneToOneField(help_text='Users authorised to make changes to the Lab', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='editable_lab', to='galv.groupproxy'),
+            model_name="lab",
+            name="admin_group",
+            field=models.OneToOneField(
+                help_text="Users authorised to make changes to the Lab",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="editable_lab",
+                to="galv.groupproxy",
+            ),
         ),
         migrations.CreateModel(
-            name='Experiment',
+            name="Experiment",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('uuid', galv.models.utils.UUIDFieldLD(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('custom_properties', models.JSONField(default=dict, validators=[django_json_field_schema_validator.validators.JSONFieldSchemaValidator({'$defs': {'typedArray': {'additionalProperties': False, 'properties': {'_type': {'const': 'array'}, '_value': {'$comment': 'Array items are objects with _type and _value fields only, so each item in the array is individually typed.', 'items': {'$ref': '#/$defs/typedObjectProperty'}, 'type': 'array'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedBoolean': {'additionalProperties': False, 'properties': {'_type': {'const': 'boolean'}, '_value': {'type': 'boolean'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNull': {'additionalProperties': False, 'properties': {'_type': {'const': 'null'}, '_value': {'type': 'null'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedNumber': {'additionalProperties': False, 'properties': {'_type': {'const': 'number'}, '_value': {'type': 'number'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObject': {'additionalProperties': False, 'properties': {'_type': {'const': 'object'}, '_value': {'$ref': '#'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedObjectProperty': {'$comment': 'typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.', 'anyOf': [{'$ref': '#/$defs/typedString'}, {'$ref': '#/$defs/typedNumber'}, {'$ref': '#/$defs/typedBoolean'}, {'$ref': '#/$defs/typedNull'}, {'$ref': '#/$defs/typedObject'}, {'$ref': '#/$defs/typedArray'}, {'$ref': '#/$defs/typedUnknown'}]}, 'typedString': {'additionalProperties': False, 'properties': {'_type': {'const': 'string'}, '_value': {'type': 'string'}}, 'required': ['_type', '_value'], 'type': 'object'}, 'typedUnknown': {'$comment': "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'additionalProperties': False, 'properties': {'_type': {'type': 'string'}, '_value': {'anyOf': [{'$ref': '#/$defs/typedObjectProperty'}, {'$ref': '#'}, {'type': ['string', 'number', 'boolean', 'null']}]}}, 'required': ['_type', '_value'], 'type': 'object'}}, '$schema': 'https://json-schema.org/draft/2020-12/schema#', 'additionalProperties': {'$ref': '#/$defs/typedObjectProperty'}, 'description': "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.", 'title': 'Galv typed JSON - strict', 'type': 'object'})])),
-                ('delete_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member')], default=3)),
-                ('edit_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User')], default=3)),
-                ('read_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User'), (0, 'Anonymous')], default=2)),
-                ('title', models.TextField(help_text='Title of the experiment')),
-                ('description', models.TextField(blank=True, help_text='Description of the experiment', null=True)),
-                ('protocol', models.JSONField(blank=True, help_text='Protocol of the experiment', null=True)),
-                ('protocol_file', models.FileField(blank=True, help_text='Protocol file of the experiment', null=True, upload_to='')),
-                ('cycler_tests', models.ManyToManyField(help_text='Cycler tests of the experiment', related_name='experiments', to='galv.cyclertest')),
-                ('team', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='%(class)s_resources', to='galv.team')),
-                ('authors', models.ManyToManyField(help_text='Authors of the experiment', to='galv.userproxy')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "uuid",
+                    galv.models.utils.UUIDFieldLD(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "custom_properties",
+                    models.JSONField(
+                        default=dict,
+                        validators=[
+                            django_json_field_schema_validator.validators.JSONFieldSchemaValidator(
+                                {
+                                    "$defs": {
+                                        "typedArray": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "array"},
+                                                "_value": {
+                                                    "$comment": "Array items are objects with _type and _value fields only, so each item in the array is individually typed.",
+                                                    "items": {
+                                                        "$ref": "#/$defs/typedObjectProperty"
+                                                    },
+                                                    "type": "array",
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedBoolean": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "boolean"},
+                                                "_value": {"type": "boolean"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNull": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "null"},
+                                                "_value": {"type": "null"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedNumber": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "number"},
+                                                "_value": {"type": "number"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObject": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "object"},
+                                                "_value": {"$ref": "#"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedObjectProperty": {
+                                            "$comment": "typedObjectProperty is either a known JSON type or a custom one. In either case, it is an object with _type and _value fields only. Different typed* types are used to enforce the correct _value type for each _type.",
+                                            "anyOf": [
+                                                {"$ref": "#/$defs/typedString"},
+                                                {"$ref": "#/$defs/typedNumber"},
+                                                {"$ref": "#/$defs/typedBoolean"},
+                                                {"$ref": "#/$defs/typedNull"},
+                                                {"$ref": "#/$defs/typedObject"},
+                                                {"$ref": "#/$defs/typedArray"},
+                                                {"$ref": "#/$defs/typedUnknown"},
+                                            ],
+                                        },
+                                        "typedString": {
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"const": "string"},
+                                                "_value": {"type": "string"},
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                        "typedUnknown": {
+                                            "$comment": "Custom types can be signified by using anything for _type that doesn't match the core JSON types. The _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                            "additionalProperties": False,
+                                            "properties": {
+                                                "_type": {"type": "string"},
+                                                "_value": {
+                                                    "anyOf": [
+                                                        {
+                                                            "$ref": "#/$defs/typedObjectProperty"
+                                                        },
+                                                        {"$ref": "#"},
+                                                        {
+                                                            "type": [
+                                                                "string",
+                                                                "number",
+                                                                "boolean",
+                                                                "null",
+                                                            ]
+                                                        },
+                                                    ]
+                                                },
+                                            },
+                                            "required": ["_type", "_value"],
+                                            "type": "object",
+                                        },
+                                    },
+                                    "$schema": "https://json-schema.org/draft/2020-12/schema#",
+                                    "additionalProperties": {
+                                        "$ref": "#/$defs/typedObjectProperty"
+                                    },
+                                    "description": "JSON schema for Galv typed JSON. All items are objects with a _type and _value field only. The _type will be one of the core JSON data types, or a custom string. If _type is a core JSON primitive, _value must have that type. If _type is 'array', then the contents must be items with _type and _value fields. If _type is 'object', then _value must be a JSON object with _type and _value fields. If _type is 'object', _value will be an object with each property value being an object with _type and _value fields. If _type is a custom string, _value can be any JSON primitive, an object with properties that are objects with _type and _value, or an array of objects with _type and _value.",
+                                    "title": "Galv typed JSON - strict",
+                                    "type": "object",
+                                }
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "delete_access_level",
+                    models.IntegerField(
+                        choices=[(4, "Team Admin"), (3, "Team Member")], default=3
+                    ),
+                ),
+                (
+                    "edit_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                        ],
+                        default=3,
+                    ),
+                ),
+                (
+                    "read_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                            (0, "Anonymous"),
+                        ],
+                        default=2,
+                    ),
+                ),
+                ("title", models.TextField(help_text="Title of the experiment")),
+                (
+                    "description",
+                    models.TextField(
+                        blank=True, help_text="Description of the experiment", null=True
+                    ),
+                ),
+                (
+                    "protocol",
+                    models.JSONField(
+                        blank=True, help_text="Protocol of the experiment", null=True
+                    ),
+                ),
+                (
+                    "protocol_file",
+                    models.FileField(
+                        blank=True,
+                        help_text="Protocol file of the experiment",
+                        null=True,
+                        upload_to="",
+                    ),
+                ),
+                (
+                    "cycler_tests",
+                    models.ManyToManyField(
+                        help_text="Cycler tests of the experiment",
+                        related_name="experiments",
+                        to="galv.cyclertest",
+                    ),
+                ),
+                (
+                    "team",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="%(class)s_resources",
+                        to="galv.team",
+                    ),
+                ),
+                (
+                    "authors",
+                    models.ManyToManyField(
+                        help_text="Authors of the experiment", to="galv.userproxy"
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='BibliographicInfo',
+            name="BibliographicInfo",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('bibjson', models.JSONField()),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='galv.userproxy')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("bibjson", models.JSONField()),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE, to="galv.userproxy"
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='HarvesterEnvVar',
+            name="HarvesterEnvVar",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('key', models.TextField(help_text='Name of the variable')),
-                ('value', models.TextField(help_text='Variable value')),
-                ('deleted', models.BooleanField(default=False, help_text='Whether this variable was deleted')),
-                ('harvester', models.ForeignKey(help_text='Harvester whose environment this describes', on_delete=django.db.models.deletion.CASCADE, related_name='environment_variables', to='galv.harvester')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("key", models.TextField(help_text="Name of the variable")),
+                ("value", models.TextField(help_text="Variable value")),
+                (
+                    "deleted",
+                    models.BooleanField(
+                        default=False, help_text="Whether this variable was deleted"
+                    ),
+                ),
+                (
+                    "harvester",
+                    models.ForeignKey(
+                        help_text="Harvester whose environment this describes",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="environment_variables",
+                        to="galv.harvester",
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('harvester', 'key')},
+                "unique_together": {("harvester", "key")},
             },
         ),
         migrations.CreateModel(
-            name='MonitoredPath',
+            name="MonitoredPath",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('uuid', galv.models.utils.UUIDFieldLD(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('read_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User'), (0, 'Anonymous')], default=2)),
-                ('path', models.TextField(help_text='Directory location on Harvester')),
-                ('regex', models.TextField(blank=True, help_text="\n    Python.re regular expression to filter files by, \n    applied to full file name starting from this Path's directory", null=True)),
-                ('stable_time', models.PositiveSmallIntegerField(default=60, help_text='Number of seconds files must remain stable to be processed')),
-                ('active', models.BooleanField(default=True)),
-                ('delete_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member')], default=4)),
-                ('edit_access_level', models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member')], default=4)),
-                ('harvester', models.ForeignKey(help_text='Harvester with access to this directory', on_delete=django.db.models.deletion.DO_NOTHING, related_name='monitored_paths', to='galv.harvester')),
-                ('team', models.ForeignKey(help_text='Team with access to this Path', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='monitored_paths', to='galv.team')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "uuid",
+                    galv.models.utils.UUIDFieldLD(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "read_access_level",
+                    models.IntegerField(
+                        choices=[
+                            (4, "Team Admin"),
+                            (3, "Team Member"),
+                            (2, "Lab Member"),
+                            (1, "Registered User"),
+                            (0, "Anonymous"),
+                        ],
+                        default=2,
+                    ),
+                ),
+                ("path", models.TextField(help_text="Directory location on Harvester")),
+                (
+                    "regex",
+                    models.TextField(
+                        blank=True,
+                        help_text="\n    Python.re regular expression to filter files by, \n    applied to full file name starting from this Path's directory",
+                        null=True,
+                    ),
+                ),
+                (
+                    "stable_time",
+                    models.PositiveSmallIntegerField(
+                        default=60,
+                        help_text="Number of seconds files must remain stable to be processed",
+                    ),
+                ),
+                ("active", models.BooleanField(default=True)),
+                (
+                    "delete_access_level",
+                    models.IntegerField(
+                        choices=[(4, "Team Admin"), (3, "Team Member")], default=4
+                    ),
+                ),
+                (
+                    "edit_access_level",
+                    models.IntegerField(
+                        choices=[(4, "Team Admin"), (3, "Team Member")], default=4
+                    ),
+                ),
+                (
+                    "harvester",
+                    models.ForeignKey(
+                        help_text="Harvester with access to this directory",
+                        on_delete=django.db.models.deletion.DO_NOTHING,
+                        related_name="monitored_paths",
+                        to="galv.harvester",
+                    ),
+                ),
+                (
+                    "team",
+                    models.ForeignKey(
+                        help_text="Team with access to this Path",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="monitored_paths",
+                        to="galv.team",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
-                'unique_together': {('harvester', 'path', 'regex', 'team')},
+                "abstract": False,
+                "unique_together": {("harvester", "path", "regex", "team")},
             },
         ),
         migrations.AlterUniqueTogether(
-            name='cellfamily',
-            unique_together={('model', 'manufacturer')},
+            name="cellfamily",
+            unique_together={("model", "manufacturer")},
         ),
         migrations.AlterUniqueTogether(
-            name='cell',
-            unique_together={('identifier', 'family')},
+            name="cell",
+            unique_together={("identifier", "family")},
         ),
         migrations.CreateModel(
-            name='SchemaValidation',
+            name="SchemaValidation",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('object_id', models.CharField(max_length=36)),
-                ('status', models.TextField(choices=[('VALID', 'Valid'), ('INVALID', 'Invalid'), ('SKIPPED', 'Skipped'), ('UNCHECKED', 'Unchecked'), ('ERROR', 'Error')], help_text='Validation status')),
-                ('detail', models.JSONField(help_text='Validation detail', null=True)),
-                ('last_update', models.DateTimeField(auto_now=True, help_text='Date and time of last status update')),
-                ('content_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype')),
-                ('schema', models.ForeignKey(help_text='ValidationSchema used to validate the component', on_delete=django.db.models.deletion.CASCADE, to='galv.validationschema')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                ("object_id", models.CharField(max_length=36)),
+                (
+                    "status",
+                    models.TextField(
+                        choices=[
+                            ("VALID", "Valid"),
+                            ("INVALID", "Invalid"),
+                            ("SKIPPED", "Skipped"),
+                            ("UNCHECKED", "Unchecked"),
+                            ("ERROR", "Error"),
+                        ],
+                        help_text="Validation status",
+                    ),
+                ),
+                ("detail", models.JSONField(help_text="Validation detail", null=True)),
+                (
+                    "last_update",
+                    models.DateTimeField(
+                        auto_now=True, help_text="Date and time of last status update"
+                    ),
+                ),
+                (
+                    "content_type",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="contenttypes.contenttype",
+                    ),
+                ),
+                (
+                    "schema",
+                    models.ForeignKey(
+                        help_text="ValidationSchema used to validate the component",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="galv.validationschema",
+                    ),
+                ),
             ],
             options={
-                'indexes': [models.Index(fields=['content_type', 'object_id'], name='galv_schema_content_a0f28a_idx'), models.Index(fields=['status'], name='galv_schema_status_b04295_idx'), models.Index(fields=['schema'], name='galv_schema_schema__f5b262_idx')],
+                "indexes": [
+                    models.Index(
+                        fields=["content_type", "object_id"],
+                        name="galv_schema_content_a0f28a_idx",
+                    ),
+                    models.Index(
+                        fields=["status"], name="galv_schema_status_b04295_idx"
+                    ),
+                    models.Index(
+                        fields=["schema"], name="galv_schema_schema__f5b262_idx"
+                    ),
+                ],
             },
         ),
     ]

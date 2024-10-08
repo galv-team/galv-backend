@@ -13,11 +13,14 @@ logger.setLevel(logging.INFO)
 
 
 class ArbitraryFileTests(GalvTeamResourceTestCase):
-    stub = 'arbitraryfile'
+    stub = "arbitraryfile"
     factory = ArbitraryFileFactory
 
     def get_edit_kwargs(self):
-        return {'name': f"{fake.word()} {fake.word()} {self.client.session.session_key or 'session_key'}"}
+        return {
+            "name": f"{fake.word()} {fake.word()} {self.client.session.session_key or 'session_key'}"
+        }
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

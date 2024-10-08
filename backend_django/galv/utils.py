@@ -8,14 +8,22 @@ import re
 from .models import MonitoredPath, Harvester, ObservedFile
 
 
-def get_monitored_paths(path: os.PathLike|str, harvester: Harvester) -> list[MonitoredPath]:
+def get_monitored_paths(
+    path: os.PathLike | str, harvester: Harvester
+) -> list[MonitoredPath]:
     """
     Return the MonitoredPaths on this Harvester that match the given path.
     MonitoredPaths are matched by path and regex.
     """
     monitored_paths = MonitoredPath.objects.filter(harvester=harvester)
-    monitored_paths = [p for p in monitored_paths if os.path.normpath(path).startswith(os.path.normpath(p.path))]
-    return [p for p in monitored_paths if re.search(p.regex, os.path.relpath(path, p.path))]
+    monitored_paths = [
+        p
+        for p in monitored_paths
+        if os.path.normpath(path).startswith(os.path.normpath(p.path))
+    ]
+    return [
+        p for p in monitored_paths if re.search(p.regex, os.path.relpath(path, p.path))
+    ]
 
 
 # TODO: If these lookups are too slow, we could keep track of the monitored_path used
@@ -24,7 +32,9 @@ def get_files_from_path(path: MonitoredPath) -> list[ObservedFile]:
     """
     Return a list of files from the given path that match the MonitoredPath's regex.
     """
-    files = ObservedFile.objects.filter(path__startswith=path.path, harvester=path.harvester)
+    files = ObservedFile.objects.filter(
+        path__startswith=path.path, harvester=path.harvester
+    )
     if not path.regex:
         out = files
     else:

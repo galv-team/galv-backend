@@ -4,19 +4,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0029_remove_lab_s3_access_key_remove_lab_s3_bucket_name_and_more'),
+        ("galv", "0029_remove_lab_s3_access_key_remove_lab_s3_bucket_name_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='cyclertest',
-            name='file',
+            model_name="cyclertest",
+            name="file",
         ),
         migrations.AddField(
-            model_name='cyclertest',
-            name='files',
-            field=models.ManyToManyField(help_text='Test data', related_name='cycler_tests', to='galv.observedfile'),
+            model_name="cyclertest",
+            name="files",
+            field=models.ManyToManyField(
+                help_text="Test data",
+                related_name="cycler_tests",
+                to="galv.observedfile",
+            ),
         ),
     ]

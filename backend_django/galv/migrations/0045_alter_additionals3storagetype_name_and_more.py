@@ -4,20 +4,27 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0044_alter_observedfile_state'),
+        ("galv", "0044_alter_observedfile_state"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='additionals3storagetype',
-            name='name',
-            field=models.TextField(blank=True, help_text='Human-friendly identifier for the storage type', null=True),
+            model_name="additionals3storagetype",
+            name="name",
+            field=models.TextField(
+                blank=True,
+                help_text="Human-friendly identifier for the storage type",
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='galvstoragetype',
-            name='name',
-            field=models.TextField(blank=True, help_text='Human-friendly identifier for the storage type', null=True),
+            model_name="galvstoragetype",
+            name="name",
+            field=models.TextField(
+                blank=True,
+                help_text="Human-friendly identifier for the storage type",
+                null=True,
+            ),
         ),
     ]

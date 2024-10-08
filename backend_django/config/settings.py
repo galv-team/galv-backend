@@ -4,7 +4,7 @@
 
 import os
 
-if 'DJANGO_SETTINGS' in os.environ and os.environ['DJANGO_SETTINGS'] == "dev":
-    from .settings_dev import *
+if "DJANGO_SETTINGS" in os.environ and os.environ["DJANGO_SETTINGS"] == "dev":
+    from .settings_dev import *  # noqa: F403
 else:
-    from .settings_prod import *
+    from .settings_prod import *  # noqa: F403

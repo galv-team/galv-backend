@@ -5,48 +5,82 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0045_alter_additionals3storagetype_name_and_more'),
+        ("galv", "0045_alter_additionals3storagetype_name_and_more"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='observedfile',
+            name="observedfile",
             unique_together=set(),
         ),
         migrations.AddField(
-            model_name='observedfile',
-            name='delete_access_level',
-            field=models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member')], default=3),
+            model_name="observedfile",
+            name="delete_access_level",
+            field=models.IntegerField(
+                choices=[(4, "Team Admin"), (3, "Team Member")], default=3
+            ),
         ),
         migrations.AddField(
-            model_name='observedfile',
-            name='edit_access_level',
-            field=models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User')], default=3),
+            model_name="observedfile",
+            name="edit_access_level",
+            field=models.IntegerField(
+                choices=[
+                    (4, "Team Admin"),
+                    (3, "Team Member"),
+                    (2, "Lab Member"),
+                    (1, "Registered User"),
+                ],
+                default=3,
+            ),
         ),
         migrations.AddField(
-            model_name='observedfile',
-            name='read_access_level',
-            field=models.IntegerField(choices=[(4, 'Team Admin'), (3, 'Team Member'), (2, 'Lab Member'), (1, 'Registered User'), (0, 'Anonymous')], default=2),
+            model_name="observedfile",
+            name="read_access_level",
+            field=models.IntegerField(
+                choices=[
+                    (4, "Team Admin"),
+                    (3, "Team Member"),
+                    (2, "Lab Member"),
+                    (1, "Registered User"),
+                    (0, "Anonymous"),
+                ],
+                default=2,
+            ),
         ),
         migrations.AddField(
-            model_name='observedfile',
-            name='team',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_resources', to='galv.team'),
+            model_name="observedfile",
+            name="team",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_resources",
+                to="galv.team",
+            ),
         ),
         migrations.AddField(
-            model_name='observedfile',
-            name='uploader',
-            field=models.ForeignKey(help_text='User that uploaded the File', null=True, on_delete=django.db.models.deletion.CASCADE, to='galv.userproxy'),
+            model_name="observedfile",
+            name="uploader",
+            field=models.ForeignKey(
+                help_text="User that uploaded the File",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="galv.userproxy",
+            ),
         ),
         migrations.AlterField(
-            model_name='observedfile',
-            name='harvester',
-            field=models.ForeignKey(help_text='Harvester that harvested the File', null=True, on_delete=django.db.models.deletion.CASCADE, to='galv.harvester'),
+            model_name="observedfile",
+            name="harvester",
+            field=models.ForeignKey(
+                help_text="Harvester that harvested the File",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="galv.harvester",
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='observedfile',
-            unique_together={('path', 'harvester', 'uploader')},
+            name="observedfile",
+            unique_together={("path", "harvester", "uploader")},
         ),
     ]
