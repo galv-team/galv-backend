@@ -81,11 +81,11 @@ jobs:
             git config --global user.name "GitHub Actions"
             if [ -z $(git tag --list | grep ${{ steps.scrape.outputs.version }}) ]; then
               UNTAGGED=true
-            fi          
+            fi
             git tag ${{ steps.scrape.outputs.version }} || true
           fi
           echo untagged=$UNTAGGED >> $GITHUB_OUTPUT
-          
+
           # Save tag list to a temporary file
           git tag --list > tags.txt
           echo "tags.txt:"

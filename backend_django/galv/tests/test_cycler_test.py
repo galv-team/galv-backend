@@ -13,12 +13,13 @@ logger.setLevel(logging.INFO)
 
 
 class CyclerTestTests(GalvTeamResourceTestCase):
-    stub = 'cyclertest'
+    stub = "cyclertest"
     factory = CyclerTestFactory
 
     def get_edit_kwargs(self):
         cell = CellFactory.create()
-        return {'cell': cell.pk}
+        return {"cell": cell.pk}
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

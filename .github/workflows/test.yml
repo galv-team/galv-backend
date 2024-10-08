@@ -74,7 +74,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            
+
             await core.group(`GitHub needs`, async () => {
               core.info(JSON.stringify(JSON.parse(`${process.env.NEEDS}`), null, 2));
             });
@@ -151,7 +151,7 @@ jobs:
           path: .
 
 #      - name: Test python package
-#        run: | 
+#        run: |
 #          pip install -r requirements.txt
 #          pip install -r test-requirements.txt
 #          pytest test

@@ -8,7 +8,7 @@
 [![Build docs](https://github.com/galv-team/galv-backend/actions/workflows/docs.yml/badge.svg)](https://github.com/galv-team/galv-backend/actions/workflows/docs.yml)
 
 > API client libraries:
-> 
+>
 > [![NPM Downloads](https://img.shields.io/npm/dm/%40galv%2Fgalv)](https://www.npmjs.com/package/@galv/galv)
 > [![PyPI - Downloads](https://img.shields.io/pypi/dm/galv)](https://pypi.org/project/galv/)
 
@@ -20,7 +20,7 @@ The Galv backend provides a REST API powered by [Django](https://www.djangoproje
 - [Frontend](https://github.com/galv-team/galv-frontend)
 - [Harvester](https://github.com/galv-team/galv-harvester)
 
-For more complete documentation, see the 
+For more complete documentation, see the
 [Galv Server documentation](https://galv-team.github.io/galv-backend/).
 
 ## Deploying
@@ -55,7 +55,7 @@ This is generally for development, however, so you will need to add a database a
 ## Envvars
 
 You should ensure that all environment variables in the `.env` file are set correctly before deploying.
-These variables can be set by editing and including the `.env` file, by setting them in the environment, 
+These variables can be set by editing and including the `.env` file, by setting them in the environment,
 or by setting them via a hosting platform's interface.
 
 ## Development
@@ -87,12 +87,12 @@ Documentation is generated using [Sphinx](https://www.sphinx-doc.org/en/master/)
 To make it easy to develop documentation, a Dockerfile is provided that will build the documentation and serve it using a webserver.
 It should refresh automatically when changes are made to the documentation.
 
-The docs container is started with `docker-compose up docs`. 
+The docs container is started with `docker-compose up docs`.
 By default, it will serve at http://localhost:8005.
 
 ### Versioning
 
-The documentation supports multiple versions. 
+The documentation supports multiple versions.
 To add a new version, add a new entry to `docs/tags.json`.
 These tags must be in the format `v*.*.*` and must be available as a git tag.
 
@@ -101,8 +101,8 @@ This workflow is defined in `.github/workflows/docs.yml`, with help from `docs/b
 
 ## Testing
 
-Tests are most easily run using the provided Dockerfile and docker-compose.yml files.  
-The docker-compose.yml file will start a postgres database and run the tests.  
+Tests are most easily run using the provided Dockerfile and docker-compose.yml files.
+The docker-compose.yml file will start a postgres database and run the tests.
 The following command will run the tests:
 
 ```bash

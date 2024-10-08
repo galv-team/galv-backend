@@ -3,21 +3,16 @@
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 from __future__ import annotations
 
-import cProfile
 import datetime
-import pstats
-from pstats import SortKey
 
 import knox.auth
 import os
 
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseRedirect, FileResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import NoReverseMatch
 from django.db.models.base import ModelBase
-from django.utils.decorators import method_decorator
 from django.utils.module_loading import import_string
-from django.views.decorators.csrf import csrf_exempt
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
 from dry_rest_permissions.generics import DRYPermissions
@@ -27,54 +22,123 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.renderers import JSONRenderer
 from rest_framework.reverse import reverse
 
-from .serializers import HarvesterSerializer, \
-    HarvesterCreateSerializer, \
-    HarvesterConfigSerializer, \
-    MonitoredPathSerializer, \
-    ObservedFileSerializer, \
-    CellSerializer, \
-    EquipmentSerializer, \
-    DataUnitSerializer, \
-    UserSerializer, \
-    TransparentGroupSerializer, \
-    HarvestErrorSerializer, \
-    KnoxTokenSerializer, \
-    KnoxTokenFullSerializer, CellFamilySerializer, EquipmentFamilySerializer, \
-    ScheduleSerializer, CyclerTestSerializer, ScheduleFamilySerializer, DataColumnTypeSerializer, \
-    ExperimentSerializer, LabSerializer, TeamSerializer, ValidationSchemaSerializer, SchemaValidationSerializer, \
-    ArbitraryFileSerializer, ArbitraryFileCreateSerializer, ParquetPartitionSerializer, ColumnMappingSerializer, \
-    GalvStorageTypeSerializer, AdditionalS3StorageTypeSerializer, PasswordResetRequestSerializer, \
-    PasswordResetSerializer, ObservedFileCreateSerializer
-from .models import Harvester, \
-    HarvestError, \
-    MonitoredPath, \
-    ObservedFile, \
-    Cell, \
-    Equipment, \
-    DataUnit, \
-    DataColumnType, \
-    FileState, \
-    KnoxAuthToken, CellFamily, EquipmentTypes, EquipmentModels, EquipmentManufacturers, CellModels, CellManufacturers, \
-    CellChemistries, CellFormFactors, ScheduleIdentifiers, EquipmentFamily, Schedule, CyclerTest, ScheduleFamily, \
-    ValidationSchema, Experiment, Lab, Team, UserProxy, GroupProxy, ValidatableBySchemaMixin, SchemaValidation, \
-    UserActivation, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, ALLOWED_USER_LEVELS_DELETE, \
-    ALLOWED_USER_LEVELS_EDIT_PATH, ArbitraryFile, ParquetPartition, StorageError, ColumnMapping, GalvStorageType, \
-    AdditionalS3StorageType, PasswordReset
-from .permissions import HarvesterFilterBackend, TeamFilterBackend, LabFilterBackend, GroupFilterBackend, \
-    ResourceFilterBackend, ObservedFileFilterBackend, UserFilterBackend, SchemaValidationFilterBackend, \
-    ParquetPartitionFilterBackend, LabResourceFilterBackend
-from .serializers.utils import get_GetOrCreateTextStringSerializer, DumpSerializer, SerializerDescriptionSerializer
+from .serializers import (
+    HarvesterSerializer,
+    HarvesterCreateSerializer,
+    HarvesterConfigSerializer,
+    MonitoredPathSerializer,
+    ObservedFileSerializer,
+    CellSerializer,
+    EquipmentSerializer,
+    DataUnitSerializer,
+    UserSerializer,
+    TransparentGroupSerializer,
+    HarvestErrorSerializer,
+    KnoxTokenSerializer,
+    KnoxTokenFullSerializer,
+    CellFamilySerializer,
+    EquipmentFamilySerializer,
+    ScheduleSerializer,
+    CyclerTestSerializer,
+    ScheduleFamilySerializer,
+    DataColumnTypeSerializer,
+    ExperimentSerializer,
+    LabSerializer,
+    TeamSerializer,
+    ValidationSchemaSerializer,
+    SchemaValidationSerializer,
+    ArbitraryFileSerializer,
+    ArbitraryFileCreateSerializer,
+    ParquetPartitionSerializer,
+    ColumnMappingSerializer,
+    GalvStorageTypeSerializer,
+    AdditionalS3StorageTypeSerializer,
+    ObservedFileCreateSerializer,
+)
+from .models import (
+    Harvester,
+    HarvestError,
+    MonitoredPath,
+    ObservedFile,
+    Cell,
+    Equipment,
+    DataUnit,
+    DataColumnType,
+    FileState,
+    KnoxAuthToken,
+    CellFamily,
+    EquipmentTypes,
+    EquipmentModels,
+    EquipmentManufacturers,
+    CellModels,
+    CellManufacturers,
+    CellChemistries,
+    CellFormFactors,
+    ScheduleIdentifiers,
+    EquipmentFamily,
+    Schedule,
+    CyclerTest,
+    ScheduleFamily,
+    ValidationSchema,
+    Experiment,
+    Lab,
+    Team,
+    UserProxy,
+    GroupProxy,
+    ValidatableBySchemaMixin,
+    SchemaValidation,
+    UserActivation,
+    ALLOWED_USER_LEVELS_READ,
+    ALLOWED_USER_LEVELS_EDIT,
+    ALLOWED_USER_LEVELS_DELETE,
+    ALLOWED_USER_LEVELS_EDIT_PATH,
+    ArbitraryFile,
+    ParquetPartition,
+    StorageError,
+    ColumnMapping,
+    GalvStorageType,
+    AdditionalS3StorageType,
+    PasswordReset,
+)
+from .permissions import (
+    HarvesterFilterBackend,
+    TeamFilterBackend,
+    LabFilterBackend,
+    GroupFilterBackend,
+    ResourceFilterBackend,
+    ObservedFileFilterBackend,
+    UserFilterBackend,
+    SchemaValidationFilterBackend,
+    ParquetPartitionFilterBackend,
+    LabResourceFilterBackend,
+)
+from .serializers.utils import (
+    get_GetOrCreateTextStringSerializer,
+    DumpSerializer,
+    SerializerDescriptionSerializer,
+)
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import viewsets, serializers, permissions
-from rest_framework.decorators import action, api_view, renderer_classes, parser_classes, permission_classes
+from rest_framework.decorators import (
+    action,
+    api_view,
+    renderer_classes,
+    parser_classes,
+    permission_classes,
+)
 from rest_framework.response import Response
 from knox.views import LoginView as KnoxLoginView
 from knox.views import LogoutView as KnoxLogoutView
 from knox.views import LogoutAllView as KnoxLogoutAllView
 from knox.models import AuthToken
 from rest_framework.authentication import BasicAuthentication
-from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer, OpenApiResponse
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    inline_serializer,
+    OpenApiResponse,
+)
 import json
 import time
 import logging
@@ -85,7 +149,9 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 
 
-GENERATE_HARVESTER_API_SCHEMA = os.getenv('GENERATE_HARVESTER_API_SCHEMA', "FALSE").upper()[0] != "F"
+GENERATE_HARVESTER_API_SCHEMA = (
+    os.getenv("GENERATE_HARVESTER_API_SCHEMA", "FALSE").upper()[0] != "F"
+)
 
 
 def checkpoint(msg: str, t: float, log_fun=logger.warning) -> float:
@@ -100,10 +166,10 @@ class ErrorSerializer(serializers.Serializer):
 
 def error_response(error: str, status: int = 400) -> Response:
     print(f"Error: {error}")
-    return Response({'error': error}, status=status)
+    return Response({"error": error}, status=status)
 
 
-def deserialize_datetime(serialized_value: str | float) -> timezone.datetime|None:
+def deserialize_datetime(serialized_value: str | float) -> timezone.datetime | None:
     if serialized_value is None:
         return None
     if isinstance(serialized_value, str):
@@ -114,10 +180,10 @@ def deserialize_datetime(serialized_value: str | float) -> timezone.datetime|Non
 
 
 def lab_dependent_file_fetcher(
-        parent_object,
-        file_field_name: str,
-        request,
-        headers = lambda f: {'Content-Disposition': f"attachment; filename={f.name}"}
+    parent_object,
+    file_field_name: str,
+    request,
+    headers=lambda f: {"Content-Disposition": f"attachment; filename={f.name}"},
 ):
     """
     Check a user is allowed to access a file, and redirect them to its actual location if they are.
@@ -125,17 +191,19 @@ def lab_dependent_file_fetcher(
     try:
         file = getattr(parent_object, file_field_name)
         if file:
-            if parent_object.storage_type and isinstance(parent_object.storage_type.get_storage(file), LocalDataStorage):
+            if parent_object.storage_type and isinstance(
+                parent_object.storage_type.get_storage(file), LocalDataStorage
+            ):
                 # Send the file directly via the upstream nginx proxy
                 response = HttpResponse()
                 for k, v in headers(file).items():
                     response[k] = v
-                response['X-Accel-Redirect'] = file.backend_url()
+                response["X-Accel-Redirect"] = file.backend_url()
             else:
                 # Redirect to S3
-                if request.headers.get('Galv-Storage-No-Redirect'):
+                if request.headers.get("Galv-Storage-No-Redirect"):
                     response = HttpResponse()
-                    response['Galv-Storage-Redirect-URL'] = file.backend_url()
+                    response["Galv-Storage-Redirect-URL"] = file.backend_url()
                 else:
                     response = HttpResponseRedirect(file.backend_url())
             return response
@@ -146,16 +214,20 @@ def lab_dependent_file_fetcher(
 
 class MethodPermissionMixin(viewsets.GenericViewSet):
     def get_permissions(self):
-        if hasattr(self, 'action') and self.action is not None and hasattr(self, getattr(self, 'action')):
-            action = getattr(self, getattr(self, 'action'))
-            if hasattr(action, 'permission_classes'):
+        if (
+            hasattr(self, "action")
+            and self.action is not None
+            and hasattr(self, getattr(self, "action"))
+        ):
+            action = getattr(self, getattr(self, "action"))
+            if hasattr(action, "permission_classes"):
                 return [p() for p in action.permission_classes]
         return super().get_permissions()
 
 
 class DescribeSelfMixin(MethodPermissionMixin):
     # TODO: This method throws an error looking for a DRF form to display when not in JSON format
-    @action(detail=False, methods=['GET'])
+    @action(detail=False, methods=["GET"])
     @permission_classes([permissions.AllowAny])
     @extend_schema(
         responses=SerializerDescriptionSerializer,
@@ -174,13 +246,15 @@ Each field will have the following information:
 - `help_text`: The help text for the field
 - `choices`: The choices for the field (if the field is a choice field)
 - `allow_null`: Whether the field allows null values
-        """
+        """,
     )
     def describe(self, request):
         try:
             serializer_class = self.get_serializer_class()
         except Exception as e:
-            return error_response(f"Error getting serializer class for {self.__class__.__name__}:\n{e}")
+            return error_response(
+                f"Error getting serializer class for {self.__class__.__name__}:\n{e}"
+            )
         try:
             description = SerializerDescriptionSerializer(serializer_class())
         except Exception as e:
@@ -189,19 +263,20 @@ Each field will have the following information:
 
 
 @extend_schema_view(
-    list=extend_schema(responses={
-        '200': {'type': 'string'}
-    }),
+    list=extend_schema(responses={"200": {"type": "string"}}),
 )
-class _GetOrCreateTextStringViewSet(DescribeSelfMixin, ListModelMixin, viewsets.GenericViewSet):
+class _GetOrCreateTextStringViewSet(
+    DescribeSelfMixin, ListModelMixin, viewsets.GenericViewSet
+):
     """
     Abstract base class for ViewSets that allow the creation of TextString objects.
 
     TextString objects are used to describe the properties of Cells, Equipment, and
     other objects used in experiments, making values available for autocompletion hints.
     """
-    http_method_names = ['get', 'options']
-    search_fields = ['@value']
+
+    http_method_names = ["get", "options"]
+    search_fields = ["@value"]
 
     def list(self, *args, **kwargs):
         return super().list(*args, **kwargs)
@@ -213,16 +288,16 @@ class _GetOrCreateTextStringViewSet(DescribeSelfMixin, ListModelMixin, viewsets.
 
 
 @extend_schema(responses={200: DumpSerializer})
-@api_view(('GET',))
+@api_view(("GET",))
 @renderer_classes((JSONRenderer,))
 def dump(request, pk):
     # Iterate over models exported from galv.Models to find one matching the pk
     models = import_string("galv.models")
     target = None
     for model in models.__dict__.values():
-        if isinstance(model, ModelBase) and hasattr(model, 'DoesNotExist'):
-            meta = getattr(model, '_meta', {})
-            if getattr(meta, 'abstract', True):
+        if isinstance(model, ModelBase) and hasattr(model, "DoesNotExist"):
+            meta = getattr(model, "_meta", {})
+            if getattr(meta, "abstract", True):
                 continue
             try:
                 target = model.objects.get(pk=pk)
@@ -231,27 +306,29 @@ def dump(request, pk):
                 pass
     if target is None:
         return error_response(f"No model with pk {pk}")
-    return Response(DumpSerializer(target, context={'request': request}).data)
+    return Response(DumpSerializer(target, context={"request": request}).data)
 
 
-
-@extend_schema(responses={200: inline_serializer(
-    'ActivationResponse',
-    {"detail": serializers.CharField()}
-)})
-@api_view(('GET',))
+@extend_schema(
+    responses={
+        200: inline_serializer(
+            "ActivationResponse", {"detail": serializers.CharField()}
+        )
+    }
+)
+@api_view(("GET",))
 @renderer_classes((JSONRenderer,))
 def activate_user(request):
     # Request should have a token in the querystring
-    token = request.GET.get('token')
-    username = request.GET.get('username')
+    token = request.GET.get("token")
+    username = request.GET.get("username")
     if not username:
         return error_response("No username provided")
     try:
         user = UserProxy.objects.get(username=username, is_active=False)
     except UserProxy.DoesNotExist:
         return error_response(f"No user with username {username} requires activation")
-    if request.GET.get('resend') == 'true':
+    if request.GET.get("resend") == "true":
         try:
             activation = UserActivation.objects.get(user=user)
             activation.send_email(request)
@@ -259,10 +336,12 @@ def activate_user(request):
         except UserActivation.DoesNotExist:
             return error_response(f"Unable to send activation email for {username}")
     if not token:
-        return error_response((
-            f"No token provided. To send another token to your email address, "
-            f"visit {reverse('activate_user', request=request)}?username={username}&resend=true"
-        ))
+        return error_response(
+            (
+                f"No token provided. To send another token to your email address, "
+                f"visit {reverse('activate_user', request=request)}?username={username}&resend=true"
+            )
+        )
     try:
         activation = UserActivation.objects.get(user=user, token=token)
         try:
@@ -275,14 +354,17 @@ def activate_user(request):
         return error_response(str(e))
     return Response({"detail": f"User {activation.user.username} activated"})
 
-@extend_schema(responses={204: None}, request=inline_serializer(
-    'PasswordResetRequest',
-    {'email': serializers.EmailField()}
-))
-@api_view(('POST',))
+
+@extend_schema(
+    responses={204: None},
+    request=inline_serializer(
+        "PasswordResetRequest", {"email": serializers.EmailField()}
+    ),
+)
+@api_view(("POST",))
 @renderer_classes((JSONRenderer,))
 def request_password_reset(request):
-    email = request.data.get('email')
+    email = request.data.get("email")
     if not email:
         return error_response("No email provided")
     try:
@@ -295,18 +377,22 @@ def request_password_reset(request):
     reset.send_email()
     return Response(status=204)
 
-@extend_schema(responses={204: None}, request=inline_serializer(
-    'PasswordReset',
-    {
-        'email': serializers.EmailField(),
-        'password': serializers.CharField(),
-        'token': serializers.CharField()
-    }
-))
-@api_view(('POST',))
+
+@extend_schema(
+    responses={204: None},
+    request=inline_serializer(
+        "PasswordReset",
+        {
+            "email": serializers.EmailField(),
+            "password": serializers.CharField(),
+            "token": serializers.CharField(),
+        },
+    ),
+)
+@api_view(("POST",))
 @renderer_classes((JSONRenderer,))
 def reset_password(request):
-    email = request.data.get('email')
+    email = request.data.get("email")
     if not email:
         return error_response("No email provided")
     try:
@@ -316,7 +402,7 @@ def reset_password(request):
     if not user.is_active:
         return error_response("User is not active")
 
-    token = request.data.get('token')
+    token = request.data.get("token")
     if not token:
         return error_response("No token provided")
     try:
@@ -324,7 +410,7 @@ def reset_password(request):
     except PasswordReset.DoesNotExist:
         return error_response("Invalid token")
 
-    password = request.data.get('password')
+    password = request.data.get("password")
     if not password:
         return error_response("No password provided")
     if len(password) < 8:
@@ -337,21 +423,42 @@ def reset_password(request):
     return Response(status=204)
 
 
-@extend_schema(responses={200: inline_serializer('PermittedAccessLevels', {
-    "read_access_level": serializers.DictField(child=serializers.IntegerField()),
-    "edit_access_level": serializers.DictField(child=serializers.IntegerField()),
-    "delete_access_level": serializers.DictField(child=serializers.IntegerField()),
-    "path.edit_access_level": serializers.DictField(child=serializers.IntegerField()),
-})})
-@api_view(('GET',))
+@extend_schema(
+    responses={
+        200: inline_serializer(
+            "PermittedAccessLevels",
+            {
+                "read_access_level": serializers.DictField(
+                    child=serializers.IntegerField()
+                ),
+                "edit_access_level": serializers.DictField(
+                    child=serializers.IntegerField()
+                ),
+                "delete_access_level": serializers.DictField(
+                    child=serializers.IntegerField()
+                ),
+                "path.edit_access_level": serializers.DictField(
+                    child=serializers.IntegerField()
+                ),
+            },
+        )
+    }
+)
+@api_view(("GET",))
 @renderer_classes((JSONRenderer,))
 def access_levels(request):
-    return Response({
-        'read_access_level': {v.label: v.value for v in ALLOWED_USER_LEVELS_READ},
-        'edit_access_level': {v.label: v.value for v in ALLOWED_USER_LEVELS_EDIT},
-        'delete_access_level': {v.label: v.value for v in ALLOWED_USER_LEVELS_DELETE},
-        'path.edit_access_level': {v.label: v.value for v in ALLOWED_USER_LEVELS_EDIT_PATH},
-    })
+    return Response(
+        {
+            "read_access_level": {v.label: v.value for v in ALLOWED_USER_LEVELS_READ},
+            "edit_access_level": {v.label: v.value for v in ALLOWED_USER_LEVELS_EDIT},
+            "delete_access_level": {
+                v.label: v.value for v in ALLOWED_USER_LEVELS_DELETE
+            },
+            "path.edit_access_level": {
+                v.label: v.value for v in ALLOWED_USER_LEVELS_EDIT_PATH
+            },
+        }
+    )
 
 
 @extend_schema(
@@ -365,45 +472,47 @@ where token is the token you received in exchange for your credentials here.
     """,
     responses={
         200: inline_serializer(
-            name='KnoxUser',
+            name="KnoxUser",
             fields={
-                'expiry': serializers.DateTimeField(),
-                'token': serializers.CharField(),
-                'user': UserSerializer()
-            }
+                "expiry": serializers.DateTimeField(),
+                "token": serializers.CharField(),
+                "user": UserSerializer(),
+            },
         ),
-        401: OpenApiResponse(description='Invalid username/password'),
+        401: OpenApiResponse(description="Invalid username/password"),
     },
-    request=None
+    request=None,
 )
 class LoginView(KnoxLoginView):
     permission_classes = [permissions.AllowAny]
     authentication_classes = [BasicAuthentication]
-    http_method_names = ['post', 'options']
+    http_method_names = ["post", "options"]
 
     def post(self, request, fmt=None):
         from django.contrib.auth.base_user import AbstractBaseUser
+
         if isinstance(request.user, AbstractBaseUser):
             return super(LoginView, self).post(request=request, format=fmt)
-        return Response({'detail': "Anonymous login not allowed"}, status=401)
+        return Response({"detail": "Anonymous login not allowed"}, status=401)
 
     def get_post_response_data(self, request, token, instance):
         user = UserProxy.objects.get(pk=request.user.pk)
         return {
-            **UserSerializer(user, context={'request': request}).data,
-            'token': token
+            **UserSerializer(user, context={"request": request}).data,
+            "token": token,
         }
+
 
 @extend_schema(
     summary="Log out current API Token.",
     description="""
 Send a logout request to remove the token used to authenticate the request.
     """,
-    responses={204: None, 401: OpenApiResponse(description='Unauthorized')},
-    request=None
+    responses={204: None, 401: OpenApiResponse(description="Unauthorized")},
+    request=None,
 )
 class LogoutView(KnoxLogoutView):
-    http_method_names = ['get', 'options']
+    http_method_names = ["get", "options"]
     authentication_classes = [knox.auth.TokenAuthentication]
 
 
@@ -414,11 +523,11 @@ Remove all tokens associated with your account.
 If you have numerous old or leaked tokens spread across numerous programs,
 you can use this endpoint to easily revoke them all.
     """,
-    responses={204: None, 401: OpenApiResponse(description='Unauthorized')},
-    request=None
+    responses={204: None, 401: OpenApiResponse(description="Unauthorized")},
+    request=None,
 )
 class LogoutAllView(KnoxLogoutAllView):
-    http_method_names = ['get', 'options']
+    http_method_names = ["get", "options"]
     authentication_classes = [knox.auth.TokenAuthentication]
 
 
@@ -432,26 +541,32 @@ If you wish to access the API via the Python client, or similar programmatically
 you will likely want a token with a longer expiry time. Those tokens are created using
 this endpoint.
     """,
-    request=inline_serializer('CreateKnoxToken', {
-        'ttl': serializers.IntegerField(required=False, help_text="Time to live (s)"),
-        'name': serializers.CharField()
-    }),
+    request=inline_serializer(
+        "CreateKnoxToken",
+        {
+            "ttl": serializers.IntegerField(
+                required=False, help_text="Time to live (s)"
+            ),
+            "name": serializers.CharField(),
+        },
+    ),
     responses={
         200: KnoxTokenFullSerializer,
-    }
+    },
 )
 class CreateTokenView(KnoxLoginView):
     """
     Create a new Knox Token.
     """
-    http_method_names = ['post', 'options']
+
+    http_method_names = ["post", "options"]
 
     def get_queryset(self):
-        return KnoxAuthToken.objects.none().order_by('-id')
+        return KnoxAuthToken.objects.none().order_by("-id")
 
     def get_token_ttl(self):
         try:
-            ttl = self.get_context()['request'].data.get('ttl', None)
+            ttl = self.get_context()["request"].data.get("ttl", None)
             if ttl is not None:
                 ttl = datetime.timedelta(seconds=int(ttl))
             return ttl
@@ -470,7 +585,7 @@ class CreateTokenView(KnoxLoginView):
                 t.delete()
 
         error = None
-        name = request.data.get('name')
+        name = request.data.get("name")
         if not name:
             error = "Token must have a name"
         elif KnoxAuthToken.objects.filter(name=name, user=request.user).exists():
@@ -480,11 +595,11 @@ class CreateTokenView(KnoxLoginView):
             return error_response(str(error))
         else:
             token_wrapper = KnoxAuthToken.objects.create(
-                user=request.user,
-                name=name,
-                knox_token_key=instance.token_key
+                user=request.user, name=name, knox_token_key=instance.token_key
             )
-        return KnoxTokenFullSerializer(token_wrapper, context={'request': request, 'token': token}).data
+        return KnoxTokenFullSerializer(
+            token_wrapper, context={"request": request, "token": token}
+        ).data
 
 
 @extend_schema_view(
@@ -496,7 +611,7 @@ You will not be able to see the value of the tokens themselves,
 because these values are encrypted, but you can see the names you gave them and their expiry dates.
 
 New Tokens cannot be created at this endpoint, use /create_token/ instead.
-        """
+        """,
     ),
     retrieve=extend_schema(
         summary="View a token associated with your account.",
@@ -510,7 +625,7 @@ but you can see the name you gave it and its creation/expiry date.
         description="""
 Token values and expiry dates are immutable, but you can change the name you
 associated with a token.
-        """
+        """,
     ),
     destroy=extend_schema(
         summary="Revoke a token associated with your account.",
@@ -519,32 +634,37 @@ Revoking a token renders that token invalid for authenticating requests to the A
 If you have tokens that are no longer needed, or that have been leaked (for example
 by being included in a public Git Repository), you can should revoke them so that
 other people cannot use them to access the API under your credentials.
-        """
-    )
+        """,
+    ),
 )
 class TokenViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     View and edit tokens associated with your account.
     """
+
     serializer_class = KnoxTokenSerializer
-    queryset = KnoxAuthToken.objects.none().order_by('-id')
-    http_method_names = ['get', 'patch', 'delete', 'options']
+    queryset = KnoxAuthToken.objects.none().order_by("-id")
+    http_method_names = ["get", "patch", "delete", "options"]
     permission_classes = [DRYPermissions]
 
     def get_queryset(self):
-        token_keys = [t.token_key for t in AuthToken.objects.filter(user_id=self.request.user.id)]
+        token_keys = [
+            t.token_key for t in AuthToken.objects.filter(user_id=self.request.user.id)
+        ]
         # Create entries for temporary browser tokens
         for k in token_keys:
             KnoxAuthToken.objects.get_or_create(
                 user=self.request.user,
                 knox_token_key=k,
-                defaults={'name': f"Browser session [{k}]"}
+                defaults={"name": f"Browser session [{k}]"},
             )
-        return KnoxAuthToken.objects.filter(knox_token_key__in=token_keys).order_by('-id')
+        return KnoxAuthToken.objects.filter(knox_token_key__in=token_keys).order_by(
+            "-id"
+        )
 
     def destroy(self, request, *args, **kwargs):
         try:
-            token = KnoxAuthToken.objects.get(pk=kwargs.get('pk'), user=request.user)
+            token = KnoxAuthToken.objects.get(pk=kwargs.get("pk"), user=request.user)
             self.check_object_permissions(self.request, token)
         except KnoxAuthToken.DoesNotExist:
             return error_response("Token not found")
@@ -557,35 +677,40 @@ class TokenViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
         summary="View all Labs",
         description="""
 Labs are collections of Teams that provide for wider-scale access management and administration.
-"""
+""",
     ),
     retrieve=extend_schema(
         summary="View a single Lab",
         description="""
 Labs are collections of Teams that provide for wider-scale access management and administration.
-"""
+""",
     ),
     create=extend_schema(
         summary="Create a new Lab",
         description="""
 Labs are collections of Teams that provide for wider-scale access management and administration.
-"""
+""",
     ),
     partial_update=extend_schema(
         summary="Update a Lab",
         description="""
 Labs are collections of Teams that provide for wider-scale access management and administration.
-"""
-    )
+""",
+    ),
 )
 class LabViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
-    filter_backends = [LabFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['name']
-    search_fields = ['@name']
-    queryset = Lab.objects.all().order_by('-id')
+    filter_backends = [
+        LabFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+    filterset_fields = ["name"]
+    search_fields = ["@name"]
+    queryset = Lab.objects.all().order_by("-id")
     serializer_class = LabSerializer
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+    http_method_names = ["get", "post", "patch", "delete", "options"]
 
 
 @extend_schema_view(
@@ -593,35 +718,40 @@ class LabViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
         summary="View all Labs",
         description="""
 Teams are groups of Users who share Resources.
-"""
+""",
     ),
     retrieve=extend_schema(
         summary="View a single Lab",
         description="""
 Teams are groups of Users who share Resources.
-"""
+""",
     ),
     create=extend_schema(
         summary="Create a new Lab",
         description="""
 Teams are groups of Users who share Resources.
-"""
+""",
     ),
     partial_update=extend_schema(
         summary="Update a Lab",
         description="""
 Teams are groups of Users who share Resources.
-"""
-    )
+""",
+    ),
 )
 class TeamViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
-    filter_backends = [TeamFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [
+        TeamFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
     serializer_class = TeamSerializer
-    filterset_fields = ['name']
-    search_fields = ['@name']
-    queryset = Team.objects.all().order_by('-id')
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+    filterset_fields = ["name"]
+    search_fields = ["@name"]
+    queryset = Team.objects.all().order_by("-id")
+    http_method_names = ["get", "post", "patch", "delete", "options"]
 
 
 @extend_schema_view(
@@ -633,13 +763,13 @@ You can view all Harvesters for any Labs you are a member of.
 
 Searchable fields:
 - name
-        """
+        """,
     ),
     retrieve=extend_schema(
         summary="View a single Harvester",
         description="""
 Harvesters monitor a set of MonitoredPaths and send reports about ObservedFiles within those paths.
-        """
+        """,
     ),
     create=extend_schema(
         exclude=not GENERATE_HARVESTER_API_SCHEMA,
@@ -649,7 +779,7 @@ A new Harvester created with the harvester program's `start.py` script will regi
 This endpoint will register the Harvester and set up the user and administrator groups.
         """,
         request=HarvesterCreateSerializer(),
-        responses={201: HarvesterConfigSerializer()}
+        responses={201: HarvesterConfigSerializer()},
     ),
     partial_update=extend_schema(
         summary="Update Harvester details",
@@ -658,7 +788,7 @@ Some Harvester details can be updated after the Harvester is created.
 Those details are updated using this endpoint.
 
 Only Harvester Administrators are authorised to make these changes.
-        """
+        """,
     ),
     #     destroy=extend_schema(
     #         summary="Deactivate a Harvester",
@@ -679,7 +809,7 @@ Only accessible to Harvesters.
 Returns the full configuration information required by the harvester program to do its work.
 This includes the Harvester specification, the Paths to monitor,
 and information about standard Columns and Units.
-        """
+        """,
     ),
     report=extend_schema(
         exclude=not GENERATE_HARVESTER_API_SCHEMA,
@@ -690,13 +820,16 @@ The harvester programs use the report endpoint for all information they send to 
 Reports will be file size reports, file parsing reports, or error reports.
 File parsing reports may contain metadata or data to store.
         """,
-        request=inline_serializer('HarvesterReportSerializer', {
-            # TODO
-        }),
+        request=inline_serializer(
+            "HarvesterReportSerializer",
+            {
+                # TODO
+            },
+        ),
         responses={
             # TODO
-        }
-    )
+        },
+    ),
 )
 class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
@@ -709,12 +842,18 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
 
     Harvesters are created by a separate software package available within Galv.
     """
+
     permission_classes = [DRYPermissions]
-    filter_backends = [HarvesterFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['name', 'lab_id']
-    search_fields = ['@name']
-    queryset = Harvester.objects.all().order_by('-last_check_in', '-id')
-    http_method_names = ['get', 'post', 'patch', 'options']
+    filter_backends = [
+        HarvesterFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+    filterset_fields = ["name", "lab_id"]
+    search_fields = ["@name"]
+    queryset = Harvester.objects.all().order_by("-last_check_in", "-id")
+    http_method_names = ["get", "post", "patch", "options"]
 
     def get_serializer_class(self):
         if self.request.method.lower() == "post":
@@ -732,13 +871,13 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
         instance = self.get_object()
         self.check_object_permissions(self.request, instance)
         # Strip out envvars unless this is an admin
-        data = HarvesterSerializer(instance, context={'request': request}).data
+        data = HarvesterSerializer(instance, context={"request": request}).data
         if not instance.has_object_write_permission(request):
-            data.pop('environment_variables')
+            data.pop("environment_variables")
         return Response(data)
 
-    @action(detail=True, methods=['GET'])
-    def config(self, request, pk = None):
+    @action(detail=True, methods=["GET"])
+    def config(self, request, pk=None):
         """
         Return a full configuration file including MonitoredPaths under paths.
 
@@ -746,14 +885,13 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
         """
         harvester = get_object_or_404(Harvester, id=pk)
         self.check_object_permissions(self.request, harvester)
-        return Response(HarvesterConfigSerializer(
-            harvester,
-            context={'request': request}
-        ).data)
+        return Response(
+            HarvesterConfigSerializer(harvester, context={"request": request}).data
+        )
 
-    @action(detail=True, methods=['POST'])
+    @action(detail=True, methods=["POST"])
     @parser_classes([JSONParser, MultiPartParser, FormParser])
-    def report(self, request, pk = None):
+    def report(self, request, pk=None):
         """
         Process a Harvester's report on its activity.
         This will spawn various other database updates depending on payload content.
@@ -821,40 +959,40 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
 
         Only Harvesters are authorised to issue reports.
         """
+
         def handle_error_report(request, harvester):
-            if request.data.get('error') is None:
-                return error_response('error field required when status=error')
-            error = request.data.get('error')
+            if request.data.get("error") is None:
+                return error_response("error field required when status=error")
+            error = request.data.get("error")
             if error is None:
-                return error_response('error field required when status=error')
+                return error_response("error field required when status=error")
             if not isinstance(error, str):
                 try:
                     error = json.dumps(error)
                 except json.JSONDecodeError:
                     error = str(error)
-            path = request.data.get('path')
+            path = request.data.get("path")
             if path:
                 HarvestError.objects.create(
                     harvester=harvester,
                     file=ObservedFile.objects.get_or_create(
                         harvester=harvester,
                         path=path,
-                        defaults={'state': FileState.IMPORT_FAILED}
+                        defaults={"state": FileState.IMPORT_FAILED},
                     )[0],
-                    error=str(error)
+                    error=str(error),
                 )
             else:
-                HarvestError.objects.create(
-                    harvester=harvester,
-                    error=str(error)
-                )
+                HarvestError.objects.create(harvester=harvester, error=str(error))
             return Response({})
 
         def handle_file_size_report(harvester, path, monitored_path, content):
             # Harvester is reporting the size of a file
             # Update our database record and return a file status
-            if content.get('size') is None:
-                return error_response('file_size task requires content to include size field')
+            if content.get("size") is None:
+                return error_response(
+                    "file_size task requires content to include size field"
+                )
 
             # reserve space for the png snapshot
             try:
@@ -864,7 +1002,7 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                     file = ObservedFile.objects.create(
                         harvester=harvester,
                         path=path,
-                        bytes_required=settings.MAX_PNG_PREVIEW_SIZE
+                        bytes_required=settings.MAX_PNG_PREVIEW_SIZE,
                     )
                 except StorageError as e:
                     return error_response(f"Error creating File: {e}", status=507)
@@ -872,7 +1010,7 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                     return error_response(f"Error creating File: {e}")
             file.monitored_paths.add(monitored_path)
 
-            size = content['size']
+            size = content["size"]
             if size < file.last_observed_size_bytes:
                 file.state = FileState.UNSTABLE
             elif size > file.last_observed_size_bytes:
@@ -883,37 +1021,43 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                 file.last_observed_time = timezone.now()
             else:
                 # Recent changes
-                if file.last_observed_time + timezone.timedelta(seconds=monitored_path.stable_time_s) > timezone.now():
+                if (
+                    file.last_observed_time
+                    + timezone.timedelta(seconds=monitored_path.stable_time_s)
+                    > timezone.now()
+                ):
                     file.state = FileState.UNSTABLE
                 # Stable file -- already imported?
                 elif file.state not in [
                     FileState.IMPORTED,
                     FileState.IMPORT_FAILED,
                     FileState.MAP_ASSIGNED,
-                    FileState.AWAITING_MAP_ASSIGNMENT
+                    FileState.AWAITING_MAP_ASSIGNMENT,
                 ]:
                     file.state = FileState.STABLE
 
             file.save()
-            return Response(ObservedFileSerializer(file, context={'request': self.request}).data)
+            return Response(
+                ObservedFileSerializer(file, context={"request": self.request}).data
+            )
 
         def handle_import_report(harvester, path, content, request):
             def handle_file_metadata(file, data):
                 file.state = FileState.IMPORTING
-                file.data_generation_date = deserialize_datetime(data['test_date'])
-                if 'parser' in data:
-                    file.parser = data['parser']
+                file.data_generation_date = deserialize_datetime(data["test_date"])
+                if "parser" in data:
+                    file.parser = data["parser"]
 
-                core_metadata = data['core_metadata']
-                extra_metadata = data['extra_metadata']
-                if 'Machine Type' in core_metadata:
-                    file.inferred_format = core_metadata.pop('Machine Type')
-                if 'Dataset Name' in core_metadata:
-                    file.name = core_metadata.pop('Dataset Name')
-                if 'first_sample_no' in core_metadata:
-                    file.first_sample_no = core_metadata.pop('first_sample_no')
-                if 'last_sample_no' in core_metadata:
-                    file.last_sample_no = core_metadata.pop('last_sample_no')
+                core_metadata = data["core_metadata"]
+                extra_metadata = data["extra_metadata"]
+                if "Machine Type" in core_metadata:
+                    file.inferred_format = core_metadata.pop("Machine Type")
+                if "Dataset Name" in core_metadata:
+                    file.name = core_metadata.pop("Dataset Name")
+                if "first_sample_no" in core_metadata:
+                    file.first_sample_no = core_metadata.pop("first_sample_no")
+                if "last_sample_no" in core_metadata:
+                    file.last_sample_no = core_metadata.pop("last_sample_no")
                 if extra_metadata:
                     file.extra_metadata = extra_metadata
                 file.core_metadata = core_metadata
@@ -922,7 +1066,9 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                 try:
                     data = json.loads(data)
                 except json.JSONDecodeError:
-                    return error_response("Data summary must be a JSON string of the first few rows of the file")
+                    return error_response(
+                        "Data summary must be a JSON string of the first few rows of the file"
+                    )
                 if not isinstance(data, dict):
                     return error_response("Data summary must be a dictionary")
 
@@ -941,29 +1087,32 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                     file.state = FileState.MAP_ASSIGNED
                     return
                 mappings = file.applicable_mappings(request)
-                mappings = [m for m in mappings if m['mapping'].is_valid]
+                mappings = [m for m in mappings if m["mapping"].is_valid]
                 if mappings:
                     best = mappings[0]
-                    if best['mapping'].is_valid:  # only assign if the mapping is valid
+                    if best["mapping"].is_valid:  # only assign if the mapping is valid
                         # If there's a tie for best mapping, don't assign (let the user choose later)
-                        if len(mappings) == 1 or mappings[1]['missing'] > best['missing']:
-                            file.mapping = best['mapping']
+                        if (
+                            len(mappings) == 1
+                            or mappings[1]["missing"] > best["missing"]
+                        ):
+                            file.mapping = best["mapping"]
                             file.state = FileState.MAP_ASSIGNED
                             return
                 file.state = FileState.AWAITING_MAP_ASSIGNMENT
 
             def handle_upload_parquets(file, data, request):
                 try:
-                    file.num_rows = data['total_row_count']
-                    file.num_partitions = data['partition_count']
+                    file.num_rows = data["total_row_count"]
+                    file.num_partitions = data["partition_count"]
                     file.state = FileState.IMPORTING
                     file.save()
-                    upload = request.FILES.get('parquet_file')
+                    upload = request.FILES.get("parquet_file")
                     try:
                         # Before we delete the old partition, check we have storage for the new one
                         partition = ParquetPartition.objects.get(
                             observed_file=file,
-                            partition_number=data['partition_number']
+                            partition_number=data["partition_number"],
                         )
                         old_size = partition.bytes_required
                         try:
@@ -975,40 +1124,50 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                             partition.save()
                             file.state = FileState.AWAITING_STORAGE
                             file.save()
-                            return error_response(f"Error updating parquet file: {e}", status=507)
+                            return error_response(
+                                f"Error updating parquet file: {e}", status=507
+                            )
                         partition.delete()
                     except ParquetPartition.DoesNotExist:
                         pass
 
                     partition = ParquetPartition.objects.create(
                         observed_file=file,
-                        partition_number=data['partition_number'],
-                        bytes_required=upload.size
+                        partition_number=data["partition_number"],
+                        bytes_required=upload.size,
                     )
                     partition.parquet_file = upload
                     partition.save()
                 except StorageError as e:
                     file.state = FileState.AWAITING_STORAGE
                     file.save()
-                    return error_response(f"Error uploading parquet file to storage: {e}", status=507)
+                    return error_response(
+                        f"Error uploading parquet file to storage: {e}", status=507
+                    )
                 except Exception as e:
                     return error_response(f"Error creating Parquet Partition: {e}")
-                return Response(ParquetPartitionSerializer(partition, context={'request': request}).data)
+                return Response(
+                    ParquetPartitionSerializer(
+                        partition, context={"request": request}
+                    ).data
+                )
 
             def handle_upload_complete(file, data):
-                file.successful_uploads = data['successes']
-                errors = data.get('errors', {})
+                file.successful_uploads = data["successes"]
+                errors = data.get("errors", {})
                 for i, e in errors.items():
-                    pq = ParquetPartition.objects.get(observed_file=file, partition_number=i)
+                    pq = ParquetPartition.objects.get(
+                        observed_file=file, partition_number=i
+                    )
                     pq.upload_errors.append(e)
                     pq.save()
 
             def handle_upload_png(file, _, request):
-                upload = request.FILES.get('png_file')
+                upload = request.FILES.get("png_file")
                 if upload.size > settings.MAX_PNG_PREVIEW_SIZE:
                     return error_response(
                         f"PNG file too large: {upload.size} > {settings.MAX_PNG_PREVIEW_SIZE}",
-                        status=507
+                        status=507,
                     )
                 file.bytes_required = upload.size
                 file.save()
@@ -1017,8 +1176,10 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
             def handle_completion(file, stage, content):
                 if stage == settings.HARVEST_STAGE_FAILED:
                     file.state = FileState.IMPORT_FAILED
-                    if 'error' in content:
-                        HarvestError.objects.create(harvester=harvester, file=file, error=content['error'])
+                    if "error" in content:
+                        HarvestError.objects.create(
+                            harvester=harvester, file=file, error=content["error"]
+                        )
                 elif file.state == FileState.IMPORTING:
                     file.state = FileState.IMPORTED
 
@@ -1026,24 +1187,31 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                 file = ObservedFile.objects.get(harvester=harvester, path=path)
             except ObservedFile.DoesNotExist:
                 return error_response("ObservedFile does not exist")
-            stage = content.get('stage')
+            stage = content.get("stage")
             if stage is None:
                 return error_response("'stage' field must be present where task=import")
 
             try:
-                if stage == settings.HARVEST_STAGE_COMPLETE or stage == settings.HARVEST_STAGE_FAILED:
+                if (
+                    stage == settings.HARVEST_STAGE_COMPLETE
+                    or stage == settings.HARVEST_STAGE_FAILED
+                ):
                     handle_completion(file, stage, content)
                 else:
-                    data = content.get('data')
+                    data = content.get("data")
                     if data is None:
-                        return error_response("'data' field must be present where task=import")
+                        return error_response(
+                            "'data' field must be present where task=import"
+                        )
 
                     if stage == settings.HARVEST_STAGE_FILE_METADATA:
                         handle_file_metadata(file, data)
                     elif stage == settings.HARVEST_STAGE_DATA_SUMMARY:
                         handle_data_summary(file, data, request)
                     elif stage == settings.HARVEST_STAGE_UPLOAD_PARQUET:
-                        return handle_upload_parquets(file, data, request)  # return because we return the ParquetPartition
+                        return handle_upload_parquets(
+                            file, data, request
+                        )  # return because we return the ParquetPartition
                     elif stage == settings.HARVEST_STAGE_UPLOAD_COMPLETE:
                         handle_upload_complete(file, data)
                     elif stage == settings.HARVEST_STAGE_UPLOAD_PNG:
@@ -1053,73 +1221,83 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
 
             except BaseException as e:
                 file.state = FileState.IMPORT_FAILED
-                HarvestError.objects.create(harvester=harvester, file=file, error=str(e))
+                HarvestError.objects.create(
+                    harvester=harvester, file=file, error=str(e)
+                )
                 file.save()
                 return error_response(f"Error importing data: {e.args}")
 
             file.save()
 
-            return Response(ObservedFileSerializer(file, context={'request': self.request}).data)
+            return Response(
+                ObservedFileSerializer(file, context={"request": self.request}).data
+            )
 
         harvester = get_object_or_404(Harvester, id=pk)
         self.check_object_permissions(self.request, harvester)
         harvester.last_check_in = timezone.now()
 
-        content = request.data.get('content')
-        if request.data.get('content') is None and request.data.get('format') == 'flat':
+        content = request.data.get("content")
+        if request.data.get("content") is None and request.data.get("format") == "flat":
             # Upload comes in a different format with the properties unnested.
             content = {
-                'task': request.data.get('task'),
-                'stage': request.data.get('stage'),
-                'data': {
-                    'filename': request.data.get('filename')
-                }
+                "task": request.data.get("task"),
+                "stage": request.data.get("stage"),
+                "data": {"filename": request.data.get("filename")},
             }
-            if content['stage'] == settings.HARVEST_STAGE_UPLOAD_PARQUET:
-                content['data']['total_row_count'] = int(float(request.data.get('total_row_count')))
-                content['data']['partition_number'] = int(float(request.data.get('partition_number')))
-                content['data']['partition_count'] = int(float(request.data.get('partition_count')))
+            if content["stage"] == settings.HARVEST_STAGE_UPLOAD_PARQUET:
+                content["data"]["total_row_count"] = int(
+                    float(request.data.get("total_row_count"))
+                )
+                content["data"]["partition_number"] = int(
+                    float(request.data.get("partition_number"))
+                )
+                content["data"]["partition_count"] = int(
+                    float(request.data.get("partition_count"))
+                )
         else:
             content = content or {}
 
-        harvester.last_check_in_job = content.get('task', 'error_report')
+        harvester.last_check_in_job = content.get("task", "error_report")
         harvester.save()
 
-        if request.data.get('status') == settings.HARVESTER_STATUS_ERROR:
+        if request.data.get("status") == settings.HARVESTER_STATUS_ERROR:
             return handle_error_report(request, harvester)
 
-        if request.data.get('status') != settings.HARVESTER_STATUS_SUCCESS:
-            return error_response('Badly formatted request')
+        if request.data.get("status") != settings.HARVESTER_STATUS_SUCCESS:
+            return error_response("Badly formatted request")
 
         try:
-            path = request.data.get('path')
+            path = request.data.get("path")
             assert path is not None
             path = os.path.normpath(path)
         except AssertionError:
-            return error_response('Harvester report must specify a path')
+            return error_response("Harvester report must specify a path")
 
         try:
-            monitored_path_id = request.data.get('monitored_path_id')
+            monitored_path_id = request.data.get("monitored_path_id")
             assert monitored_path_id is not None
             monitored_path = MonitoredPath.objects.get(id=monitored_path_id)
         except AssertionError:
-            return error_response('Harvester report must specify a monitored_path_id')
+            return error_response("Harvester report must specify a monitored_path_id")
         except MonitoredPath.DoesNotExist:
-            return error_response('Harvester report must specify a valid monitored_path_id', 404)
+            return error_response(
+                "Harvester report must specify a valid monitored_path_id", 404
+            )
 
         # Figure out what we succeeded in doing!
         if content is None:
-            return error_response('content field required when status=success')
-        task = content.get('task')
+            return error_response("content field required when status=success")
+        task = content.get("task")
         if task is None:
-            return error_response('content field must include task field')
+            return error_response("content field must include task field")
 
         if task == settings.HARVESTER_TASK_FILE_SIZE:
             return handle_file_size_report(harvester, path, monitored_path, content)
         elif task == settings.HARVESTER_TASK_IMPORT:
             return handle_import_report(harvester, path, content, request)
         else:
-            return error_response('Unrecognised task')
+            return error_response("Unrecognised task")
 
 
 @extend_schema_view(
@@ -1135,7 +1313,7 @@ well as any users who have been given explicit permissions to edit the Monitored
 
 Searchable fields:
 - path
-        """
+        """,
     ),
     retrieve=extend_schema(
         summary="View the details of a Path",
@@ -1143,7 +1321,7 @@ Searchable fields:
 A Path refers to a directory accessible by a Harvester in which
 data files will reside. Those files will be scanned periodically by the Harvester,
 becoming ObservedFiles once they are reported to Galv by the Harvester.
-        """
+        """,
     ),
     create=extend_schema(
         summary="Create a new Path",
@@ -1153,9 +1331,7 @@ Files in that directory will be scanned periodically by the Harvester,
 becoming ObservedFiles once they are reported to Galv by the Harvester.
         """,
         request=MonitoredPathSerializer(),
-        responses={
-            201: MonitoredPathSerializer()
-        }
+        responses={201: MonitoredPathSerializer()},
     ),
     destroy=extend_schema(
         summary="Delete a Path",
@@ -1163,15 +1339,15 @@ becoming ObservedFiles once they are reported to Galv by the Harvester.
 Delete a directory from a Harvester's list of directories to crawl.
 Files in that directory will no longer be scanned periodically by the Harvester,
 and will no longer become ObservedFiles once they are reported to Galv by the Harvester.
-        """
+        """,
     ),
     partial_update=extend_schema(
         summary="Update a Path",
         description="""
 Alter the path to the monitored directory,
 or the time for which files need to be stable before being imported.
-        """
-    )
+        """,
+    ),
 )
 class MonitoredPathViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
@@ -1182,13 +1358,19 @@ class MonitoredPathViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     MonitoredPaths can be created or updated by a Harvester's admins and users, as
     well as any users who have been given explicit permissions to edit the MonitoredPath.
     """
+
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [
+        ResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
     serializer_class = MonitoredPathSerializer
-    filterset_fields = ['path', 'harvester__id', 'harvester__name']
-    search_fields = ['@path', '=harvester__id', '=harvester__name']
-    queryset = MonitoredPath.objects.all().order_by('-id')
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+    filterset_fields = ["path", "harvester__id", "harvester__name"]
+    search_fields = ["@path", "=harvester__id", "=harvester__name"]
+    queryset = MonitoredPath.objects.all().order_by("-id")
+    http_method_names = ["get", "post", "patch", "delete", "options"]
 
 
 @extend_schema_view(
@@ -1209,7 +1391,7 @@ Harvester Administrators have access to all Files on the Harvester's Paths.
 Searchable fields:
 - path
 - state
-        """
+        """,
     ),
     create=extend_schema(
         summary="Upload a new File",
@@ -1217,20 +1399,20 @@ Searchable fields:
 Files can be uploaded to the server.
 If you know the `mapping` of a file, the file can be uploaded in a single step.
 
-If you do not know the `mapping` of a file, upload the file without a Mapping and then assign it a `mapping` using the 
-mapping interface. 
+If you do not know the `mapping` of a file, upload the file without a Mapping and then assign it a `mapping` using the
+mapping interface.
 You may create a Mapping using the mapping interface and the `summary` data extracted from the file if necessary.
 
 Once a `mapping` has been selected for the file, upload the file again, specifying the `id` of the partially-uploaded
 file as `target_file_id`.
 The file will then be uploaded in full.
-"""
+""",
     ),
     retrieve=extend_schema(
         summary="View a File",
         description="""
 Files are files in a directory marked as a monitored Path for a Harvester.
-        """
+        """,
     ),
     reimport=extend_schema(
         summary="Force a File to be re-imported",
@@ -1243,8 +1425,8 @@ for wishing to repeat the import process, you can use this endpoint to force the
 harvester program to rerun the import process when it next scans the file.
 
 *Note*: This request may be overwritten if the file changes size before it is next scanned.
-        """
-    )
+        """,
+    ),
 )
 class ObservedFileViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
@@ -1256,15 +1438,24 @@ class ObservedFileViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     encountered while importing the file, and/or to Datasets representing the content
     of imported files.
     """
+
     permission_classes = [DRYPermissions]
-    filter_backends = [ObservedFileFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['harvester__id', 'path']
-    search_fields = ['@path', 'state', 'name']
-    queryset = ObservedFile.objects.all().order_by('-last_observed_time', '-id')
-    http_method_names = ['get', 'post', 'patch', 'options']
+    filter_backends = [
+        ObservedFileFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+    filterset_fields = ["harvester__id", "path"]
+    search_fields = ["@path", "state", "name"]
+    queryset = ObservedFile.objects.all().order_by("-last_observed_time", "-id")
+    http_method_names = ["get", "post", "patch", "options"]
 
     def get_parsers(self):
-        if self.request is not None and self.action_map.get(self.request.method.lower()) == 'create':
+        if (
+            self.request is not None
+            and self.action_map.get(self.request.method.lower()) == "create"
+        ):
             return [MultiPartParser(), FormParser()]
         return super().get_parsers()
 
@@ -1273,13 +1464,13 @@ class ObservedFileViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
             return ObservedFileCreateSerializer
         return ObservedFileSerializer
 
-    @action(detail=True, methods=['GET'])
-    def reimport(self, request, pk = None):
+    @action(detail=True, methods=["GET"])
+    def reimport(self, request, pk=None):
         try:
             file = self.queryset.get(id=pk)
             self.check_object_permissions(self.request, file)
         except ObservedFile.DoesNotExist:
-            return error_response('Requested file not found')
+            return error_response("Requested file not found")
         file.state = FileState.RETRY_IMPORT
         file.storage_urls = []
         if file.png is not None:
@@ -1287,62 +1478,69 @@ class ObservedFileViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
         file.save()
         for dataset in file.parquet_partitions.all():
             dataset.delete()
-        return Response(self.get_serializer(file, context={'request': request}).data)
+        return Response(self.get_serializer(file, context={"request": request}).data)
 
-    @action(detail=True, methods=['GET'])
-    def applicable_mappings(self, request, pk = None):
+    @action(detail=True, methods=["GET"])
+    def applicable_mappings(self, request, pk=None):
         try:
             file = self.queryset.get(id=pk)
             self.check_object_permissions(self.request, file)
         except ObservedFile.DoesNotExist:
-            return error_response('Requested file not found')
+            return error_response("Requested file not found")
         mappings = file.applicable_mappings(request)
         for m in mappings:
-            m['mapping'] = ColumnMappingSerializer(m['mapping'], context={'request': request}).data
+            m["mapping"] = ColumnMappingSerializer(
+                m["mapping"], context={"request": request}
+            ).data
         return Response(mappings)
 
-    @action(detail=True, methods=['GET'])
-    def summary(self, request, pk = None):
+    @action(detail=True, methods=["GET"])
+    def summary(self, request, pk=None):
         try:
             file = self.queryset.get(id=pk)
             self.check_object_permissions(self.request, file)
         except ObservedFile.DoesNotExist:
-            return error_response('Requested file not found')
+            return error_response("Requested file not found")
         return Response(file.summary)
 
-    @action(detail=True, methods=['GET'])
-    def extra_metadata(self, request, pk = None):
+    @action(detail=True, methods=["GET"])
+    def extra_metadata(self, request, pk=None):
         try:
             file = self.queryset.get(id=pk)
             self.check_object_permissions(self.request, file)
         except ObservedFile.DoesNotExist:
-            return error_response('Requested file not found')
+            return error_response("Requested file not found")
         return Response(file.extra_metadata)
 
-    @action(detail=True, methods=['GET'])
-    def png(self, request, pk = None):
+    @action(detail=True, methods=["GET"])
+    def png(self, request, pk=None):
         try:
             file = self.queryset.get(id=pk)
         except ObservedFile.DoesNotExist:
-            return error_response('Requested file not found')
+            return error_response("Requested file not found")
         self.check_object_permissions(self.request, file)
         return lab_dependent_file_fetcher(
             file,
-            'png',
+            "png",
             request,
             lambda f: {
-                'Content-Disposition': f'inline; filename="{f.path.split("/")[-1]}.png"',
-                'Content-Type': 'image/png'
-            }
+                "Content-Disposition": f'inline; filename="{f.path.split("/")[-1]}.png"',
+                "Content-Type": "image/png",
+            },
         )
 
 
 class ColumnMappingViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [
+        ResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
     serializer_class = ColumnMappingSerializer
-    queryset = ColumnMapping.objects.all().order_by('-id')
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+    queryset = ColumnMapping.objects.all().order_by("-id")
+    http_method_names = ["get", "post", "patch", "delete", "options"]
 
     def destroy(self, request, *args, **kwargs):
         try:
@@ -1350,18 +1548,18 @@ class ColumnMappingViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
             self.check_object_permissions(self.request, mapping)
         except ColumnMapping.DoesNotExist:
             return error_response("Mapping not found")
-        if (mapping.in_use and
-                not all([
-                    f.has_object_write_permission(request=request)
-                    for f in mapping.observed_files.all()
-                ])
+        if mapping.in_use and not all(
+            [
+                f.has_object_write_permission(request=request)
+                for f in mapping.observed_files.all()
+            ]
         ):
-            return error_response("You cannot modify a mapping that is in use by files you cannot write to.")
+            return error_response(
+                "You cannot modify a mapping that is in use by files you cannot write to."
+            )
         if mapping.in_use:
             return error_response("Mapping is in use and cannot be deleted")
         return super().destroy(request, *args, **kwargs)
-
-
 
 
 @extend_schema_view(
@@ -1370,35 +1568,42 @@ class ColumnMappingViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
         description="""
 Download a file from the API.
         """,
-        responses={200: OpenApiTypes.BINARY}
+        responses={200: OpenApiTypes.BINARY},
     )
 )
 class ParquetPartitionViewSet(DescribeSelfMixin, viewsets.ReadOnlyModelViewSet):
     permission_classes = [DRYPermissions]
-    filter_backends = [ParquetPartitionFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filter_fields = ['observed_file__id', 'observed_file__path']
-    search_fields = ['@observed_file__path']
+    filter_backends = [
+        ParquetPartitionFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+    filter_fields = ["observed_file__id", "observed_file__path"]
+    search_fields = ["@observed_file__path"]
     serializer_class = ParquetPartitionSerializer
-    queryset = ParquetPartition.objects.all().order_by('-observed_file__id', 'partition_number')
+    queryset = ParquetPartition.objects.all().order_by(
+        "-observed_file__id", "partition_number"
+    )
 
-    @action(detail=True, methods=['GET'])
-    def file(self, request, pk = None):
+    @action(detail=True, methods=["GET"])
+    def file(self, request, pk=None):
         try:
             partition = self.queryset.get(id=pk)
         except ParquetPartition.DoesNotExist:
-            return error_response('Requested partition not found')
+            return error_response("Requested partition not found")
         self.check_object_permissions(self.request, partition)
         return lab_dependent_file_fetcher(
             partition,
-            'parquet_file',
+            "parquet_file",
             request,
             lambda f: {
-                'Content-Disposition': (
+                "Content-Disposition": (
                     f'inline; '
                     f'filename="{partition.observed_file.path.split("/")[-1]}.{partition.partition_number}.parquet"'
                 ),
-                'Content-Type': 'application/octet-stream'
-            }
+                "Content-Type": "application/octet-stream",
+            },
         )
 
 
@@ -1413,25 +1618,26 @@ If a File or Dataset is not appearing on a Path where you think it should be, th
 
 Searchable fields:
 - error
-        """
+        """,
     ),
     retrieve=extend_schema(
         summary="View Error details",
         description="""
 View an Error reported by a Harvester.
-        """
-    )
+        """,
+    ),
 )
 class HarvestErrorViewSet(DescribeSelfMixin, viewsets.ReadOnlyModelViewSet):
     """
     HarvestErrors are problems encountered by Harvesters during the crawling of
     MonitoredPaths or the importing or inspection of ObservedFiles.
     """
+
     permission_classes = [DRYPermissions]
     serializer_class = HarvestErrorSerializer
-    filterset_fields = ['file', 'harvester']
-    search_fields = ['@error', '@file__path', '@harvester__name', '=harvester__id']
-    queryset = HarvestError.objects.all().order_by('-timestamp')
+    filterset_fields = ["file", "harvester"]
+    search_fields = ["@error", "@file__path", "@harvester__name", "=harvester__id"]
+    queryset = HarvestError.objects.all().order_by("-timestamp")
 
 
 class EquipmentTypesViewSet(_GetOrCreateTextStringViewSet):
@@ -1439,9 +1645,13 @@ class EquipmentTypesViewSet(_GetOrCreateTextStringViewSet):
     Equipment Types are used to describe the type of equipment used in an experiment.
     Examples are "Thermal Chamber", "Cycler".
     """
+
     def get_serializer_class(self):
         return get_GetOrCreateTextStringSerializer(EquipmentTypes)
-    queryset = EquipmentTypes.objects.filter(include_in_autocomplete=True).order_by('value')
+
+    queryset = EquipmentTypes.objects.filter(include_in_autocomplete=True).order_by(
+        "value"
+    )
 
 
 class EquipmentModelsViewSet(_GetOrCreateTextStringViewSet):
@@ -1449,57 +1659,95 @@ class EquipmentModelsViewSet(_GetOrCreateTextStringViewSet):
     Equipment Models are used to describe the model of equipment used in an experiment.
     Examples are "BT-2000", "BT-2043".
     """
+
     def get_serializer_class(self):
         return get_GetOrCreateTextStringSerializer(EquipmentModels)
-    queryset = EquipmentModels.objects.filter(include_in_autocomplete=True).order_by('value')
+
+    queryset = EquipmentModels.objects.filter(include_in_autocomplete=True).order_by(
+        "value"
+    )
+
+
 class EquipmentManufacturersViewSet(_GetOrCreateTextStringViewSet):
     """
     Equipment Manufacturers are used to describe the manufacturer of equipment used in an experiment.
     Examples are "Arbin", "Maccor".
     """
+
     def get_serializer_class(self):
         return get_GetOrCreateTextStringSerializer(EquipmentManufacturers)
-    queryset = EquipmentManufacturers.objects.filter(include_in_autocomplete=True).order_by('value')
+
+    queryset = EquipmentManufacturers.objects.filter(
+        include_in_autocomplete=True
+    ).order_by("value")
+
+
 class CellModelsViewSet(_GetOrCreateTextStringViewSet):
     """
     Cell Models are used to describe the model of cell used in an experiment.
     Examples are "VTC6", "HG2".
     """
+
     def get_serializer_class(self):
         return get_GetOrCreateTextStringSerializer(CellModels)
-    queryset = CellModels.objects.filter(include_in_autocomplete=True).order_by('value')
+
+    queryset = CellModels.objects.filter(include_in_autocomplete=True).order_by("value")
+
+
 class CellManufacturersViewSet(_GetOrCreateTextStringViewSet):
     """
     Cell Manufacturers are used to describe the manufacturer of cell used in an experiment.
     Examples are "Sony", "LG".
     """
+
     def get_serializer_class(self):
         return get_GetOrCreateTextStringSerializer(CellManufacturers)
-    queryset = CellManufacturers.objects.filter(include_in_autocomplete=True).order_by('value')
+
+    queryset = CellManufacturers.objects.filter(include_in_autocomplete=True).order_by(
+        "value"
+    )
+
+
 class CellChemistriesViewSet(_GetOrCreateTextStringViewSet):
     """
     Cell Chemistries are used to describe the chemistry of cell used in an experiment.
     Examples are "NMC", "LFP".
     """
+
     def get_serializer_class(self):
         return get_GetOrCreateTextStringSerializer(CellChemistries)
-    queryset = CellChemistries.objects.filter(include_in_autocomplete=True).order_by('value')
+
+    queryset = CellChemistries.objects.filter(include_in_autocomplete=True).order_by(
+        "value"
+    )
+
+
 class CellFormFactorsViewSet(_GetOrCreateTextStringViewSet):
     """
     Cell Form Factors are used to describe the form factor of cell used in an experiment.
     Examples are "Pouch", "Cylindrical".
     """
+
     def get_serializer_class(self):
         return get_GetOrCreateTextStringSerializer(CellFormFactors)
-    queryset = CellFormFactors.objects.filter(include_in_autocomplete=True).order_by('value')
+
+    queryset = CellFormFactors.objects.filter(include_in_autocomplete=True).order_by(
+        "value"
+    )
+
+
 class ScheduleIdentifiersViewSet(_GetOrCreateTextStringViewSet):
     """
     Schedule Identifiers are used to describe the type of schedule used in an experiment.
     Examples are "Cell Conditioning", "Pseudo-OCV".
     """
+
     def get_serializer_class(self):
         return get_GetOrCreateTextStringSerializer(ScheduleIdentifiers)
-    queryset = ScheduleIdentifiers.objects.filter(include_in_autocomplete=True).order_by('value')
+
+    queryset = ScheduleIdentifiers.objects.filter(
+        include_in_autocomplete=True
+    ).order_by("value")
 
 
 @extend_schema_view(
@@ -1513,21 +1761,21 @@ Searchable fields:
 - name
 - manufacturer
 - form_factor
-        """
+        """,
     ),
     retrieve=extend_schema(
         summary="View a Cell Family",
         description="""
 Cell Families group together the general properties of a type of Cell.
 Each Cell is associated with a Cell Family.
-        """
+        """,
     ),
     create=extend_schema(
         summary="Create a Cell Family",
         description="""
 Cell Families group together the general properties of a type of Cell.
 Each Cell is associated with a Cell Family.
-        """
+        """,
     ),
     partial_update=extend_schema(
         summary="Update a Cell Family",
@@ -1535,7 +1783,7 @@ Each Cell is associated with a Cell Family.
 Cell Families that do not have any Cells associated with them may be edited.
 Cell Families that _do_ have Cells associated with them are locked,
 to prevent accidental updating.
-        """
+        """,
     ),
     destroy=extend_schema(
         summary="Delete a Cell Family",
@@ -1543,22 +1791,32 @@ to prevent accidental updating.
 Cell Families that do not have any Cells associated with them may be deleted.
 Cell Families that _do_ have Cells associated with them are locked,
 to prevent accidental updating.
-        """
-    )
+        """,
+    ),
 )
 class CellFamilyViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     CellFamilies describe types of Cell.
     """
+
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [
+        ResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
     serializer_class = CellFamilySerializer
     filterset_fields = [
-        'model', 'form_factor', 'chemistry', 'nominal_capacity_ah', 'manufacturer'
+        "model",
+        "form_factor",
+        "chemistry",
+        "nominal_capacity_ah",
+        "manufacturer",
     ]
-    search_fields = ['@model', '@manufacturer', '@form_factor']
-    queryset = CellFamily.objects.all().order_by('-id')
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+    search_fields = ["@model", "@manufacturer", "@form_factor"]
+    queryset = CellFamily.objects.all().order_by("-id")
+    http_method_names = ["get", "post", "patch", "delete", "options"]
 
 
 @extend_schema_view(
@@ -1569,54 +1827,70 @@ Cells are specific cells which generate data stored in Datasets/observed Files.
 
 Searchable fields:
 - identifier
-        """
+        """,
     ),
     retrieve=extend_schema(
         summary="View a Cell",
         description="""
 Cells are specific cells which generate data stored in Datasets/observed Files.
-        """
+        """,
     ),
     create=extend_schema(
         summary="Create a Cell",
         description="""
 Create an instance of a Cell by declaring its unique identifier and associated Cell Family.
-        """
+        """,
     ),
     partial_update=extend_schema(
         summary="Update a Cell",
         description="""
 Cells that are not used in Cycler Tests may be edited.
 Cells that _are_ used in a Cycler Tests are locked to prevent accidental updating.
-        """
+        """,
     ),
     destroy=extend_schema(
         summary="Delete a Cell",
         description="""
 Cells that are not used in Cycler Tests may be deleted.
 Cells that _are_ used in a Cycler Tests are locked to prevent accidental updating.
-        """
+        """,
     ),
     rdf=extend_schema(
         summary="View a Cell in RDF (JSON-LD)",
         description="""
 Dump the Cell in RDF (JSON-LD) format.
-        """
-    )
+        """,
+    ),
 )
 class CellViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Cells are specific cells which have generated data stored in Datasets/ObservedFiles.
     """
-    permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
-    serializer_class = CellSerializer
-    filterset_fields = ['identifier', 'family__id', 'family__model', 'family__manufacturer']
-    search_fields = ['@identifier', '@family__model', '@family__manufacturer', '=family__id']
-    queryset = Cell.objects.all().order_by('-id')
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 
-    @action(detail=True, methods=['get'])
+    permission_classes = [DRYPermissions]
+    filter_backends = [
+        ResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+    serializer_class = CellSerializer
+    filterset_fields = [
+        "identifier",
+        "family__id",
+        "family__model",
+        "family__manufacturer",
+    ]
+    search_fields = [
+        "@identifier",
+        "@family__model",
+        "@family__manufacturer",
+        "=family__id",
+    ]
+    queryset = Cell.objects.all().order_by("-id")
+    http_method_names = ["get", "post", "patch", "delete", "options"]
+
+    @action(detail=True, methods=["get"])
     def rdf(self, request, pk=None):
         """
         Dump the Cell in RDF (JSON-LD) format.
@@ -1637,21 +1911,21 @@ Searchable fields:
 - type
 - manufacturer
 - form_factor
-        """
+        """,
     ),
     retrieve=extend_schema(
         summary="View an Equipment Family",
         description="""
 Equipment Families group together the general properties of a type of Equipment.
 Each Equipment is associated with an Equipment Family.
-        """
+        """,
     ),
     create=extend_schema(
         summary="Create an Equipment Family",
         description="""
 Equipment Families group together the general properties of a type of Equipment.
 Each Equipment is associated with an Equipment Family.
-        """
+        """,
     ),
     partial_update=extend_schema(
         summary="Update an Equipment Family",
@@ -1659,7 +1933,7 @@ Each Equipment is associated with an Equipment Family.
 Equipment Families that do not have any Equipment associated with them may be edited.
 Equipment Families that _do_ have Equipment associated with them are locked,
 to prevent accidental updating.
-        """
+        """,
     ),
     destroy=extend_schema(
         summary="Delete an Equipment Family",
@@ -1667,22 +1941,26 @@ to prevent accidental updating.
 Equipment Families that do not have any Equipment associated with them may be deleted.
 Equipment Families that _do_ have Equipment associated with them are locked,
 to prevent accidental updating.
-        """
-    )
+        """,
+    ),
 )
 class EquipmentFamilyViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     EquipmentFamilies describe types of Equipment.
     """
+
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
-    serializer_class = EquipmentFamilySerializer
-    filterset_fields = [
-        'model', 'type', 'manufacturer'
+    filter_backends = [
+        ResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
     ]
-    search_fields = ['@model', '@manufacturer', '@type']
-    queryset = EquipmentFamily.objects.all().order_by('-id')
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+    serializer_class = EquipmentFamilySerializer
+    filterset_fields = ["model", "type", "manufacturer"]
+    search_fields = ["@model", "@manufacturer", "@type"]
+    queryset = EquipmentFamily.objects.all().order_by("-id")
+    http_method_names = ["get", "post", "patch", "delete", "options"]
 
 
 @extend_schema_view(
@@ -1694,47 +1972,59 @@ Experimental equipment used in experiments which generate Files and their Cycler
 Searchable fields:
 - name
 - type
-        """
+        """,
     ),
     retrieve=extend_schema(
         summary="View specific Equipment",
         description="""
 Experimental equipment used in experiments which generate Files and their Cycler Tests.
-        """
+        """,
     ),
     create=extend_schema(
         summary="Create Equipment",
         description="""
 Create Equipment by describing its role and purpose.
-        """
+        """,
     ),
     partial_update=extend_schema(
         summary="Update Equipment",
         description="""
 Equipment that is not used in Cycler Tests may be edited.
 Equipment that _is_ used in a Cycler Tests is locked to prevent accidental updating.
-        """
+        """,
     ),
     destroy=extend_schema(
         summary="Delete Equipment",
         description="""
 Equipment that is not used in Cycler Tests may be deleted.
 Equipment that _is_ used in a Cycler Tests is locked to prevent accidental updating.
-        """
-    )
+        """,
+    ),
 )
 class EquipmentViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Equipment can be attached to Datasets and used to view Datasets which
     have used similar equipment.
     """
+
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [
+        ResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
     serializer_class = EquipmentSerializer
     queryset = Equipment.objects.all()
-    filterset_fields = ['family__type', 'family__manufacturer', 'family__model']
-    search_fields = ['@identifier', '@family__type', '@family__manufacturer', '@family__model', '=family__id']
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+    filterset_fields = ["family__type", "family__manufacturer", "family__model"]
+    search_fields = [
+        "@identifier",
+        "@family__type",
+        "@family__manufacturer",
+        "@family__model",
+        "=family__id",
+    ]
+    http_method_names = ["get", "post", "patch", "delete", "options"]
 
 
 @extend_schema_view(
@@ -1748,21 +2038,21 @@ Searchable fields:
 - type
 - manufacturer
 - form_factor
-        """
+        """,
     ),
     retrieve=extend_schema(
         summary="View a Schedule Family",
         description="""
 Schedule Families group together the general properties of a type of Schedule.
 Each Schedule is associated with a Schedule Family.
-        """
+        """,
     ),
     create=extend_schema(
         summary="Create a Schedule Family",
         description="""
 Schedule Families group together the general properties of a type of Schedule.
 Each Schedule is associated with a Schedule Family.
-        """
+        """,
     ),
     partial_update=extend_schema(
         summary="Update a Schedule Family",
@@ -1770,7 +2060,7 @@ Each Schedule is associated with a Schedule Family.
 Schedule Families that do not have a Schedule associated with them may be edited.
 Schedule Families that _do_ have Schedule associated with them are locked,
 to prevent accidental updating.
-        """
+        """,
     ),
     destroy=extend_schema(
         summary="Delete a Schedule Family",
@@ -1778,20 +2068,26 @@ to prevent accidental updating.
 Schedule Families that do not have a Schedule associated with them may be deleted.
 Schedule Families that _do_ have Schedule associated with them are locked,
 to prevent accidental updating.
-        """
-    )
+        """,
+    ),
 )
 class ScheduleFamilyViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Schedules can be attached to Cycler Tests and used to view Cycler Tests which
     have used similar equipment.
     """
+
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [
+        ResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
     serializer_class = ScheduleFamilySerializer
     queryset = ScheduleFamily.objects.all()
-    search_fields = ['@identifier', '@description']
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+    search_fields = ["@identifier", "@description"]
+    http_method_names = ["get", "post", "patch", "delete", "options"]
 
 
 @extend_schema_view(
@@ -1803,46 +2099,53 @@ Schedule used in experiments which generate Files and their Datasets.
 Searchable fields:
 - identifier
 - description
-        """
+        """,
     ),
     retrieve=extend_schema(
         summary="View specific Schedule",
         description="""
 Schedule used in experiments which generate Files and their Datasets.
-        """
+        """,
     ),
     create=extend_schema(
         summary="Create Schedule",
         description="""
 Create a Schedule by describing its role and purpose.
-        """
+        """,
     ),
     partial_update=extend_schema(
         summary="Update Schedule",
         description="""
 Schedules that is not used in Cycler Tests may be edited.
 Schedules that _is_ used in a Cycler Tests is locked to prevent accidental updating.
-        """
+        """,
     ),
     destroy=extend_schema(
         summary="Delete Schedule",
         description="""
 Schedules that is not used in Cycler Tests may be deleted.
 Schedules that _is_ used in a Cycler Tests is locked to prevent accidental updating.
-        """
-    )
+        """,
+    ),
 )
 class ScheduleViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Schedules can be attached to Cycler Tests and used to view Cycler Tests which
     have used similar equipment.
     """
+
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [
+        ResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
     serializer_class = ScheduleSerializer
     queryset = Schedule.objects.all()
-    search_fields = ['@family__identifier', '=family__id', '@family__description']
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+    search_fields = ["@family__identifier", "=family__id", "@family__description"]
+    http_method_names = ["get", "post", "patch", "delete", "options"]
+
 
 class CyclerTestViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
@@ -1853,25 +2156,30 @@ class CyclerTestViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     The test produces a dataset which can be associated with the Cycler Test,
     and Cycler Tests can be grouped together into Experiments.
     """
+
     serializer_class = CyclerTestSerializer
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [
+        ResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
     queryset = CyclerTest.objects.all()
     search_fields = [
-        '@cell__id',
-        '@schedule__identifier',
-        '@equipment__identifier',
-        '@experiment__title'
-        '@cell__identifier',
-        '=cell__family__id',
-        '=schedule__family__id',
-        '=equipment__family__id',
-        '=experiment__id',
-        '=cell__id',
-        '=schedule__id',
-        '=files__id'
+        "@cell__id",
+        "@schedule__identifier",
+        "@equipment__identifier",
+        "@experiment__title" "@cell__identifier",
+        "=cell__family__id",
+        "=schedule__family__id",
+        "=equipment__family__id",
+        "=experiment__id",
+        "=cell__id",
+        "=schedule__id",
+        "=files__id",
     ]
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+    http_method_names = ["get", "post", "patch", "delete", "options"]
 
 
 @extend_schema_view(
@@ -1879,42 +2187,48 @@ class CyclerTestViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
         summary="View Experiments",
         description="""
 Experiments are collections of Cycler Tests which are grouped together for analysis.
-        """
+        """,
     ),
     retrieve=extend_schema(
         summary="View an Experiment",
         description="""
 Experiments are collections of Cycler Tests which are grouped together for analysis.
-        """
+        """,
     ),
     create=extend_schema(
         summary="Create an Experiment",
         description="""
 Experiments are collections of Cycler Tests which are grouped together for analysis.
-        """
-    )
+        """,
+    ),
 )
 class ExperimentViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Experiments are collections of Cycler Tests which are grouped together for analysis.
     """
+
     serializer_class = ExperimentSerializer
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
-    queryset = Experiment.objects.all()
-    filter_fields = ['title', 'description', 'authors', 'cycler_tests']
-    search_fields = [
-        '@title',
-        '@description',
-        '=author__id',
-        '=author__username',
-        '=cycler_tests__id',
-        '=cycler_tests__cell__id',
-        '=cycler_tests__schedule__id',
-        '=cycler_tests__equipment__id',
-        '=cycler_tests__files__id'
+    filter_backends = [
+        ResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
     ]
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+    queryset = Experiment.objects.all()
+    filter_fields = ["title", "description", "authors", "cycler_tests"]
+    search_fields = [
+        "@title",
+        "@description",
+        "=author__id",
+        "=author__username",
+        "=cycler_tests__id",
+        "=cycler_tests__cell__id",
+        "=cycler_tests__schedule__id",
+        "=cycler_tests__equipment__id",
+        "=cycler_tests__files__id",
+    ]
+    http_method_names = ["get", "post", "patch", "delete", "options"]
 
 
 @extend_schema_view(
@@ -1929,7 +2243,7 @@ Searchable fields:
 - name
 - symbol
 - description
-        """
+        """,
     ),
     retrieve=extend_schema(
         summary="View a Unit",
@@ -1937,20 +2251,26 @@ Searchable fields:
 Units are scientific (typically SI) units which describe how data map to quantities in the world.
 Some Units are predefined (e.g. seconds, volts, amps, unitless quantities),
 while others can be defined in experimental data.
-        """
-    )
+        """,
+    ),
 )
 class DataUnitViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     DataUnits are units used to characterise data in a DataColumn.
     """
+
     serializer_class = DataUnitSerializer
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['name', 'symbol', 'is_default']
-    search_fields = ['@name', '@symbol', '@description']
-    queryset = DataUnit.objects.all().order_by('id')
-    http_method_names = ['get', 'post', 'patch', 'options']
+    filter_backends = [
+        ResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+    filterset_fields = ["name", "symbol", "is_default"]
+    search_fields = ["@name", "@symbol", "@description"]
+    queryset = DataUnit.objects.all().order_by("id")
+    http_method_names = ["get", "post", "patch", "options"]
 
 
 @extend_schema_view(
@@ -1966,7 +2286,7 @@ while others can be defined by the parsers during data processing.
 Searchable fields:
 - name
 - description
-        """
+        """,
     ),
     retrieve=extend_schema(
         summary="View a Column Type",
@@ -1980,21 +2300,27 @@ while others can be defined by the parsers during data processing.
 Searchable fields:
 - name
 - description
-        """
-    )
+        """,
+    ),
 )
 class DataColumnTypeViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     DataColumnTypes support reuse of DataColumns over multiple DataSets
     by abstracting their information.
     """
+
     serializer_class = DataColumnTypeSerializer
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['name', 'unit__symbol', 'unit__name', 'is_default']
-    search_fields = ['@name', '@description', '=unit__name']
-    queryset = DataColumnType.objects.all().order_by('id')
-    http_method_names = ['get', 'post', 'patch', 'options']
+    filter_backends = [
+        ResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+    filterset_fields = ["name", "unit__symbol", "unit__name", "is_default"]
+    search_fields = ["@name", "@description", "=unit__name"]
+    queryset = DataColumnType.objects.all().order_by("id")
+    http_method_names = ["get", "post", "patch", "options"]
 
 
 @extend_schema_view(
@@ -2004,40 +2330,53 @@ class DataColumnTypeViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
 Your User profile can be updated. You may change your email address and password.
 All changes require your current password to be accepted.
         """,
-        request=inline_serializer('UserUpdate', {
-            'email': serializers.EmailField(help_text="Your updated email"),
-            'password': serializers.CharField(help_text="Your new password"),
-            'currentPassword': serializers.CharField(help_text="Your current password", required=True)
-        }),
-        responses={
-            200: UserSerializer,
-            401: ErrorSerializer,
-            404: ErrorSerializer
-        }
+        request=inline_serializer(
+            "UserUpdate",
+            {
+                "email": serializers.EmailField(help_text="Your updated email"),
+                "password": serializers.CharField(help_text="Your new password"),
+                "currentPassword": serializers.CharField(
+                    help_text="Your current password", required=True
+                ),
+            },
+        ),
+        responses={200: UserSerializer, 401: ErrorSerializer, 404: ErrorSerializer},
     )
 )
 class UserViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Users are Django User instances custom-serialized for convenience.
     """
+
     permission_classes = [DRYPermissions]
-    filter_backends = [UserFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [
+        UserFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
     serializer_class = UserSerializer
-    filter_fields = ['username', 'email', 'lab__id', 'lab__name', 'team__name']
-    search_fields = ['@username', '@email', '=lab__name', '=team__name']
-    queryset = UserProxy.objects.filter(is_active=True).order_by('id')
-    http_method_names = ['get', 'post', 'patch', 'options']
+    filter_fields = ["username", "email", "lab__id", "lab__name", "team__name"]
+    search_fields = ["@username", "@email", "=lab__name", "=team__name"]
+    queryset = UserProxy.objects.filter(is_active=True).order_by("id")
+    http_method_names = ["get", "post", "patch", "options"]
 
 
 class GroupViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
     Groups are Django Group instances custom-serialized for convenience.
     """
+
     permission_classes = [DRYPermissions]
-    filter_backends = [GroupFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [
+        GroupFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
     serializer_class = TransparentGroupSerializer
     queryset = GroupProxy.objects.all()
-    http_method_names = ['patch', 'options', 'get']
+    http_method_names = ["patch", "options", "get"]
 
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
@@ -2073,22 +2412,22 @@ This means you need not specify a root object (e.g. with `"type": "object"`) in 
 }
 ```
 
-Because your definitions are included locally, you can include references to other definitions in your schema, 
+Because your definitions are included locally, you can include references to other definitions in your schema,
 and Galv will automatically resolve them for you.
 
 Galv will highlight any objects that do not meet the requirements.
 This can allow you to specify a series of increasingly strict requirements for your lab's metadata.
 
 Schemas are validated against _individually_, and are not checked for consistency.
-If you declare that a particular field is a `string` in one schema and a `number` in another, 
+If you declare that a particular field is a `string` in one schema and a `number` in another,
 Galv will not complain, except to issue a warning for failing to adhere to one or the other schema.
 
-Because schemas validate objects returned from the Galv API, 
-schemas should expect most relational fields to be represented as URLs. 
+Because schemas validate objects returned from the Galv API,
+schemas should expect most relational fields to be represented as URLs.
 
-Note: there are some requirements put in place by Galv's database structure. 
+Note: there are some requirements put in place by Galv's database structure.
 These will always apply, and will generate errors rather than warnings.
-"""
+""",
     ),
     keys=extend_schema(
         summary="Keys available for validation schemas",
@@ -2097,37 +2436,50 @@ Validation schemas contain one or more root properties that describe requirement
 This endpoint provides the names and list URLs for each Galv object that can be validated against a schema.
         """,
         responses={
-            200: inline_serializer('ValidationSchemaRootKeys', {
-                'key': serializers.CharField(help_text="Name of the root key"),
-                'describes': serializers.CharField(help_text="URL of the objects the key describes"),
-            })
-        }
-    )
+            200: inline_serializer(
+                "ValidationSchemaRootKeys",
+                {
+                    "key": serializers.CharField(help_text="Name of the root key"),
+                    "describes": serializers.CharField(
+                        help_text="URL of the objects the key describes"
+                    ),
+                },
+            )
+        },
+    ),
 )
 class ValidationSchemaViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filter_fields = ['name']
-    search_fields = ['@name']
+    filter_backends = [
+        ResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+    filter_fields = ["name"]
+    search_fields = ["@name"]
     serializer_class = ValidationSchemaSerializer
-    queryset = ValidationSchema.objects.all().order_by('-id')
+    queryset = ValidationSchema.objects.all().order_by("-id")
 
-    @action(methods=['get'], detail=False)
+    @action(methods=["get"], detail=False)
     def keys(self, request):
         """
         Return the possible root keys for a validation schema.
         This consists of all models that extend the JSONModel or UUIDModel classes.
         """
+
         def url(s):
             try:
                 return reverse(f"{s.lower()}-list", request=request)
             except NoReverseMatch:
                 return None
 
-        return Response([{
-            'key': m.__name__,
-            'describes': url(m.__name__)
-        } for m in ValidatableBySchemaMixin.__subclasses__() if url(m.__name__) is not None]
+        return Response(
+            [
+                {"key": m.__name__, "describes": url(m.__name__)}
+                for m in ValidatableBySchemaMixin.__subclasses__()
+                if url(m.__name__) is not None
+            ]
         )
 
 
@@ -2135,12 +2487,18 @@ class SchemaValidationViewSet(DescribeSelfMixin, viewsets.ReadOnlyModelViewSet):
     """
     SchemaValidations are the results of validating Galv objects against ValidationSchemas.
     """
+
     permission_classes = [DRYPermissions]
-    filter_backends = [SchemaValidationFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filter_fields = ['schema__id', 'object_id', 'content_type__model', 'status']
-    search_fields = ['@schema__name', '=object_id']
+    filter_backends = [
+        SchemaValidationFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+    filter_fields = ["schema__id", "object_id", "content_type__model", "status"]
+    search_fields = ["@schema__name", "=object_id"]
     serializer_class = SchemaValidationSerializer
-    queryset = SchemaValidation.objects.all().order_by('-last_update')
+    queryset = SchemaValidation.objects.all().order_by("-last_update")
 
     # def list(self, request, *args, **kwargs):
     #     """
@@ -2151,6 +2509,7 @@ class SchemaValidationViewSet(DescribeSelfMixin, viewsets.ReadOnlyModelViewSet):
     #         sv.save()
     #     return super().list(request, *args, **kwargs)
 
+
 @extend_schema_view(
     create=extend_schema(
         summary="Upload a file",
@@ -2158,12 +2517,10 @@ class SchemaValidationViewSet(DescribeSelfMixin, viewsets.ReadOnlyModelViewSet):
 Upload a file along with its metadata. The file will be stored in Lab storage.
         """,
         request={
-            'multipart/form-data': ArbitraryFileCreateSerializer,
-            'application/x-www-form-urlencoded': ArbitraryFileCreateSerializer
+            "multipart/form-data": ArbitraryFileCreateSerializer,
+            "application/x-www-form-urlencoded": ArbitraryFileCreateSerializer,
         },
-        responses={
-            201: ArbitraryFileSerializer
-        }
+        responses={201: ArbitraryFileSerializer},
     ),
     partial_update=extend_schema(
         summary="Update a file's metadata",
@@ -2171,14 +2528,12 @@ Upload a file along with its metadata. The file will be stored in Lab storage.
 You can change the visibility of a file and its metadata. Files themselves cannot be updated, only deleted.
         """,
         request=ArbitraryFileSerializer,
-        responses={
-            200: ArbitraryFileSerializer
-        }
+        responses={200: ArbitraryFileSerializer},
     ),
     destroy=extend_schema(
         summary="Delete a file",
-        description="""Delete a file from the database and from the S3 bucket."""
-    )
+        description="""Delete a file from the database and from the S3 bucket.""",
+    ),
 )
 class ArbitraryFileViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
@@ -2190,31 +2545,40 @@ class ArbitraryFileViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
 
     Files are stored in an AWS S3 bucket.
     """
+
     permission_classes = [DRYPermissions]
-    filter_backends = [ResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filter_fields = ['name', 'description']
-    queryset = ArbitraryFile.objects.all().order_by('-id')
-    search_fields = ['@name', '@description']
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+    filter_backends = [
+        ResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+    filter_fields = ["name", "description"]
+    queryset = ArbitraryFile.objects.all().order_by("-id")
+    search_fields = ["@name", "@description"]
+    http_method_names = ["get", "post", "patch", "delete", "options"]
 
     def get_parsers(self):
-        if self.request is not None and self.action_map[self.request.method.lower()] == 'create':
+        if (
+            self.request is not None
+            and self.action_map[self.request.method.lower()] == "create"
+        ):
             return [MultiPartParser(), FormParser()]
         return super().get_parsers()
 
     def get_serializer_class(self):
-        if self.action is not None and self.action == 'create':
+        if self.action is not None and self.action == "create":
             return ArbitraryFileCreateSerializer
         return ArbitraryFileSerializer
 
-    @action(detail=True, methods=['GET'])
-    def file(self, request, pk = None):
+    @action(detail=True, methods=["GET"])
+    def file(self, request, pk=None):
         try:
             arbitrary_file = self.queryset.get(id=pk)
         except ParquetPartition.DoesNotExist:
-            return error_response('Requested file not found')
+            return error_response("Requested file not found")
         self.check_object_permissions(self.request, arbitrary_file)
-        return lab_dependent_file_fetcher(arbitrary_file, 'file', request)
+        return lab_dependent_file_fetcher(arbitrary_file, "file", request)
 
 
 class _StorageTypeMixin:
@@ -2229,7 +2593,7 @@ class _StorageTypeMixin:
 Galv storage is divided by Lab. Each Lab has some storage allocated for saving data.
 
 Additional storage can be configured by connecting a new S3 bucket to your Lab.
-        """
+        """,
     ),
     retrieve=extend_schema(
         summary="View a Lab's storage",
@@ -2237,7 +2601,7 @@ Additional storage can be configured by connecting a new S3 bucket to your Lab.
 Galv storage is divided by Lab. Each Lab has some storage allocated for saving data.
 
 Additional storage can be configured by connecting a new S3 bucket to your Lab.
-        """
+        """,
     ),
     partial_update=extend_schema(
         summary="Update a Lab's storage",
@@ -2245,22 +2609,30 @@ Additional storage can be configured by connecting a new S3 bucket to your Lab.
 Galv storage is divided by Lab. Each Lab has some storage allocated for saving data.
 
 Additional storage can be configured by connecting a new S3 bucket to your Lab.
-        """
+        """,
     ),
 )
-class GalvStorageTypeViewSet(DescribeSelfMixin, viewsets.ModelViewSet, _StorageTypeMixin):
+class GalvStorageTypeViewSet(
+    DescribeSelfMixin, viewsets.ModelViewSet, _StorageTypeMixin
+):
     """
     GalvStorageTypes are used to describe the storage available to a Lab.
     """
-    view_prefix = r'galvstoragetype'
+
+    view_prefix = r"galvstoragetype"
     model = GalvStorageType
     permission_classes = [DRYPermissions]
-    filter_backends = [LabResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filter_fields = ['lab__id', 'lab__name', 'enabled']
-    search_fields = ['=lab__id', '@lab__name']
+    filter_backends = [
+        LabResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+    filter_fields = ["lab__id", "lab__name", "enabled"]
+    search_fields = ["=lab__id", "@lab__name"]
     serializer_class = GalvStorageTypeSerializer
-    queryset = GalvStorageType.objects.all().order_by('-id')
-    http_method_names = ['get', 'patch', 'options']
+    queryset = GalvStorageType.objects.all().order_by("-id")
+    http_method_names = ["get", "patch", "options"]
 
 
 @extend_schema_view(
@@ -2268,36 +2640,36 @@ class GalvStorageTypeViewSet(DescribeSelfMixin, viewsets.ModelViewSet, _StorageT
         summary="View Additional S3 storage by Lab",
         description="""
 Additional S3 storage is storage that is configured and managed outside of Galv.
-        
+
 When the settings are configured appropriately, Galv can store data in the S3 bucket.
-        
+
 You can set a quota for the amount of data that can be stored in the bucket
 so that Galv does not exceed the storage limits.
-        """
+        """,
     ),
     retrieve=extend_schema(
         summary="View a Lab's Additional S3 storage",
         description="""
 Additional S3 storage is storage that is configured and managed outside of Galv.
-        
+
 When the settings are configured appropriately, Galv can store data in the S3 bucket.
-        """
+        """,
     ),
     create=extend_schema(
         summary="Create Additional S3 storage",
         description="""
 Create a new S3 bucket for Galv to use.
-        
+
 When the settings are configured appropriately, Galv can store data in the S3 bucket.
-        """
+        """,
     ),
     partial_update=extend_schema(
         summary="Update Additional S3 storage",
         description="""
 Update the settings for an S3 bucket.
-        
+
 When the settings are configured appropriately, Galv can store data in the S3 bucket.
-        """
+        """,
     ),
     destroy=extend_schema(
         summary="Delete Additional S3 storage",
@@ -2306,32 +2678,47 @@ Delete an S3 bucket from Galv.
 
 Deleting a bucket will cause all associated data files to be inaccessible.
 Use this option with caution, and consider setting the storage to enabled=False (read-only access) instead.
-        """
-    )
+        """,
+    ),
 )
-class AdditionalS3StorageTypeViewSet(DescribeSelfMixin, viewsets.ModelViewSet, _StorageTypeMixin):
+class AdditionalS3StorageTypeViewSet(
+    DescribeSelfMixin, viewsets.ModelViewSet, _StorageTypeMixin
+):
     """
     AdditionalS3Storage is used to describe the storage available to a Lab.
     """
-    view_prefix = r'additionals3storagetype'
+
+    view_prefix = r"additionals3storagetype"
     model = AdditionalS3StorageType
     permission_classes = [DRYPermissions]
-    filter_backends = [LabResourceFilterBackend, DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filter_fields = [
-        'lab__id', 'lab__name', 'enabled', 'bucket_name', 'location', 'quota', 'region_name', 'custom_domain'
+    filter_backends = [
+        LabResourceFilterBackend,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
     ]
-    ordering = ['-priority']
+    filter_fields = [
+        "lab__id",
+        "lab__name",
+        "enabled",
+        "bucket_name",
+        "location",
+        "quota",
+        "region_name",
+        "custom_domain",
+    ]
+    ordering = ["-priority"]
     search_fields = [
-        '=lab__id',
-        '@lab__name',
-        '@bucket_name',
-        '=location',
-        '=region_name',
-        '=custom_domain'
+        "=lab__id",
+        "@lab__name",
+        "@bucket_name",
+        "=location",
+        "=region_name",
+        "=custom_domain",
     ]
     serializer_class = AdditionalS3StorageTypeSerializer
-    queryset = AdditionalS3StorageType.objects.all().order_by('-id')
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+    queryset = AdditionalS3StorageType.objects.all().order_by("-id")
+    http_method_names = ["get", "post", "patch", "delete", "options"]
 
 
 def get_storage_url(model, view_suffix, *args, **kwargs):

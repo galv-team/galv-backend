@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0016_observedfile_monitored_paths'),
+        ("galv", "0016_observedfile_monitored_paths"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='observedfile',
-            name='summary',
+            model_name="observedfile",
+            name="summary",
             field=models.JSONField(blank=True, null=True),
         ),
     ]

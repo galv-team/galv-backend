@@ -54,16 +54,28 @@ class S3DataStorage(S3Boto3Storage):
 
 
 class LocalDataStorage(FileSystemStorage):
-    def __init__(self, location=None, base_url=None, file_permissions_mode=None, directory_permissions_mode=None, **kwargs):
+    def __init__(
+        self,
+        location=None,
+        base_url=None,
+        file_permissions_mode=None,
+        directory_permissions_mode=None,
+        **kwargs,
+    ):
         location = location or settings.DATA_ROOT
         base_url = base_url or settings.DATA_URL
-        file_permissions_mode = file_permissions_mode or 0o755  # any user in container can read -- potentially dangerous
+        file_permissions_mode = (
+            file_permissions_mode or 0o755
+        )  # any user in container can read -- potentially dangerous
         directory_permissions_mode = directory_permissions_mode or 0o755
-        super().__init__(location, base_url, file_permissions_mode, directory_permissions_mode)
+        super().__init__(
+            location, base_url, file_permissions_mode, directory_permissions_mode
+        )
 
 
 class DummyDataStorage(FileSystemStorage):
     def _open(self, name, mode="rb"):
         raise NotImplementedError("Dummy storage cannot open files")
+
     def _save(self, name, content):
         raise NotImplementedError("Dummy storage cannot save files")

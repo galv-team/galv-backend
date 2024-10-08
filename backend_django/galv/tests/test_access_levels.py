@@ -8,7 +8,12 @@ import uuid
 
 from rest_framework.reverse import reverse
 
-from ..models import UserLevel, ALLOWED_USER_LEVELS_READ, ALLOWED_USER_LEVELS_EDIT, ALLOWED_USER_LEVELS_DELETE
+from ..models import (
+    UserLevel,
+    ALLOWED_USER_LEVELS_READ,
+    ALLOWED_USER_LEVELS_EDIT,
+    ALLOWED_USER_LEVELS_DELETE,
+)
 from .utils import _GalvTeamResourceTestCase
 from .factories import CellFactory
 
@@ -28,11 +33,12 @@ class AccessLevelTests(_GalvTeamResourceTestCase):
     * If you don't have the appropriate access level, you can't change it
     * You can't violate the Read < Edit < Delete hierarchy
     """
-    stub = 'cell'
+
+    stub = "cell"
     factory = CellFactory
 
     def get_edit_kwargs(self):
-        return {'identifier': str(uuid.uuid4())}
+        return {"identifier": str(uuid.uuid4())}
 
     def test_access_level_change_ok(self):
         """
@@ -40,20 +46,16 @@ class AccessLevelTests(_GalvTeamResourceTestCase):
         """
         self.client.force_authenticate(self.user)
         resource = self.create_with_perms(read_access_level=UserLevel.TEAM_MEMBER.value)
-        url = reverse(f'{self.stub}-detail', args=(resource.pk,))
+        url = reverse(f"{self.stub}-detail", args=(resource.pk,))
         response = self.file_safe_request(
-            self.client.patch,
-            url,
-            {'read_access_level': UserLevel.ANONYMOUS.value}
+            self.client.patch, url, {"read_access_level": UserLevel.ANONYMOUS.value}
         )
         self.assertEqual(response.status_code, 200)
         resource.refresh_from_db()
         self.assertEqual(resource.read_access_level, UserLevel.ANONYMOUS.value)
         # And back again
         response = self.file_safe_request(
-            self.client.patch,
-            url,
-            {'read_access_level': UserLevel.TEAM_MEMBER.value}
+            self.client.patch, url, {"read_access_level": UserLevel.TEAM_MEMBER.value}
         )
         self.assertEqual(response.status_code, 200)
         resource.refresh_from_db()
@@ -65,11 +67,9 @@ class AccessLevelTests(_GalvTeamResourceTestCase):
         """
         self.client.force_authenticate(self.strange_lab_admin)
         resource = self.create_with_perms(read_access_level=UserLevel.TEAM_MEMBER.value)
-        url = reverse(f'{self.stub}-detail', args=(resource.pk,))
+        url = reverse(f"{self.stub}-detail", args=(resource.pk,))
         response = self.file_safe_request(
-            self.client.patch,
-            url,
-            {'read_access_level': UserLevel.ANONYMOUS.value}
+            self.client.patch, url, {"read_access_level": UserLevel.ANONYMOUS.value}
         )
         self.assertEqual(response.status_code, 403)
 
@@ -79,44 +79,43 @@ class AccessLevelTests(_GalvTeamResourceTestCase):
         * If you don't have the appropriate access level, you can't change it
         """
         self.client.force_authenticate(self.user)
-        resource = self.create_with_perms(delete_access_level=UserLevel.TEAM_ADMIN.value)
-        url = reverse(f'{self.stub}-detail', args=(resource.pk,))
+        resource = self.create_with_perms(
+            delete_access_level=UserLevel.TEAM_ADMIN.value
+        )
+        url = reverse(f"{self.stub}-detail", args=(resource.pk,))
         response = self.file_safe_request(
-            self.client.patch,
-            url,
-            {'edit_access_level': UserLevel.TEAM_ADMIN.value}
+            self.client.patch, url, {"edit_access_level": UserLevel.TEAM_ADMIN.value}
         )
         self.assertEqual(response.status_code, 200)
         resource.refresh_from_db()
         self.assertEqual(resource.edit_access_level, UserLevel.TEAM_ADMIN.value)
         # And now we can't change it back
         response = self.file_safe_request(
-            self.client.patch,
-            url,
-            {'edit_access_level': UserLevel.TEAM_MEMBER.value}
+            self.client.patch, url, {"edit_access_level": UserLevel.TEAM_MEMBER.value}
         )
         self.assertEqual(response.status_code, 403)
 
     def test_access_level_change_values(self):
-        self.client.force_authenticate(self.admin)  # team admin won't run into lockout issues
+        self.client.force_authenticate(
+            self.admin
+        )  # team admin won't run into lockout issues
         for access_type, allowed in [
-            ('delete_access_level', ALLOWED_USER_LEVELS_DELETE),
-            ('edit_access_level', ALLOWED_USER_LEVELS_EDIT),
-            ('read_access_level', ALLOWED_USER_LEVELS_READ),
+            ("delete_access_level", ALLOWED_USER_LEVELS_DELETE),
+            ("edit_access_level", ALLOWED_USER_LEVELS_EDIT),
+            ("read_access_level", ALLOWED_USER_LEVELS_READ),
         ]:
             for level, label in UserLevel.choices:
                 with self.subTest(access_type=access_type, label=label):
                     resource = self.create_with_perms(
                         read_access_level=UserLevel.ANONYMOUS.value,
-                        edit_access_level=UserLevel.TEAM_MEMBER.value \
-                            if access_type == 'delete_access_level' else UserLevel.TEAM_ADMIN.value,
+                        edit_access_level=UserLevel.TEAM_MEMBER.value
+                        if access_type == "delete_access_level"
+                        else UserLevel.TEAM_ADMIN.value,
                         delete_access_level=UserLevel.TEAM_ADMIN.value,
                     )
-                    url = reverse(f'{self.stub}-detail', args=(resource.pk,))
+                    url = reverse(f"{self.stub}-detail", args=(resource.pk,))
                     response = self.file_safe_request(
-                        self.client.patch,
-                        url,
-                        {access_type: level}
+                        self.client.patch, url, {access_type: level}
                     )
                     expected_code = 200 if UserLevel(level) in allowed else 400
                     self.assertEqual(response.status_code, expected_code)
@@ -131,14 +130,12 @@ class AccessLevelTests(_GalvTeamResourceTestCase):
             edit_access_level=UserLevel.TEAM_MEMBER.value,
             delete_access_level=UserLevel.TEAM_MEMBER.value,
         )
-        url = reverse(f'{self.stub}-detail', args=(resource.pk,))
+        url = reverse(f"{self.stub}-detail", args=(resource.pk,))
         # Try to violate the hierarchy
-        for access_type in ['read_access_level', 'edit_access_level']:
+        for access_type in ["read_access_level", "edit_access_level"]:
             with self.subTest(access_type=access_type):
                 response = self.file_safe_request(
-                    self.client.patch,
-                    url,
-                    {access_type: UserLevel.TEAM_ADMIN.value}
+                    self.client.patch, url, {access_type: UserLevel.TEAM_ADMIN.value}
                 )
                 self.assertEqual(response.status_code, 400)
         # Verify it works if we do it all in one go
@@ -146,10 +143,10 @@ class AccessLevelTests(_GalvTeamResourceTestCase):
             self.client.patch,
             url,
             {
-                'read_access_level': UserLevel.TEAM_ADMIN.value,
-                'edit_access_level': UserLevel.TEAM_ADMIN.value,
-                'delete_access_level': UserLevel.TEAM_ADMIN.value,
-            }
+                "read_access_level": UserLevel.TEAM_ADMIN.value,
+                "edit_access_level": UserLevel.TEAM_ADMIN.value,
+                "delete_access_level": UserLevel.TEAM_ADMIN.value,
+            },
         )
         self.assertEqual(response.status_code, 200)
         resource.refresh_from_db()
@@ -157,5 +154,6 @@ class AccessLevelTests(_GalvTeamResourceTestCase):
         self.assertEqual(resource.edit_access_level, UserLevel.TEAM_ADMIN.value)
         self.assertEqual(resource.delete_access_level, UserLevel.TEAM_ADMIN.value)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

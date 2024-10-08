@@ -4,20 +4,28 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0034_alter_arbitraryfile_file_alter_arbitraryfile_name_and_more'),
+        ("galv", "0034_alter_arbitraryfile_file_alter_arbitraryfile_name_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='additionals3storagetype',
-            name='region_name',
-            field=models.TextField(blank=True, help_text='Region for the S3 bucket. Only one of custom domain or region should be set.', null=True),
+            model_name="additionals3storagetype",
+            name="region_name",
+            field=models.TextField(
+                blank=True,
+                help_text="Region for the S3 bucket. Only one of custom domain or region should be set.",
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='additionals3storagetype',
-            name='access_key',
-            field=models.TextField(blank=True, default='eu-west-2', help_text='Access key for the S3 bucket', null=True),
+            model_name="additionals3storagetype",
+            name="access_key",
+            field=models.TextField(
+                blank=True,
+                default="eu-west-2",
+                help_text="Access key for the S3 bucket",
+                null=True,
+            ),
         ),
     ]

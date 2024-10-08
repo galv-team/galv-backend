@@ -4,15 +4,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0042_alter_schemavalidation_schema'),
+        ("galv", "0042_alter_schemavalidation_schema"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='datacolumntype',
-            name='data_type',
-            field=models.TextField(choices=[('int', 'int'), ('float', 'float'), ('str', 'str'), ('bool', 'bool'), ('datetime64[ns]', 'datetime64[ns]')], default='float', help_text='Type of the data in this column.'),
+            model_name="datacolumntype",
+            name="data_type",
+            field=models.TextField(
+                choices=[
+                    ("int", "int"),
+                    ("float", "float"),
+                    ("str", "str"),
+                    ("bool", "bool"),
+                    ("datetime64[ns]", "datetime64[ns]"),
+                ],
+                default="float",
+                help_text="Type of the data in this column.",
+            ),
         ),
     ]

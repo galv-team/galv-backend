@@ -14,26 +14,26 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
-import os
+import os  # noqa: F401
 import dj_database_url
+
+from .settings_base import *  # noqa: F401, F403, E402
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-dev-key')
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-dev-key")
 
-from .settings_base import *
+ALLOWED_HOSTS = [*ALLOWED_HOSTS, "localhost", "host.docker.internal"]  # noqa: F405
 
-ALLOWED_HOSTS = [*ALLOWED_HOSTS, "localhost", "host.docker.internal"]
-
-CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS  # noqa: F405
 
 # for django-debug-toolbar
 DEBUG_TOOLBAR_CONFIG = {
     "SHOW_TOOLBAR_CALLBACK": lambda request: DEBUG,
     "DEBUG_TOOLBAR_PANELS": [
-        'cachalot.panels.CachalotPanel',
-    ]
+        "cachalot.panels.CachalotPanel",
+    ],
 }
 
 # Database
@@ -42,20 +42,18 @@ DEBUG_TOOLBAR_CONFIG = {
 # First port of call is the DATABASE_URL environment variable
 # This means we can support fly.io's postgresql service
 
-if os.environ.get('DATABASE_URL'):
-    DATABASES = {
-        'default': dj_database_url.config(test_options={'NAME': 'galv_test'})
-    }
+if os.environ.get("DATABASE_URL"):
+    DATABASES = {"default": dj_database_url.config(test_options={"NAME": "galv_test"})}
 else:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get("POSTGRES_DB", 'galv'),
-            'HOST': os.environ.get('POSTGRES_HOST', 'postgres'),
-            'PORT': os.environ.get('POSTGRES_PORT', 5432),
-            'USER': os.environ.get('POSTGRES_USER', 'postgres'),
-            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'postgres'),
-            'TEST': {'NAME': f"galv_test"}
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("POSTGRES_DB", "galv"),
+            "HOST": os.environ.get("POSTGRES_HOST", "postgres"),
+            "PORT": os.environ.get("POSTGRES_PORT", 5432),
+            "USER": os.environ.get("POSTGRES_USER", "postgres"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
+            "TEST": {"NAME": "galv_test"},
         }
     }
 

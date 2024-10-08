@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0012_parquetpartition_storage_class_name_and_more'),
+        ("galv", "0012_parquetpartition_storage_class_name_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='parquetpartition',
-            name='auth_key',
+            model_name="parquetpartition",
+            name="auth_key",
         ),
     ]

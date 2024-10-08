@@ -5,20 +5,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0005_presigneddatafile_remove_timeseriesdataint_column_and_more'),
+        ("galv", "0005_presigneddatafile_remove_timeseriesdataint_column_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='presigneddatafile',
-            name='observed_file',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='galv.observedfile'),
+            model_name="presigneddatafile",
+            name="observed_file",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="galv.observedfile",
+            ),
         ),
         migrations.AlterField(
-            model_name='presigneddatafile',
-            name='file',
-            field=models.FileField(blank=True, null=True, upload_to='data'),
+            model_name="presigneddatafile",
+            name="file",
+            field=models.FileField(blank=True, null=True, upload_to="data"),
         ),
     ]

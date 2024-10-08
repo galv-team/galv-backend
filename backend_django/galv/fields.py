@@ -2,7 +2,8 @@ from django.db import models
 from django.db.models.fields.files import FieldFile
 from rest_framework.reverse import reverse
 
-from .storages import MediaStorage, LocalDataStorage
+from .storages import MediaStorage
+
 
 # DEPRECATED
 # TODO: remove when squashing migrations
@@ -16,10 +17,11 @@ class DynamicStorageFieldFile(FieldFile):
             return
         # Only close the file if it's already open, which we know by
         # the presence of self._file
-        if hasattr(self, '_file'):
+        if hasattr(self, "_file"):
             self.close()  # This update_acl method we have already defined in UpdateACLMixin class
         if isinstance(self.storage, MediaStorage):
             self.storage.update_acl(self.name)
+
 
 # DEPRECATED
 # TODO: remove when squashing migrations
@@ -47,6 +49,7 @@ class LabDependentStorageFieldFile(FieldFile):
     """
     A custom FieldFile that allows the storage to be set dynamically based on the model instance.
     """
+
     def __init__(self, instance, field, name):
         super().__init__(instance, field, name)
         self.storage = instance.get_storage()
@@ -76,9 +79,9 @@ class LabDependentStorageFileField(models.FileField):
     The storage argument should be a function that returns a dummy storage class instance
      unless provided with a model instance.
     """
+
     attr_class = LabDependentStorageFieldFile
 
     def pre_save(self, model_instance, add):
         self.storage = model_instance.get_storage(add)
         return super().pre_save(model_instance, add)
-
