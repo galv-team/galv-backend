@@ -37,7 +37,6 @@ from ..models import (
     UserProxy,
     Lab,
     Team,
-    AutoCompleteEntry,
     DataUnit,
     DataColumnType,
     ParquetPartition,
@@ -47,6 +46,7 @@ from ..models import (
     ArbitraryFile,
 )
 from ..models.choices import UserLevel
+from ..models.autocomplete_entries import AutoCompleteEntry
 
 fake = faker.Faker(django.conf.global_settings.LANGUAGE_CODE)
 
