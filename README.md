@@ -6,6 +6,7 @@
 
 [![CI tests](https://github.com/galv-team/galv-backend/actions/workflows/test.yml/badge.svg)](https://github.com/galv-team/galv-backend/actions/workflows/test.yml)
 [![Build docs](https://github.com/galv-team/galv-backend/actions/workflows/docs.yml/badge.svg)](https://github.com/galv-team/galv-backend/actions/workflows/docs.yml)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/galv-team/galv-backend/develop.svg)](https://results.pre-commit.ci/latest/github/galv-team/galv-backend/develop)
 
 > API client libraries:
 >
