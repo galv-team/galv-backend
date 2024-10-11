@@ -1719,7 +1719,7 @@ class MonitoredPathSerializer(
 
     def validate_path(self, value):
         try:
-            value = str(value).lower().lstrip().rstrip()
+            value = str(value).lstrip().rstrip()
         except BaseException as e:
             raise ValidationError(f"Invalid path: {e.__context__}")
         abs_path = os.path.normpath(value)
