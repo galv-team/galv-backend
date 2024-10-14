@@ -94,6 +94,10 @@ from .utils import (
     PasswordField,
 )
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 @extend_schema_serializer(
     examples=[
@@ -2222,10 +2226,13 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
         it's less of a headache than trying to create persistent temporary storage somewhere
         and police the limits on it.
         """
+
+        def df_to_dict(df) -> dict:
+            return json.loads(df.to_json())
+
         target_file = validated_data.pop("target_file_id", None)
         file = validated_data.pop("file")
         mapping = validated_data.pop("mapping", None)
-        observed_file = None
         try:
             # Use the same extension as the uploaded file because the Parsers usually check extension to determine type
             ext = os.path.splitext(file.name)[1]
@@ -2237,18 +2244,47 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
         try:
             harvester = InternalHarvestProcessor(temp_file.name)
             summary = harvester.summarise_columns()
+            summary = df_to_dict(summary)
             if target_file is not None:
+                logger.debug(f"Updating existing file {target_file}")
                 observed_file = target_file
-                if observed_file.summary != json.loads(
-                    summary.to_json()
-                ):  # apply the same processing to summary
-                    raise ValidationError("Summary does not match existing file")
+                d_old = observed_file.summary
+                d_new = summary  # apply the same processing to summary
+                if d_new != d_old:
+                    max_diffs = 10
+                    diffs = []
+                    for k in d_new.keys():
+                        if len(diffs) >= max_diffs:
+                            break
+                        if k not in d_old.keys():
+                            diffs.append(f"{k} not in original summary")
+                        else:
+                            for kk in d_new[k].keys():
+                                if kk not in d_old[k].keys():
+                                    diffs.append(
+                                        f"Original summary {k}[{kk}] doesn't exist"
+                                    )
+                                else:
+                                    if d_new[k][kk] != d_old[k][kk]:
+                                        diffs.append(
+                                            f"{k}[{kk}]: {d_new[k][kk]} vs {d_old[k][kk]}"
+                                        )
+                    diff_str = "\n".join(diffs)
+                    err = (
+                        f"Summary does not match original file's summary.\n"
+                        f"There were{' at least' if len(diffs) >= max_diffs else ''} {max_diffs} differences."
+                        " Showing differences new vs original:\n"
+                    )
+                    raise ValidationError(err + diff_str)
                 if mapping is None:
                     mapping = observed_file.mapping
             else:
+                logger.debug(
+                    f"New manual file upload {'with' if mapping is not None else 'without'} mapping"
+                )
                 observed_file = ObservedFile.objects.create(
                     **validated_data,
-                    summary=summary.to_dict(),
+                    summary=summary,
                     parser=harvester.input_file.__class__.__name__,
                 )
             if mapping is not None:
@@ -2267,8 +2303,8 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
                 # Delete any existing partitions
                 observed_file.parquet_partitions.all().delete()
                 # Save parquet partitions to storage
-                dir, _, partitions = list(os.walk(harvester.data_file_name))[0]
-                for i, name in enumerate([os.path.join(dir, p) for p in partitions]):
+                d, _, partitions = list(os.walk(harvester.data_file_name))[0]
+                for i, name in enumerate([os.path.join(d, p) for p in partitions]):
                     if name.endswith(".parquet"):
                         ParquetPartition.objects.create(
                             observed_file=observed_file,
@@ -2286,6 +2322,7 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
                 except (
                     FileNotFoundError
                 ):  # don't fail the whole process if the PNG can't be saved
+                    logger.exception("Error saving PNG")
                     pass
                 observed_file.state = FileState.IMPORTED
             else:
@@ -2295,7 +2332,8 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
         except UnsupportedFileTypeError:
             raise ValidationError("Unsupported file type")
         except Exception as e:
-            raise ValidationError(f"Error processing file: {e}")
+            logger.exception("Error processing file.")
+            raise ValidationError("Error processing file.") from e
         finally:
             os.unlink(temp_file.name)
 
