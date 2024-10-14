@@ -25,10 +25,14 @@ services:
       - ./.dev/.static_files:/galv_files/static
       # and media files to MEDIA_ROOT
       - ./.dev/.media_files:/galv_files/media
+      # copy logs for easy access
+      - ./.dev/logs:/var/log/galv
+      - ./.dev/logs_harvester:/opt/project/backend_django/.harvester
     environment:
       VIRTUAL_HOST: "localhost"
       FRONTEND_VIRTUAL_HOST: "http://${VIRTUAL_HOST_ROOT},https://${VIRTUAL_HOST_ROOT},http://localhost:8002"
       DJANGO_SETTINGS: "dev"
+      DJANGO_LOG_LEVEL: "DEBUG"
       DJANGO_SUPERUSER_PASSWORD: "admin"
     env_file:
       - ./.env

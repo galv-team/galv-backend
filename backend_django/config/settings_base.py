@@ -197,6 +197,84 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,  # handle read/writeOnly issues
 }
 
+# Logging
+log_dir = os.environ.get("DJANGO_LOG_DIR", "/var/log/galv")
+level = os.environ.get(
+    "DJANGO_LOG_LEVEL", "DEBUG" if os.environ.get("DJANGO_DEBUG") else "INFO"
+)
+django_level = os.environ.get("DJANGO_LOG_LEVEL_CORE", "INFO")
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "require_debug_false": {"()": "django.utils.log.RequireDebugFalse"},
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+    },
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+        "file": {
+            "format": "{levelname} {asctime} {name}:{funcName}[L{lineno}] {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "filters": ["require_debug_true"],
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+        "mail_admins": {
+            "level": "ERROR",
+            "filters": ["require_debug_false"],
+            "class": "django.utils.log.AdminEmailHandler",
+        },
+        "galv_file": {
+            "level": level,
+            "class": "logging.handlers.RotatingFileHandler",
+            "formatter": "file",
+            "filename": os.path.join(log_dir, "galv.log"),
+            "maxBytes": 1024 * 1024 * 15,  # 15MB
+            "backupCount": 10,
+        },
+        "django_file": {
+            "level": django_level,
+            "class": "logging.handlers.RotatingFileHandler",
+            "formatter": "verbose",
+            "filename": os.path.join(log_dir, "django.log"),
+            "maxBytes": 1024 * 1024 * 15,  # 15MB
+            "backupCount": 10,
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "django_file"],
+            "level": django_level,
+            "propagate": True,
+        },
+        "django.request": {
+            "handlers": ["mail_admins"],
+            "level": "ERROR",
+            "propagate": True,
+        },
+        "galv": {
+            "handlers": [
+                "galv_file",
+            ],
+            "level": level,
+        },
+    },
+}
+
 
 # Mailserver
 EMAIL_HOST = os.environ.get(
