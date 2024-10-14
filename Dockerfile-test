@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN mkdir -p /code
 RUN mkdir /static
+RUN mkdir -p /var/log/galv
 
 WORKDIR /code
 

@@ -26,6 +26,7 @@ RUN mkdir -p /code
 RUN mkdir -p /galv_files/static
 RUN mkdir -p /galv_files/media
 RUN mkdir -p /galv_files/data
+RUN mkdir -p /var/log/galv
 
 WORKDIR /code
 

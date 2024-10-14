@@ -146,7 +146,7 @@ import logging
 from .storages import LocalDataStorage
 
 logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler())
+# logger.addHandler(logging.StreamHandler())
 
 
 GENERATE_HARVESTER_API_SCHEMA = (
@@ -188,27 +188,24 @@ def lab_dependent_file_fetcher(
     """
     Check a user is allowed to access a file, and redirect them to its actual location if they are.
     """
-    try:
-        file = getattr(parent_object, file_field_name)
-        if file:
-            if parent_object.storage_type and isinstance(
-                parent_object.storage_type.get_storage(file), LocalDataStorage
-            ):
-                # Send the file directly via the upstream nginx proxy
+    file = getattr(parent_object, file_field_name)
+    if file:
+        if parent_object.storage_type and isinstance(
+            parent_object.storage_type.get_storage(file), LocalDataStorage
+        ):
+            # Send the file directly via the upstream nginx proxy
+            response = HttpResponse()
+            for k, v in headers(file).items():
+                response[k] = v
+            response["X-Accel-Redirect"] = file.backend_url()
+        else:
+            # Redirect to S3
+            if request.headers.get("Galv-Storage-No-Redirect"):
                 response = HttpResponse()
-                for k, v in headers(file).items():
-                    response[k] = v
-                response["X-Accel-Redirect"] = file.backend_url()
+                response["Galv-Storage-Redirect-URL"] = file.backend_url()
             else:
-                # Redirect to S3
-                if request.headers.get("Galv-Storage-No-Redirect"):
-                    response = HttpResponse()
-                    response["Galv-Storage-Redirect-URL"] = file.backend_url()
-                else:
-                    response = HttpResponseRedirect(file.backend_url())
-            return response
-    except Exception as e:
-        logger.error(f"Error fetching file: {e}")
+                response = HttpResponseRedirect(file.backend_url())
+        return response
     return error_response("File not uploaded")
 
 
@@ -249,15 +246,18 @@ Each field will have the following information:
         """,
     )
     def describe(self, request):
+        logger.debug(f"Describing {self.__class__.__name__}")
         try:
             serializer_class = self.get_serializer_class()
         except Exception as e:
+            logger.exception("Error getting serializer class")
             return error_response(
                 f"Error getting serializer class for {self.__class__.__name__}:\n{e}"
             )
         try:
             description = SerializerDescriptionSerializer(serializer_class())
         except Exception as e:
+            logger.exception("Error instantiating serializer")
             return error_response(f"Error instantiating serializer:\n{e}")
         return Response(description.data)
 
