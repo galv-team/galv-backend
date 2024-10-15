@@ -20,7 +20,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.4.5-dev"
+API_VERSION = "2.5.0-dev"
 
 try:
     USER_ACTIVATION_TOKEN_EXPIRY_S = int(
