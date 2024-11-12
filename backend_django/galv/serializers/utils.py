@@ -1,5 +1,6 @@
 import json
 from collections import OrderedDict
+from typing import Union, Literal, Any
 
 import django.db.models
 from django.core.serializers.json import DjangoJSONEncoder
@@ -13,6 +14,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from galv.models import GroupProxy, UserProxy, VALIDATION_MOCK_ENDPOINT
 from rest_framework.fields import DictField
 from rest_framework.relations import ManyRelatedField
+from typing_extensions import TypedDict
 
 url_help_text = "Canonical URL for this object"
 
@@ -607,6 +609,26 @@ class DumpSerializer(serializers.Serializer):
         return self.dump
 
 
+class SerializerDescription(TypedDict):
+    type: Union[
+        Literal["url"],
+        Literal["number"],
+        Literal["datetime"],
+        Literal["boolean"],
+        Literal["string"],
+        Literal["choice"],
+        Literal["json"],
+    ]
+    help_text: str
+    required: bool
+    read_only: bool
+    write_only: bool
+    create_only: bool
+    default: Any
+    choices: list[str]
+    allow_null: bool
+
+
 class SerializerDescriptionSerializer(serializers.Serializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -661,7 +683,7 @@ class SerializerDescriptionSerializer(serializers.Serializer):
                 return key
         return f"Unknown[{field.__class__.__name__}]"
 
-    def to_representation(self, instance):
+    def to_representation(self, instance) -> SerializerDescription:
         """
         Return a dictionary describing the serializer.
         Each key will be a field name, and the value will be a dictionary with the following keys:
