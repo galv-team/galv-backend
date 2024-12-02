@@ -5,20 +5,24 @@ import galv.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0026_observedfile_png'),
+        ("galv", "0026_observedfile_png"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='observedfile',
-            name='storage_class_name',
+            model_name="observedfile",
+            name="storage_class_name",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='observedfile',
-            name='png',
-            field=galv.fields.LabDependentStorageFileField(blank=True, help_text='Preview image of the file', null=True, upload_to=''),
+            model_name="observedfile",
+            name="png",
+            field=galv.fields.LabDependentStorageFileField(
+                blank=True,
+                help_text="Preview image of the file",
+                null=True,
+                upload_to="",
+            ),
         ),
     ]

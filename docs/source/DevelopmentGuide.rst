@@ -56,12 +56,12 @@ used to implement the different parts of the project.
 Docker
 ================================================================================
 
-Dockerfiles are provided to run all components of this project in containers. 
+Dockerfiles are provided to run all components of this project in containers.
 A docker-compose file exists to simplify starting the complete development stack
 including the database, the web app and the a mailhog server.
 
-A Docker container is also used for building the web app and its dependencies 
-to simplify cross platform deployment and ensure a consistent and reliable 
+A Docker container is also used for building the web app and its dependencies
+to simplify cross platform deployment and ensure a consistent and reliable
 build process.
 The API server's docker container includes a simple Nginx proxy to allow
 the server to handle static files and uploaded data files.
@@ -147,7 +147,7 @@ There are tweaks to the basic Django systems for:
 
   * code in ``backend_django/galv/storages.py``, ``backend_django/galv/fields.py``, and ``backend_django/galv/models/models.py``
 
-Additionally, there are some tricks here and there in 
+Additionally, there are some tricks here and there in
 ``backend_django/galv/serializers.py`` and
 ``backend_django/galv/models.py``.
 It's hard to say what's counterintuitive off the bat, however,
@@ -174,7 +174,7 @@ It is built and served during documentation writing using the ``docs`` container
 Contributor guide
 ********************************************************************************
 
-We very much welcome contributions. 
+We very much welcome contributions.
 Please feel free to participate in discussion around the issues listed on GitHub,
 submit new bugs or feature requests, or help contribute to the codebase.
 

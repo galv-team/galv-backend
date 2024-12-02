@@ -20,15 +20,19 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.2.0"
+API_VERSION = "2.5.0-dev"
 
 try:
-    USER_ACTIVATION_TOKEN_EXPIRY_S = int(os.environ.get("DJANGO_USER_ACTIVATION_TOKEN_EXPIRY_S"))
+    USER_ACTIVATION_TOKEN_EXPIRY_S = int(
+        os.environ.get("DJANGO_USER_ACTIVATION_TOKEN_EXPIRY_S")
+    )
 except (ValueError, TypeError):
     USER_ACTIVATION_TOKEN_EXPIRY_S = 60 * 15  # 15 minutes
 
 try:
-    USER_PW_RESET_TOKEN_EXPIRY_S = int(os.environ.get("DJANGO_USER_PW_RESET_TOKEN_EXPIRY_S"))
+    USER_PW_RESET_TOKEN_EXPIRY_S = int(
+        os.environ.get("DJANGO_USER_PW_RESET_TOKEN_EXPIRY_S")
+    )
 except (ValueError, TypeError):
     USER_PW_RESET_TOKEN_EXPIRY_S = 60 * 15  # 15 minutes
 
@@ -41,70 +45,73 @@ ALLOWED_HOSTS = [*os.environ.get("VIRTUAL_HOST", "").split(",")]
 
 CORS_ALLOW_HEADERS = list(corsheaders.defaults.default_headers) + [
     "X-CSRF-TOKEN",
-    "Galv-Storage-No-Redirect"
+    "Galv-Storage-No-Redirect",
 ]
 CORS_EXPOSE_HEADERS = [
     "Galv-Storage-Redirect-URL",
     "Content-Disposition",
 ]
-CORS_ALLOWED_ORIGINS = os.environ.get("FRONTEND_VIRTUAL_HOST", "").split(",")
+CORS_ALLOWED_ORIGINS = [
+    *os.environ.get("FRONTEND_VIRTUAL_HOST", "").split(","),
+    "https://galv-team.github.io",
+]
 CORS_ALLOW_CREDENTIALS = True
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.postgres',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django.contrib.postgres",
     "corsheaders",
     "debug_toolbar",
     # "cachalot",
-    'rest_framework',
-    'dry_rest_permissions',
-    'django_filters',
-    'knox',
-    'galv.apps.GalvConfig',
-    'drf_spectacular',
+    "rest_framework",
+    "dry_rest_permissions",
+    "django_filters",
+    "knox",
+    "galv.apps.GalvConfig",
+    "drf_spectacular",
     # "django_snakeviz_profiling",
 ]
 
 MIDDLEWARE = [
     # "django_snakeviz_profiling.SnakevizProfilingMiddleware",
-    'django.middleware.security.SecurityMiddleware',
+    "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 SNAKEVIZ_PROFILING = "PLEASE_PROFILE_REQUESTS"
 
-ROOT_URLCONF = 'config.urls'
+ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
+WSGI_APPLICATION = "config.wsgi.application"
 
 
 # Password validation
@@ -112,16 +119,16 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -129,9 +136,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -143,55 +150,140 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 100000000
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
 REST_FRAMEWORK = {
     # 'DEFAULT_PAGINATION_CLASS': 'galv.pagination.Unpaginatable',
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 100,
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'knox.auth.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-        'galv.auth.HarvesterAuthentication',
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
+    "PAGE_SIZE": 100,
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "knox.auth.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+        "galv.auth.HarvesterAuthentication",
     ],
-    'DEFAULT_FILTER_BACKENDS': [
-        'django_filters.rest_framework.DjangoFilterBackend',
-        'rest_framework.filters.SearchFilter',
-        'rest_framework.filters.OrderingFilter',
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
     ],
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',
-        'galv.renderers.BinaryRenderer',
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",
+        "galv.renderers.BinaryRenderer",
     ],
 }
 REST_KNOX = {
-    'SECURE_HASH_ALGORITHM': 'cryptography.hazmat.primitives.hashes.SHA512',
-    'USER_SERIALIZER': 'galv.serializers.UserSerializer',
-    'AUTO_REFRESH': True,
-    'AUTH_HEADER_PREFIX': 'Bearer',
-    'TOKEN_LIMIT_PER_USER': 20
+    "SECURE_HASH_ALGORITHM": "cryptography.hazmat.primitives.hashes.SHA512",
+    "USER_SERIALIZER": "galv.serializers.UserSerializer",
+    "AUTO_REFRESH": True,
+    "AUTH_HEADER_PREFIX": "Bearer",
+    "TOKEN_LIMIT_PER_USER": 20,
 }
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Battery Data API',
-    'DESCRIPTION': 'A standard API for accessing battery experiment datasets and metadata',
-    'VERSION': API_VERSION,
-    'CONTACT': {'email': 'martin.robinson@cs.ox.ac.uk'},
-    'LICENSE': {'name': 'Apache 2.0', 'url': 'https://www.apache.org/licenses/LICENSE-2.0.html'},
-    'SERVE_INCLUDE_SCHEMA': False,
-    'PREPROCESSING_HOOKS': ['galv.schema.custom_preprocessing_hook'],
-    'POSTPROCESSING_HOOKS': ['galv.schema.custom_postprocessing_hook'],
-    'COMPONENT_SPLIT_REQUEST': True,  # handle read/writeOnly issues
+    "TITLE": "Battery Data API",
+    "DESCRIPTION": "A standard API for accessing battery experiment datasets and metadata",
+    "VERSION": API_VERSION,
+    "CONTACT": {"email": "martin.robinson@cs.ox.ac.uk"},
+    "LICENSE": {
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+    },
+    "SERVE_INCLUDE_SCHEMA": False,
+    "PREPROCESSING_HOOKS": ["galv.schema.custom_preprocessing_hook"],
+    "POSTPROCESSING_HOOKS": ["galv.schema.custom_postprocessing_hook"],
+    "COMPONENT_SPLIT_REQUEST": True,  # handle read/writeOnly issues
+}
+
+# Logging
+log_dir = os.environ.get("DJANGO_LOG_DIR", "/var/log/galv")
+level = os.environ.get(
+    "DJANGO_LOG_LEVEL", "DEBUG" if os.environ.get("DJANGO_DEBUG") else "INFO"
+)
+django_level = os.environ.get("DJANGO_LOG_LEVEL_CORE", "INFO")
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "require_debug_false": {"()": "django.utils.log.RequireDebugFalse"},
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+    },
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+        "file": {
+            "format": "{levelname} {asctime} {name}:{funcName}[L{lineno}] {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "filters": ["require_debug_true"],
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+        "mail_admins": {
+            "level": "ERROR",
+            "filters": ["require_debug_false"],
+            "class": "django.utils.log.AdminEmailHandler",
+        },
+        "galv_file": {
+            "level": level,
+            "class": "logging.handlers.RotatingFileHandler",
+            "formatter": "file",
+            "filename": os.path.join(log_dir, "galv.log"),
+            "maxBytes": 1024 * 1024 * 15,  # 15MB
+            "backupCount": 10,
+        },
+        "django_file": {
+            "level": django_level,
+            "class": "logging.handlers.RotatingFileHandler",
+            "formatter": "verbose",
+            "filename": os.path.join(log_dir, "django.log"),
+            "maxBytes": 1024 * 1024 * 15,  # 15MB
+            "backupCount": 10,
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "django_file"],
+            "level": django_level,
+            "propagate": True,
+        },
+        "django.request": {
+            "handlers": ["mail_admins"],
+            "level": "ERROR",
+            "propagate": True,
+        },
+        "galv": {
+            "handlers": [
+                "galv_file",
+            ],
+            "level": level,
+        },
+    },
 }
 
 
 # Mailserver
-EMAIL_HOST = os.environ.get("DJANGO_EMAIL_HOST", 'mailhog')  # 'mail' is the default for docker-compose
+EMAIL_HOST = os.environ.get(
+    "DJANGO_EMAIL_HOST", "mailhog"
+)  # 'mail' is the default for docker-compose
 try:
-    EMAIL_PORT = int(os.environ.get("DJANGO_EMAIL_PORT", "1025"))  # '1025' is the default for smtpd
+    EMAIL_PORT = int(
+        os.environ.get("DJANGO_EMAIL_PORT", "1025")
+    )  # '1025' is the default for smtpd
 except ValueError:
     EMAIL_PORT = 1025
 EMAIL_HOST_USER = os.environ.get("DJANGO_EMAIL_HOST_USER", "")
@@ -208,18 +300,31 @@ DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_DEFAULT_FROM_EMAIL", "admin@galv")
 # These apply for static files and media files only.
 # Data files may be uploaded to S3, but Labs have to configure their own S3 access settings.
 AWS_S3_REGION_NAME = os.environ.get("DJANGO_AWS_S3_REGION_NAME")
-AWS_STORAGE_BUCKET_NAME = os.environ.get("DJANGO_AWS_STORAGE_BUCKET_NAME")
-AWS_DEFAULT_ACL = os.environ.get("DJANGO_AWS_DEFAULT_ACL")
+AWS_STORAGE_BUCKET_NAME = os.environ.get(
+    "DJANGO_AWS_STORAGE_BUCKET_NAME",
+    os.environ.get("BUCKET_NAME"),  # compatability with Fly's Tigris service
+)
+AWS_DEFAULT_ACL = os.environ.get("DJANGO_AWS_DEFAULT_ACL", "private")
 AWS_S3_OBJECT_PARAMETERS = {
     "CacheControl": "max-age=2592000",
 }
-AWS_S3_SIGNATURE_VERSION = 's3v4'
-AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
-DATA_STORAGE_UPLOAD_URL_EXPIRY_S = int(os.environ.get("DJANGO_DATA_STORAGE_UPLOAD_URL_EXPIRY_S", 60 * 60))  # 1 hour
+AWS_S3_SIGNATURE_VERSION = "s3v4"
+# AWS_S3_CUSTOM_DOMAIN = os.environ.get("AWS_ENDPOINT_URL_S3")  # for Fly's Tigris service
+AWS_S3_CUSTOM_DOMAIN = os.environ.get("DJANGO_AWS_S3_CUSTOM_DOMAIN")
+if AWS_S3_CUSTOM_DOMAIN is not None:
+    AWS_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}"
+else:
+    AWS_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+
+DATA_STORAGE_UPLOAD_URL_EXPIRY_S = int(
+    os.environ.get("DJANGO_DATA_STORAGE_UPLOAD_URL_EXPIRY_S", 60 * 60)
+)  # 1 hour
 
 # If Labs exceed their storage quota (or if the quota is set to 0),
 # they can still define their own S3 storage settings to save to the S3 cloud.
-LAB_STORAGE_QUOTA_BYTES = int(os.environ.get("DJANGO_LAB_STORAGE_QUOTA_BYTES", 10 ** 8))  # 100 MB
+LAB_STORAGE_QUOTA_BYTES = int(
+    os.environ.get("DJANGO_LAB_STORAGE_QUOTA_BYTES", 10**8)
+)  # 100 MB
 # If this is set to True, Labs can use our S3 storage to store their data files.
 # This is still subject to the LAB_STORAGE_QUOTA_BYTES limit.
 LABS_USE_OUR_S3_STORAGE = os.environ.get("DJANGO_LABS_USE_OUR_S3_STORAGE") == "True"
@@ -230,30 +335,38 @@ STATICFILES_LOCATION = "static"
 MEDIAFILES_LOCATION = "media"
 DATAFILES_LOCATION = "data"
 
-S3_ENABLED = AWS_S3_REGION_NAME and AWS_STORAGE_BUCKET_NAME and AWS_DEFAULT_ACL
-if S3_ENABLED and not os.environ.get("AWS_SECRET_ACCESS_KEY"):
-    print(os.system('env'))
-    raise ValueError("AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY")
+S3_ENABLED = (
+    bool(AWS_S3_REGION_NAME) and bool(AWS_STORAGE_BUCKET_NAME) and bool(AWS_DEFAULT_ACL)
+)
+if S3_ENABLED and not (
+    os.environ.get("AWS_SECRET_ACCESS_KEY") and os.environ.get("AWS_ACCESS_KEY_ID")
+):
+    print(os.system("env"))
+    raise ValueError(
+        "AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY and/or AWS_ACCESS_KEY_ID."
+    )
 
 STORAGES = {}
 
 if S3_ENABLED and os.environ.get("DJANGO_STORE_MEDIA_FILES_ON_S3", False) == "True":
     STORAGES["default"] = {"BACKEND": "galv.storages.MediaStorage"}  # for media
-    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIAFILES_LOCATION}/"
+    MEDIA_URL = f"{AWS_URL}/{MEDIAFILES_LOCATION}/"
 else:
     STORAGES["default"] = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
-        "LOCATION": f"/{MEDIAFILES_LOCATION}"
+        "LOCATION": f"/{MEDIAFILES_LOCATION}",
     }
     MEDIA_ROOT = f"/galv_files/{MEDIAFILES_LOCATION}"
     MEDIA_URL = f"/{MEDIAFILES_LOCATION}/"
 
 if S3_ENABLED and os.environ.get("DJANGO_STORE_STATIC_FILES_ON_S3", False) == "True":
     STORAGES["staticfiles"] = {"BACKEND": "galv.storages.StaticStorage"}  # for static
-    STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/"
+    STATIC_URL = f"{AWS_URL}/{STATICFILES_LOCATION}/"
     STATICFILES_DIRS = [f"/{STATICFILES_LOCATION}"]
 else:
-    STORAGES["staticfiles"] = {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}
+    STORAGES["staticfiles"] = {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+    }
     STATIC_ROOT = f"/galv_files/{STATICFILES_LOCATION}"
     STATIC_URL = f"/{STATICFILES_LOCATION}/"
 
@@ -262,18 +375,20 @@ else:
 DATA_ROOT = f"/galv_files/{DATAFILES_LOCATION}"
 DATA_URL = f"/{DATAFILES_LOCATION}/"
 
-MAX_PNG_PREVIEW_SIZE = int(os.environ.get("DJANGO_MAX_PNG_PREVIEW_SIZE_BYTES", 10 ** 5))  # 100 KB
+MAX_PNG_PREVIEW_SIZE = int(
+    os.environ.get("DJANGO_MAX_PNG_PREVIEW_SIZE_BYTES", 10**5)
+)  # 100 KB
 
 # Harvester report constants
 # These definitions should be kept in sync with the definitions in the harvester program
-HARVESTER_TASK_FILE_SIZE = 'file_size'
-HARVESTER_TASK_IMPORT = 'import'
-HARVESTER_STATUS_SUCCESS = 'success'
-HARVESTER_STATUS_ERROR = 'error'
-HARVEST_STAGE_FILE_METADATA = 'file metadata'
-HARVEST_STAGE_DATA_SUMMARY = 'data summary'
-HARVEST_STAGE_UPLOAD_PARQUET = 'upload parquet partitions'
-HARVEST_STAGE_UPLOAD_COMPLETE = 'upload complete'
-HARVEST_STAGE_UPLOAD_PNG = 'upload png'
-HARVEST_STAGE_COMPLETE = 'harvest complete'
-HARVEST_STAGE_FAILED = 'harvest failed'
+HARVESTER_TASK_FILE_SIZE = "file_size"
+HARVESTER_TASK_IMPORT = "import"
+HARVESTER_STATUS_SUCCESS = "success"
+HARVESTER_STATUS_ERROR = "error"
+HARVEST_STAGE_FILE_METADATA = "file metadata"
+HARVEST_STAGE_DATA_SUMMARY = "data summary"
+HARVEST_STAGE_UPLOAD_PARQUET = "upload parquet partitions"
+HARVEST_STAGE_UPLOAD_COMPLETE = "upload complete"
+HARVEST_STAGE_UPLOAD_PNG = "upload png"
+HARVEST_STAGE_COMPLETE = "harvest complete"
+HARVEST_STAGE_FAILED = "harvest failed"

@@ -9,72 +9,124 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0010_observedfile_successful_uploads'),
+        ("galv", "0010_observedfile_successful_uploads"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='observedfile',
-            name='storage_urls',
+            model_name="observedfile",
+            name="storage_urls",
         ),
         migrations.RemoveField(
-            model_name='observedfile',
-            name='successful_uploads',
+            model_name="observedfile",
+            name="successful_uploads",
         ),
         migrations.AddField(
-            model_name='lab',
-            name='s3_access_key',
-            field=models.TextField(blank=True, help_text='Access key for the S3 bucket', null=True),
+            model_name="lab",
+            name="s3_access_key",
+            field=models.TextField(
+                blank=True, help_text="Access key for the S3 bucket", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='lab',
-            name='s3_bucket_name',
-            field=models.TextField(blank=True, help_text='Name of the S3 bucket to store files in', null=True),
+            model_name="lab",
+            name="s3_bucket_name",
+            field=models.TextField(
+                blank=True,
+                help_text="Name of the S3 bucket to store files in",
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='lab',
-            name='s3_custom_domain',
-            field=models.TextField(blank=True, help_text='Custom domain for the S3 bucket. Probably region-name.s3.amazonaws.com', null=True),
+            model_name="lab",
+            name="s3_custom_domain",
+            field=models.TextField(
+                blank=True,
+                help_text="Custom domain for the S3 bucket. Probably region-name.s3.amazonaws.com",
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='lab',
-            name='s3_location',
-            field=models.TextField(blank=True, help_text='Directory within the S3 bucket to store files in', null=True),
+            model_name="lab",
+            name="s3_location",
+            field=models.TextField(
+                blank=True,
+                help_text="Directory within the S3 bucket to store files in",
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='lab',
-            name='s3_region',
-            field=models.TextField(blank=True, help_text='Region for the S3 bucket.', null=True),
+            model_name="lab",
+            name="s3_region",
+            field=models.TextField(
+                blank=True, help_text="Region for the S3 bucket.", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='lab',
-            name='s3_secret_key',
-            field=models.TextField(blank=True, help_text='Secret key for the S3 bucket', null=True),
+            model_name="lab",
+            name="s3_secret_key",
+            field=models.TextField(
+                blank=True, help_text="Secret key for the S3 bucket", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='monitoredpath',
-            name='max_partition_line_count',
-            field=models.PositiveIntegerField(default=100000, help_text='Maximum number of lines per parquet partition. If your data are very wide, select a lower number. For data with < 50 columns or so, 100,000 is a good starting point.'),
+            model_name="monitoredpath",
+            name="max_partition_line_count",
+            field=models.PositiveIntegerField(
+                default=100000,
+                help_text="Maximum number of lines per parquet partition. If your data are very wide, select a lower number. For data with < 50 columns or so, 100,000 is a good starting point.",
+            ),
         ),
         migrations.CreateModel(
-            name='ParquetPartition',
+            name="ParquetPartition",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('modified', models.DateTimeField(auto_now=True)),
-                ('uuid', galv.models.utils.UUIDFieldLD(default=uuid.uuid4, editable=False, primary_key=True, serialize=False, unique=True)),
-                ('parquet_file', galv.fields.LabDependentStorageFileField(blank=True, help_text='Parquet file', null=True, storage=galv.storages.LocalDataStorage(), upload_to='')),
-                ('partition_number', models.PositiveIntegerField(help_text='Partition number')),
-                ('upload_errors', models.JSONField(default=list, help_text='Upload errors')),
-                ('auth_key', models.TextField(blank=True, null=True, unique=True)),
-                ('observed_file', models.ForeignKey(help_text='ObservedFile containing this partition', on_delete=django.db.models.deletion.CASCADE, related_name='parquet_partitions', to='galv.observedfile')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("modified", models.DateTimeField(auto_now=True)),
+                (
+                    "uuid",
+                    galv.models.utils.UUIDFieldLD(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "parquet_file",
+                    galv.fields.LabDependentStorageFileField(
+                        blank=True,
+                        help_text="Parquet file",
+                        null=True,
+                        storage=galv.storages.LocalDataStorage(),
+                        upload_to="",
+                    ),
+                ),
+                (
+                    "partition_number",
+                    models.PositiveIntegerField(help_text="Partition number"),
+                ),
+                (
+                    "upload_errors",
+                    models.JSONField(default=list, help_text="Upload errors"),
+                ),
+                ("auth_key", models.TextField(blank=True, null=True, unique=True)),
+                (
+                    "observed_file",
+                    models.ForeignKey(
+                        help_text="ObservedFile containing this partition",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="parquet_partitions",
+                        to="galv.observedfile",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.DeleteModel(
-            name='PresignedDataFile',
+            name="PresignedDataFile",
         ),
     ]

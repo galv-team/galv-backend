@@ -15,8 +15,9 @@ with open(f"{os.path.dirname(__file__)}/../schemas/typedObjectStrict.json") as f
 LD_SOURCE_MAP = {
     "schema": "https://schema.org/",
     "emmo": "https://github.com/emmo-repo/EMMO/blob/master/emmo.ttl",
-    "battinfo": "https://github.com/emmo-repo/domain-battery/blob/master/battery.ttl"
+    "battinfo": "https://github.com/emmo-repo/domain-battery/blob/master/battery.ttl",
 }
+
 
 class LDSources(models.TextChoices):
     SCHEMA = "schema"
@@ -25,9 +26,11 @@ class LDSources(models.TextChoices):
 
 
 def get_namespace():
-    namespace = os.environ.get('RDF_HOST_ROOT', os.environ.get('VIRTUAL_HOST_ROOT'))
+    namespace = os.environ.get("RDF_HOST_ROOT", os.environ.get("VIRTUAL_HOST_ROOT"))
     if namespace is None:
-        raise ValueError("RDF_HOST_ROOT or VIRTUAL_HOST_ROOT environment variable must be set")
+        raise ValueError(
+            "RDF_HOST_ROOT or VIRTUAL_HOST_ROOT environment variable must be set"
+        )
     return f"https://rdf.{namespace}/"
 
 
@@ -41,14 +44,16 @@ class TimestampedModel(models.Model):
 
 class UUIDFieldLD(models.UUIDField):
     def __init__(self, **kwargs):
-        super().__init__(**{
-            'default': uuid.uuid4,
-            'editable': False,
-            'primary_key': True,
-            'unique': True,
-            'null': False,
-            **kwargs
-        })
+        super().__init__(
+            **{
+                "default": uuid.uuid4,
+                "editable": False,
+                "primary_key": True,
+                "unique": True,
+                "null": False,
+                **kwargs,
+            }
+        )
 
 
 class UUIDModel(TimestampedModel):
@@ -62,8 +67,9 @@ class CustomPropertiesModel(UUIDModel):
     custom_properties = models.JSONField(
         null=False,
         default=dict,
-        validators=[JSONFieldSchemaValidator(TYPED_OBJECT_SCHEMA)]
+        validators=[JSONFieldSchemaValidator(TYPED_OBJECT_SCHEMA)],
     )
+
     class Meta(UUIDModel.Meta):
         abstract = True
 
@@ -74,8 +80,8 @@ def unpack_rdf(obj: dict) -> dict:
     """
     rdf_props = {}
     for k, v in obj.items():
-        if isinstance(v, dict) and '@rdf-predicate-uri' in v and 'value' in v:
-            rdf_props[v['@rdf-predicate-uri']] = v['value']
+        if isinstance(v, dict) and "@rdf-predicate-uri" in v and "value" in v:
+            rdf_props[v["@rdf-predicate-uri"]] = v["value"]
     return rdf_props
 
 
@@ -94,23 +100,25 @@ def combine_rdf_props(*args) -> dict:
         del rdf_props["@context"]
     return rdf_props
 
+
 class JSONModel(CustomPropertiesModel):
     def __json_ld__(self) -> dict:
         # Complain if not implemented by subclass
-        if not hasattr(self, '__json_ld__'):
-            raise NotImplementedError((
-                "JSONModel subclasses must implement __json_ld__, ",
-                "returning a dict of JSON-LD representation. ",
-                "Should include '@type' field, and triples where this model is the source node. ",
-                "@id is automatically inserted using the UUID. ",
-                "LDSources.* can be used to reference known sources, and any used should be included"
-                "in the '_context' field as a simple list."
-            ))
+        if not hasattr(self, "__json_ld__"):
+            raise NotImplementedError(
+                (
+                    "JSONModel subclasses must implement __json_ld__, ",
+                    "returning a dict of JSON-LD representation. ",
+                    "Should include '@type' field, and triples where this model is the source node. ",
+                    "@id is automatically inserted using the UUID. ",
+                    "LDSources.* can be used to reference known sources, and any used should be included"
+                    "in the '_context' field as a simple list.",
+                )
+            )
         # Unpack any RDF properties from the additional properties
         custom_properties = self.custom_properties.copy()
         return combine_rdf_props(
-            {'@id': f"{get_namespace()}{str(self.id)}"},
-            unpack_rdf(custom_properties)
+            {"@id": f"{get_namespace()}{str(self.id)}"}, unpack_rdf(custom_properties)
         )
 
     class Meta(CustomPropertiesModel.Meta):
@@ -136,7 +144,7 @@ class ScheduleRenderError(ValueError):
     pass
 
 
-def render_pybamm_schedule(schedule, cell, validate = True) -> list[str]|None:
+def render_pybamm_schedule(schedule, cell, validate=True) -> list[str] | None:
     """
     Return the PyBaMM representation of the schedule, with variables filled in.
     Variables are taken from the cell properties, cell family properties, and schedule variables (most preferred first).
@@ -148,9 +156,12 @@ def render_pybamm_schedule(schedule, cell, validate = True) -> list[str]|None:
         **(cell.family.__dict__ or {}),
         **(cell.family.custom_properties or {}),
         **(cell.__dict__ or {}),
-        **(cell.custom_properties or {})
+        **(cell.custom_properties or {}),
     }
-    variables = {k: v["_value"] if isinstance(v, dict) and "_value" in v else v for k, v in variables.items()}
+    variables = {
+        k: v["_value"] if isinstance(v, dict) and "_value" in v else v
+        for k, v in variables.items()
+    }
     rendered_schedule = [t.format(**variables) for t in schedule.family.pybamm_template]
     if validate:
         # TODO: validate the schedule properly
@@ -168,7 +179,9 @@ def render_pybamm_schedule(schedule, cell, validate = True) -> list[str]|None:
                     source = cell.family
                 else:
                     source = "schedule variables"
-                raise ScheduleRenderError(f"Schedule variable {v} is not numeric (got {variables[v]} from {source})")
+                raise ScheduleRenderError(
+                    f"Schedule variable {v} is not numeric (got {variables[v]} from {source})"
+                )
 
         # Check that all variables have been filled in
         as_string = "\n".join(rendered_schedule)

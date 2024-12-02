@@ -4,15 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0036_alter_additionals3storagetype_access_key_and_more'),
+        ("galv", "0036_alter_additionals3storagetype_access_key_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='additionals3storagetype',
-            name='location',
-            field=models.TextField(blank=True, default='galv', help_text='Directory within the S3 bucket to store files in'),
+            model_name="additionals3storagetype",
+            name="location",
+            field=models.TextField(
+                blank=True,
+                default="galv",
+                help_text="Directory within the S3 bucket to store files in",
+            ),
         ),
     ]

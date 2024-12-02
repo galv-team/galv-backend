@@ -13,18 +13,19 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
-import os
+
+import os  # noqa: F401
 import dj_database_url
 
-key = os.environ.get('DJANGO_SECRET_KEY')
+from .settings_base import *  # noqa: F401, F403, E402
+
+key = os.environ.get("DJANGO_SECRET_KEY")
 if not key:
     raise Exception("Missing environment variable DJANGO_SECRET_KEY")
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
-
-from .settings_base import *
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
+DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
 # for django-debug-toolbar
 DEBUG_TOOLBAR_CONFIG = {
@@ -32,14 +33,14 @@ DEBUG_TOOLBAR_CONFIG = {
 }
 
 CSRF_TRUSTED_ORIGINS = [
-    *CORS_ALLOWED_ORIGINS,
-    f'https://{os.environ.get("VIRTUAL_HOST")}'
+    *CORS_ALLOWED_ORIGINS,  # noqa: F405
+    f'https://{os.environ.get("VIRTUAL_HOST")}',
 ]
 
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
@@ -47,33 +48,32 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # First port of call is the DATABASE_URL environment variable
 # This means we can support fly.io's postgresql service
 
-if os.environ.get('DATABASE_URL'):
-    DATABASES = {
-        'default': dj_database_url.config()
-    }
+if os.environ.get("DATABASE_URL"):
+    DATABASES = {"default": dj_database_url.config()}
 else:
-
-    db_host = os.environ.get('POSTGRES_HOST')
-    db_port = os.environ.get('POSTGRES_PORT')
-    db_user = os.environ.get('POSTGRES_USER')
-    db_password = os.environ.get('POSTGRES_PASSWORD')
+    db_host = os.environ.get("POSTGRES_HOST")
+    db_port = os.environ.get("POSTGRES_PORT")
+    db_user = os.environ.get("POSTGRES_USER")
+    db_password = os.environ.get("POSTGRES_PASSWORD")
 
     if not db_host or not db_port or not db_user or not db_password:
-        vars = {
+        db_vars = {
             "POSTGRES_HOST": db_host,
             "POSTGRES_PORT": db_port,
             "POSTGRES_USER": db_user,
-            "POSTGRES_PASSWORD": db_password
+            "POSTGRES_PASSWORD": db_password,
         }
-        raise Exception(f"Missing environment variables: {', '.join([k for k, v in vars.items() if not v])}")
+        raise Exception(
+            f"Missing environment variables: {', '.join([k for k, v in db_vars.items() if not v])}"
+        )
 
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': 'postgres',
-            'HOST': db_host,
-            'PORT': db_port,
-            'USER': db_user,
-            'PASSWORD': db_password
+        "default": {
+            "ENGINE": "django.db.backends.postgresql_psycopg2",
+            "NAME": "postgres",
+            "HOST": db_host,
+            "PORT": db_port,
+            "USER": db_user,
+            "PASSWORD": db_password,
         }
     }

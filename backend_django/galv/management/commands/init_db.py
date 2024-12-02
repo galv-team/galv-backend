@@ -24,4 +24,4 @@ class Command(BaseCommand):
                     ON DELETE RESTRICT
             ) WITH (OIDS = FALSE)
             """)
-            self.stdout.write(self.style.SUCCESS('Complete.'))
+            self.stdout.write(self.style.SUCCESS("Complete."))

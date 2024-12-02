@@ -2,10 +2,10 @@
 First Time Quick Setup
 ######################################################################################
 
-This section describes how to set up the system for the first time. 
-It is assumed you are logged into the server machine that you 
-wish to use, using the user account that you want to run the server with. 
-The entire application has been dockerised, so can in theory be used on 
+This section describes how to set up the system for the first time.
+It is assumed you are logged into the server machine that you
+wish to use, using the user account that you want to run the server with.
+The entire application has been dockerised, so can in theory be used on
 any major operating system with minimal modification.
 
 **************************************************************************************
@@ -78,7 +78,7 @@ Deploying from scratch
 **************************************************************************************
 
 You need to have ``docker``, ``docker-compose`` and ``git`` installed and available on your
-command-line. 
+command-line.
 
 You can find installation instructions for ``docker`` on all major operating systems
 `here <https://docs.docker.com/engine/install/>`__, and for ``docker-compose``
@@ -127,20 +127,20 @@ Create ``.env.secret``
 
 The second ``.env`` file is a secrets file.
 This is not included because you should come up with your own secret values for the
-entries within it. 
+entries within it.
 Create the file and edit it so that it has the following keys:
 
 * ``DJANGO_SECRET_KEY``
 * ``DJANGO_SUPERUSER_PASSWORD``
 * ``POSTGRES_PASSWORD``
 
-All of these values should be unguessable secure passwords. 
+All of these values should be unguessable secure passwords.
 ``DJANGO_SECRET_KEY`` should be very long and complex, consider 60+ characters
 with a mixture of special characters (avoid $ and £), upper- and lower-case letters,
 and numbers.
 The only one of these you will need to use again will be the superuser password.
 
-If you would like the Django superuser to have a name that is not 'admin', 
+If you would like the Django superuser to have a name that is not 'admin',
 you can also specify ``DJANGO_SUPERUSER_USERNAME``.
 
 .. code-block:: shell
@@ -172,7 +172,7 @@ You can run the galv server and web application frontend using the following
 Now view the 'localhost' IP address `http://127.0.0.1/ <http://127.0.0.1/>`_ in your
 browser and you should see the Galv login page.
 This is the web frontend.
-If you wish to use the frontend from another machine, 
+If you wish to use the frontend from another machine,
 use the IP address or URL of the server instead.
 
 Creating a user account

@@ -19,6 +19,7 @@ class UserLevel(models.Choices):
     User levels for access control.
     Team/Lab levels only make sense in the context of a Resource.
     """
+
     ANONYMOUS = 0
     REGISTERED_USER = 1
     LAB_MEMBER = 2

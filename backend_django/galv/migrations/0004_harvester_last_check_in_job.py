@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0003_alter_datacolumn_type_alter_monitoredpath_regex'),
+        ("galv", "0003_alter_datacolumn_type_alter_monitoredpath_regex"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='harvester',
-            name='last_check_in_job',
-            field=models.TextField(help_text='Job description of last Harvester contact', null=True),
+            model_name="harvester",
+            name="last_check_in_job",
+            field=models.TextField(
+                help_text="Job description of last Harvester contact", null=True
+            ),
         ),
     ]

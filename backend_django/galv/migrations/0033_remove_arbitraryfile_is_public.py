@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0032_remove_arbitraryfile_custom_properties_and_more'),
+        ("galv", "0032_remove_arbitraryfile_custom_properties_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='arbitraryfile',
-            name='is_public',
+            model_name="arbitraryfile",
+            name="is_public",
         ),
     ]

@@ -15,7 +15,7 @@ logger.setLevel(logging.INFO)
 
 
 class MonitoredPathTests(GalvTeamResourceTestCase):
-    stub = 'monitoredpath'
+    stub = "monitoredpath"
     factory = MonitoredPathFactory
     harvester = None
 
@@ -25,7 +25,7 @@ class MonitoredPathTests(GalvTeamResourceTestCase):
         self.dict_factory = self._dict_factory
 
     def get_edit_kwargs(self):
-        return {'path': fake.file_path(depth=6)}
+        return {"path": fake.file_path(depth=6)}
 
     def create_with_perms(self, **perms):
         if not self.harvester:
@@ -46,7 +46,9 @@ class MonitoredPathTests(GalvTeamResourceTestCase):
         """
         Inject harvester kwarg into dict_factory
         """
-        return self.raw_dict_factory(*args, **kwargs, harvester={'id': str(self.harvester.id)})
+        return self.raw_dict_factory(
+            *args, **kwargs, harvester={"id": str(self.harvester.id)}
+        )
 
     def test_create_team_member(self):
         """
@@ -54,20 +56,32 @@ class MonitoredPathTests(GalvTeamResourceTestCase):
             * user is ADMIN of the team
         """
         self.client.force_authenticate(self.user)
-        url = reverse(f'{self.stub}-list')
-        create_dict = self.dict_factory(team={'name': self.lab_team.name, 'lab': self.lab_team.lab})
+        url = reverse(f"{self.stub}-list")
+        create_dict = self.dict_factory(
+            team={"name": self.lab_team.name, "lab": self.lab_team.lab}
+        )
         response = self.file_safe_request(self.client.post, url, create_dict)
         assert_response_property(
-            self, response, self.assertEqual, response.status_code,
-            400, msg=f"Check {self.user.username} cannot create monitored paths on {self.lab_team}"
+            self,
+            response,
+            self.assertEqual,
+            response.status_code,
+            400,
+            msg=f"Check {self.user.username} cannot create monitored paths on {self.lab_team}",
         )
         self.client.force_authenticate(self.admin)
-        url = reverse(f'{self.stub}-list')
-        create_dict = self.dict_factory(team={'name': self.lab_team.name, 'lab': self.lab_team.lab})
+        url = reverse(f"{self.stub}-list")
+        create_dict = self.dict_factory(
+            team={"name": self.lab_team.name, "lab": self.lab_team.lab}
+        )
         response = self.file_safe_request(self.client.post, url, create_dict)
         assert_response_property(
-            self, response, self.assertEqual, response.status_code,
-            201, msg=f"Check {self.admin.username} can create resources on {self.lab_team}"
+            self,
+            response,
+            self.assertEqual,
+            response.status_code,
+            201,
+            msg=f"Check {self.admin.username} can create resources on {self.lab_team}",
         )
 
     def test_update_team_member(self):
@@ -81,16 +95,26 @@ class MonitoredPathTests(GalvTeamResourceTestCase):
             (self.access_test_default, 200),
             (self.access_test_team_no_write, 403),
             (self.access_test_lab_no_read, 200),
-            (self.access_test_lab_write, 200),  # these values should never be possible in practice
+            (
+                self.access_test_lab_write,
+                200,
+            ),  # these values should never be possible in practice
             (self.access_test_authorised_read, 200),
-            (self.access_test_authorised_write, 200),  # these values should never be possible in practice
-            (self.access_test_open, 200)
+            (
+                self.access_test_authorised_write,
+                200,
+            ),  # these values should never be possible in practice
+            (self.access_test_open, 200),
         ]:
             with self.subTest(resource=self.get_resource_description(resource)):
-                url = reverse(f'{self.stub}-detail', args=(resource.pk,))
-                response = self.file_safe_request(self.client.patch, url, self.get_edit_kwargs())
-                assert_response_property(self, response, self.assertEqual, response.status_code, code)
+                url = reverse(f"{self.stub}-detail", args=(resource.pk,))
+                response = self.file_safe_request(
+                    self.client.patch, url, self.get_edit_kwargs()
+                )
+                assert_response_property(
+                    self, response, self.assertEqual, response.status_code, code
+                )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

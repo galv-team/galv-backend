@@ -13,9 +13,10 @@ logger.setLevel(logging.INFO)
 
 
 class EquipmentTests(GalvTeamResourceTestCase):
-    stub = 'equipment'
+    stub = "equipment"
     factory = EquipmentFactory
-    edit_kwargs = {'calibration_date': '1970-01-01'}
+    edit_kwargs = {"calibration_date": "1970-01-01"}
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

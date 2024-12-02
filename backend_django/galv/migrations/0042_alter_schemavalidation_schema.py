@@ -5,15 +5,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0041_knoxauthtoken_user'),
+        ("galv", "0041_knoxauthtoken_user"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='schemavalidation',
-            name='schema',
-            field=models.ForeignKey(help_text='ValidationSchema used to validate the component', on_delete=django.db.models.deletion.CASCADE, related_name='+', to='galv.validationschema'),
+            model_name="schemavalidation",
+            name="schema",
+            field=models.ForeignKey(
+                help_text="ValidationSchema used to validate the component",
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="+",
+                to="galv.validationschema",
+            ),
         ),
     ]

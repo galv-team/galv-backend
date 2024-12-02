@@ -40,7 +40,7 @@ console_command = "/code/backend_django/manage.py shell"
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
-  memory_mb = 512
+  memory_mb = 2048
 
 #[[statics]]
 #  guest_path = "/static/"

@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0022_datacolumntype_data_type_alter_columnmapping_map'),
+        ("galv", "0022_datacolumntype_data_type_alter_columnmapping_map"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='columnmapping',
-            name='map',
-            field=models.JSONField(help_text="Mapping of column names to Column objects. Each key is a column name in the file, and each value is a dictionary with the following keys: `column_type` (required): the ID of the DataColumnType object to map to, `new_name` (optional): a new name for the column (defaults to column_type's name) and cannot be specified for required columns, `multiplier` (optional): a multiplier to apply to the column, `addition` (optional): a value to add to the column. Multiplier and addition are only used for numerical (int/float) columns. The new value is calculated as `new_value = (old_value + addition) * multiplier`. Columns will be renamed to match the DataColumnType name. **Columns not in the map will be coerced to float datatype.**"),
+            model_name="columnmapping",
+            name="map",
+            field=models.JSONField(
+                help_text="Mapping of column names to Column objects. Each key is a column name in the file, and each value is a dictionary with the following keys: `column_type` (required): the ID of the DataColumnType object to map to, `new_name` (optional): a new name for the column (defaults to column_type's name) and cannot be specified for required columns, `multiplier` (optional): a multiplier to apply to the column, `addition` (optional): a value to add to the column. Multiplier and addition are only used for numerical (int/float) columns. The new value is calculated as `new_value = (old_value + addition) * multiplier`. Columns will be renamed to match the DataColumnType name. **Columns not in the map will be coerced to float datatype.**"
+            ),
         ),
     ]

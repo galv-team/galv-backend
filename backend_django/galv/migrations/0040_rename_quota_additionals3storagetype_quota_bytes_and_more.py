@@ -4,69 +4,68 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0039_passwordreset'),
+        ("galv", "0039_passwordreset"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='additionals3storagetype',
-            old_name='quota',
-            new_name='quota_bytes',
+            model_name="additionals3storagetype",
+            old_name="quota",
+            new_name="quota_bytes",
         ),
         migrations.RenameField(
-            model_name='cellfamily',
-            old_name='energy_density',
-            new_name='energy_density_wh_per_kg',
+            model_name="cellfamily",
+            old_name="energy_density",
+            new_name="energy_density_wh_per_kg",
         ),
         migrations.RenameField(
-            model_name='cellfamily',
-            old_name='initial_ac_impedance',
-            new_name='initial_ac_impedance_o',
+            model_name="cellfamily",
+            old_name="initial_ac_impedance",
+            new_name="initial_ac_impedance_o",
         ),
         migrations.RenameField(
-            model_name='cellfamily',
-            old_name='initial_dc_resistance',
-            new_name='initial_dc_resistance_o',
+            model_name="cellfamily",
+            old_name="initial_dc_resistance",
+            new_name="initial_dc_resistance_o",
         ),
         migrations.RenameField(
-            model_name='cellfamily',
-            old_name='nominal_capacity',
-            new_name='nominal_capacity_ah',
+            model_name="cellfamily",
+            old_name="nominal_capacity",
+            new_name="nominal_capacity_ah",
         ),
         migrations.RenameField(
-            model_name='cellfamily',
-            old_name='nominal_voltage',
-            new_name='nominal_voltage_v',
+            model_name="cellfamily",
+            old_name="nominal_voltage",
+            new_name="nominal_voltage_v",
         ),
         migrations.RenameField(
-            model_name='cellfamily',
-            old_name='power_density',
-            new_name='power_density_w_per_kg',
+            model_name="cellfamily",
+            old_name="power_density",
+            new_name="power_density_w_per_kg",
         ),
         migrations.RenameField(
-            model_name='galvstoragetype',
-            old_name='quota',
-            new_name='quota_bytes',
+            model_name="galvstoragetype",
+            old_name="quota",
+            new_name="quota_bytes",
         ),
         migrations.RenameField(
-            model_name='monitoredpath',
-            old_name='stable_time',
-            new_name='stable_time_s',
+            model_name="monitoredpath",
+            old_name="stable_time",
+            new_name="stable_time_s",
         ),
         migrations.RenameField(
-            model_name='observedfile',
-            old_name='last_observed_size',
-            new_name='last_observed_size_bytes',
+            model_name="observedfile",
+            old_name="last_observed_size",
+            new_name="last_observed_size_bytes",
         ),
         migrations.RenameField(
-            model_name='schedulefamily',
-            old_name='ambient_temperature',
-            new_name='ambient_temperature_c',
+            model_name="schedulefamily",
+            old_name="ambient_temperature",
+            new_name="ambient_temperature_c",
         ),
         migrations.RemoveField(
-            model_name='datacolumntype',
-            name='override_child_name',
+            model_name="datacolumntype",
+            name="override_child_name",
         ),
     ]

@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0008_alter_presigneddatafile_file'),
+        ("galv", "0008_alter_presigneddatafile_file"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='observedfile',
-            name='core_metadata',
-            field=models.JSONField(help_text='Unparsed core metadata from the harvester', null=True),
+            model_name="observedfile",
+            name="core_metadata",
+            field=models.JSONField(
+                help_text="Unparsed core metadata from the harvester", null=True
+            ),
         ),
     ]

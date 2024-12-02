@@ -13,9 +13,10 @@ logger.setLevel(logging.INFO)
 
 
 class ValidationSchemaTests(GalvTeamResourceTestCase):
-    stub = 'validationschema'
+    stub = "validationschema"
     factory = ValidationSchemaFactory
-    edit_kwargs = {'schema': to_validation_schema({'type': 'object'})}
+    edit_kwargs = {"schema": to_validation_schema({"type": "object"})}
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

@@ -5,7 +5,7 @@
 import unittest
 import logging
 
-from .utils import  GalvTeamResourceTestCase
+from .utils import GalvTeamResourceTestCase
 from .factories import ScheduleFamilyFactory
 
 logger = logging.getLogger(__file__)
@@ -13,9 +13,10 @@ logger.setLevel(logging.INFO)
 
 
 class ScheduleFamilyTests(GalvTeamResourceTestCase):
-    stub = 'schedulefamily'
+    stub = "schedulefamily"
     factory = ScheduleFamilyFactory
-    edit_kwargs = {'description': 'test'}
+    edit_kwargs = {"description": "test"}
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

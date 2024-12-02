@@ -6,30 +6,35 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('contenttypes', '0002_remove_content_type_name'),
-        ('galv', '0031_delete_datacolumn'),
+        ("contenttypes", "0002_remove_content_type_name"),
+        ("galv", "0031_delete_datacolumn"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='arbitraryfile',
-            name='custom_properties',
+            model_name="arbitraryfile",
+            name="custom_properties",
         ),
         migrations.AddField(
-            model_name='arbitraryfile',
-            name='_storage_content_type',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype'),
+            model_name="arbitraryfile",
+            name="_storage_content_type",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="contenttypes.contenttype",
+            ),
         ),
         migrations.AddField(
-            model_name='arbitraryfile',
-            name='_storage_object_id',
+            model_name="arbitraryfile",
+            name="_storage_object_id",
             field=models.UUIDField(null=True),
         ),
         migrations.AlterField(
-            model_name='arbitraryfile',
-            name='file',
-            field=galv.fields.LabDependentStorageFileField(blank=True, help_text='File', null=True, unique=True, upload_to=''),
+            model_name="arbitraryfile",
+            name="file",
+            field=galv.fields.LabDependentStorageFileField(
+                blank=True, help_text="File", null=True, unique=True, upload_to=""
+            ),
         ),
     ]

@@ -154,12 +154,12 @@ jobs:
           -g python \
           -c /local/python-config.json \
           -o /local/clients/python
-          
+
           # Copy LICENCE file to client directory
           sudo cp LICENCE clients/python/LICENCE
-          
+
           tree clients/python
-          
+
           # zip the client
           zip -r clients/galv-client-python.zip clients/python
 
@@ -175,10 +175,10 @@ jobs:
           -g typescript-axios \
           -c /local/typescript-axios-config.json \
           -o /local/clients/typescript-axios
-          
+
           # Copy LICENCE file to client directory
           sudo cp LICENCE clients/typescript-axios/LICENCE
-          
+
           # Create a package.json file using EOF notation
           cat << EOF | sudo tee -a clients/typescript-axios/package.json
           {
@@ -202,7 +202,7 @@ jobs:
               }
           }
           EOF
-          
+
           # zip the client
           zip -r clients/galv-client-typescript-axios.zip clients/typescript-axios
 

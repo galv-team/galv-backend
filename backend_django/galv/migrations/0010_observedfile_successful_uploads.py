@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0009_observedfile_core_metadata'),
+        ("galv", "0009_observedfile_core_metadata"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='observedfile',
-            name='successful_uploads',
-            field=models.PositiveIntegerField(default=0, help_text='Number of successful uploads'),
+            model_name="observedfile",
+            name="successful_uploads",
+            field=models.PositiveIntegerField(
+                default=0, help_text="Number of successful uploads"
+            ),
         ),
     ]

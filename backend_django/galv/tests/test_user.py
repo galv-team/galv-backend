@@ -23,12 +23,13 @@ logger.setLevel(logging.INFO)
 * Lab admins can view any user's details
 """
 
-stub = 'userproxy'
+stub = "userproxy"
+
 
 class UserTests(APITestCaseWrapper):
     def setUp(self):
-        self.non_user = UserFactory.create(username='test_users', is_active=True)
-        self.user = UserFactory.create(username='test_users_user', is_active=True)
+        self.non_user = UserFactory.create(username="test_users", is_active=True)
+        self.user = UserFactory.create(username="test_users_user", is_active=True)
 
     def test_list(self):
         """
@@ -39,17 +40,17 @@ class UserTests(APITestCaseWrapper):
         lab_team = TeamFactory.create(lab=lab)
         strange_lab = LabFactory.create()
         strange_lab_team = TeamFactory.create(lab=strange_lab)
-        admin = UserFactory.create(username='test_list_admin')
+        admin = UserFactory.create(username="test_list_admin")
         lab.admin_group.user_set.add(admin)
-        strange_admin = UserFactory.create(username='test_list_strange_admin')
+        strange_admin = UserFactory.create(username="test_list_strange_admin")
         strange_lab.admin_group.user_set.add(strange_admin)
-        user = UserFactory.create(username='test_list_user')
+        user = UserFactory.create(username="test_list_user")
         lab_team.member_group.user_set.add(user)
-        colleague = UserFactory.create(username='test_list_colleague')
+        colleague = UserFactory.create(username="test_list_colleague")
         lab_team.member_group.user_set.add(colleague)
-        stranger = UserFactory.create(username='test_list_stranger')
+        stranger = UserFactory.create(username="test_list_stranger")
         strange_lab_team.member_group.user_set.add(stranger)
-        mystery_guest = UserFactory.create(username='test_list_mystery_guest')
+        mystery_guest = UserFactory.create(username="test_list_mystery_guest")
         lab.admin_group.save()
         strange_lab.admin_group.save()
         lab_team.member_group.save()
@@ -57,98 +58,135 @@ class UserTests(APITestCaseWrapper):
 
         def assert_user_list(viewing_user, expected_contents):
             self.client.force_authenticate(viewing_user)
-            result = self.client.get(reverse(f'{stub}-list'))
-            assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_200_OK)
+            result = self.client.get(reverse(f"{stub}-list"))
+            assert_response_property(
+                self, result, self.assertEqual, result.status_code, status.HTTP_200_OK
+            )
             expected_contents = [u.username for u in expected_contents]
-            contents = [u['username'] for u in result.json().get("results", [])]
+            contents = [u["username"] for u in result.json().get("results", [])]
             self.assertCountEqual(contents, expected_contents)
             for u in expected_contents:
                 self.assertIn(u, contents)
             return result
 
-        result = self.client.get(reverse(f'{stub}-list'))
-        assert_response_property(self, result, self.assertEqual, result.status_code, status.HTTP_401_UNAUTHORIZED)
+        result = self.client.get(reverse(f"{stub}-list"))
+        assert_response_property(
+            self,
+            result,
+            self.assertEqual,
+            result.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
         # Users see themselves and those they're in a lab with
         assert_user_list(mystery_guest, [mystery_guest])
         assert_user_list(user, [user, colleague, admin])
         # Admins see everybody
-        assert_user_list(admin, [user, colleague, admin, stranger, strange_admin, mystery_guest, self.user, self.non_user])
+        assert_user_list(
+            admin,
+            [
+                user,
+                colleague,
+                admin,
+                stranger,
+                strange_admin,
+                mystery_guest,
+                self.user,
+                self.non_user,
+            ],
+        )
 
     def test_create(self):
         """
         * Anonymous users can create a new user
         * Users can view and update their own details
         """
-        url = reverse(f'{stub}-list')
-        data = {'username': 'new_user'}
+        url = reverse(f"{stub}-list")
+        data = {"username": "new_user"}
         self.assertEqual(
-            self.client.post(url, {}).status_code,
-            status.HTTP_400_BAD_REQUEST
+            self.client.post(url, {}).status_code, status.HTTP_400_BAD_REQUEST
         )
         self.assertEqual(
-            self.client.post(url, data).status_code,
-            status.HTTP_400_BAD_REQUEST
+            self.client.post(url, data).status_code, status.HTTP_400_BAD_REQUEST
         )
-        data['password'] = 'pw'
+        data["password"] = "pw"
         self.assertEqual(
-            self.client.post(url, data).status_code,
-            status.HTTP_400_BAD_REQUEST
+            self.client.post(url, data).status_code, status.HTTP_400_BAD_REQUEST
         )
-        data['email'] = 'x@example.com'
+        data["email"] = "x@example.com"
         self.assertEqual(
-            self.client.post(url, data).status_code,
-            status.HTTP_400_BAD_REQUEST
+            self.client.post(url, data).status_code, status.HTTP_400_BAD_REQUEST
         )
-        data['password'] = 'password'
+        data["password"] = "password"
         self.assertEqual(
-            self.client.post(url, {**data, 'username': self.non_user.username}).status_code,
-            status.HTTP_400_BAD_REQUEST
+            self.client.post(
+                url, {**data, "username": self.non_user.username}
+            ).status_code,
+            status.HTTP_400_BAD_REQUEST,
         )
         response = self.client.post(url, data)
-        assert_response_property(self, response, self.assertEqual, response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.json()['username'], data['username'])
+        assert_response_property(
+            self,
+            response,
+            self.assertEqual,
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+        self.assertEqual(response.json()["username"], data["username"])
         response_user = response.json()
         # Check user is inactive and can't be logged in as
-        self.assertFalse(User.objects.get(id=response_user['id']).is_active)
-        self.client.force_authenticate(User.objects.get(id=response_user['id']))
-        self.assertEqual(self.client.get(response_user['url']).status_code, status.HTTP_404_NOT_FOUND)
+        self.assertFalse(User.objects.get(id=response_user["id"]).is_active)
+        self.client.force_authenticate(User.objects.get(id=response_user["id"]))
+        self.assertEqual(
+            self.client.get(response_user["url"]).status_code, status.HTTP_404_NOT_FOUND
+        )
         # Check user can be activated
-        activation = UserActivation.objects.get(user__id=response_user['id'])
-        response = self.client.get(f"{reverse('activate_user')}?username={data['username']}&token={activation.token}")
-        assert_response_property(self, response, self.assertEqual, response.status_code, status.HTTP_200_OK)
-        self.assertTrue(User.objects.get(id=response_user['id']).is_active)
+        activation = UserActivation.objects.get(user__id=response_user["id"])
+        response = self.client.get(
+            f"{reverse('activate_user')}?username={data['username']}&token={activation.token}"
+        )
+        assert_response_property(
+            self, response, self.assertEqual, response.status_code, status.HTTP_200_OK
+        )
+        self.assertTrue(User.objects.get(id=response_user["id"]).is_active)
         # Check user can be logged in as
-        self.client.force_authenticate(User.objects.get(id=response_user['id']))
-        self.assertEqual(self.client.get(response_user['url']).status_code, status.HTTP_200_OK)
+        self.client.force_authenticate(User.objects.get(id=response_user["id"]))
+        self.assertEqual(
+            self.client.get(response_user["url"]).status_code, status.HTTP_200_OK
+        )
 
     def test_update(self):
         """
         * Users can view and update their own details
         """
-        url = reverse(f'{stub}-detail', args=(self.user.id,))
+        url = reverse(f"{stub}-detail", args=(self.user.id,))
         self.client.force_authenticate(self.user)
-        body = {'email': 'test.user@example.com', 'password': 'complex_password'}
+        body = {"email": "test.user@example.com", "password": "complex_password"}
         self.assertEqual(
-            self.client.patch(url, body).status_code,
-            status.HTTP_400_BAD_REQUEST
+            self.client.patch(url, body).status_code, status.HTTP_400_BAD_REQUEST
         )
-        body['current_password'] = 'password'
-        self.user.set_password(body['current_password'])
+        body["current_password"] = "password"
+        self.user.set_password(body["current_password"])
         self.user.save()
         self.assertEqual(
-            self.client.patch(reverse(f'{stub}-detail', args=(self.non_user.id,)), body).status_code,
-            status.HTTP_403_FORBIDDEN
+            self.client.patch(
+                reverse(f"{stub}-detail", args=(self.non_user.id,)), body
+            ).status_code,
+            status.HTTP_403_FORBIDDEN,
         )
         self.assertEqual(
-            self.client.patch(url, {**body, 'email': 'bad-email'}).status_code,
-            status.HTTP_400_BAD_REQUEST
+            self.client.patch(url, {**body, "email": "bad-email"}).status_code,
+            status.HTTP_400_BAD_REQUEST,
         )
         response = self.client.patch(url, body)
         json = response.json()
-        assert_response_property(self, response, self.assertEqual, response.status_code, status.HTTP_200_OK)
-        self.assertEqual(json['email'], body['email'])
-        self.assertTrue(User.objects.get(id=self.user.id).check_password(body['password']))
+        assert_response_property(
+            self, response, self.assertEqual, response.status_code, status.HTTP_200_OK
+        )
+        self.assertEqual(json["email"], body["email"])
+        self.assertTrue(
+            User.objects.get(id=self.user.id).check_password(body["password"])
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

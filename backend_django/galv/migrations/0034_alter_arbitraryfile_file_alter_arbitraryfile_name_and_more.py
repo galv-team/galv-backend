@@ -5,24 +5,25 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('galv', '0033_remove_arbitraryfile_is_public'),
+        ("galv", "0033_remove_arbitraryfile_is_public"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='arbitraryfile',
-            name='file',
-            field=galv.fields.LabDependentStorageFileField(blank=True, help_text='File', null=True, upload_to=''),
+            model_name="arbitraryfile",
+            name="file",
+            field=galv.fields.LabDependentStorageFileField(
+                blank=True, help_text="File", null=True, upload_to=""
+            ),
         ),
         migrations.AlterField(
-            model_name='arbitraryfile',
-            name='name',
-            field=models.TextField(help_text='The name of the file'),
+            model_name="arbitraryfile",
+            name="name",
+            field=models.TextField(help_text="The name of the file"),
         ),
         migrations.AlterUniqueTogether(
-            name='arbitraryfile',
-            unique_together={('file', 'team'), ('name', 'team')},
+            name="arbitraryfile",
+            unique_together={("file", "team"), ("name", "team")},
         ),
     ]

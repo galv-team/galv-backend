@@ -14,11 +14,12 @@ logger.setLevel(logging.INFO)
 
 
 class CellTests(GalvTeamResourceTestCase):
-    stub = 'cell'
+    stub = "cell"
     factory = CellFactory
 
     def get_edit_kwargs(self):
-        return {'identifier': str(uuid.uuid4())}
+        return {"identifier": str(uuid.uuid4())}
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
