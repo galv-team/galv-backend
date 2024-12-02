@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.2 20190208//EN"
+                  "JATS-publishing1.dtd">
+<article xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:xlink="http://www.w3.org/1999/xlink" dtd-version="1.2" article-type="other">
+<front>
+<journal-meta>
+<journal-id></journal-id>
+<journal-title-group>
+<journal-title>Journal of Open Source Software</journal-title>
+<abbrev-journal-title>JOSS</abbrev-journal-title>
+</journal-title-group>
+<issn publication-format="electronic">2475-9066</issn>
+<publisher>
+<publisher-name>Open Journals</publisher-name>
+</publisher>
+</journal-meta>
+<article-meta>
+<article-id pub-id-type="publisher-id">0</article-id>
+<article-id pub-id-type="doi">N/A</article-id>
+<title-group>
+<article-title>Galv: Metadata Secretary for Battery
+Science</article-title>
+</title-group>
+<contrib-group>
+<contrib contrib-type="author" corresp="yes">
+<contrib-id contrib-id-type="orcid">https://orcid.org/0000-0002-1082-9125</contrib-id>
+<name>
+<surname>Planden</surname>
+<given-names>Brady</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+<xref ref-type="corresp" rid="cor-1"><sup>*</sup></xref>
+</contrib>
+<contrib contrib-type="author">
+<contrib-id contrib-id-type="orcid">https://orcid.org/0000-0002-5714-1096</contrib-id>
+<name>
+<surname>Jaquiery</surname>
+<given-names>Matt</given-names>
+</name>
+<xref ref-type="aff" rid="aff-2"/>
+</contrib>
+<contrib contrib-type="author">
+<contrib-id contrib-id-type="orcid">https://orcid.org/0000-0002-1572-6782</contrib-id>
+<name>
+<surname>Robinson</surname>
+<given-names>Martin</given-names>
+</name>
+<xref ref-type="aff" rid="aff-2"/>
+</contrib>
+<contrib contrib-type="author">
+<contrib-id contrib-id-type="orcid">https://orcid.org/0000-0002-0620-3955</contrib-id>
+<name>
+<surname>Howey</surname>
+<given-names>David A.</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+<xref ref-type="aff" rid="aff-3"/>
+</contrib>
+<aff id="aff-1">
+<institution-wrap>
+<institution>Department of Engineering Science, University of Oxford,
+Oxford, UK</institution>
+</institution-wrap>
+</aff>
+<aff id="aff-2">
+<institution-wrap>
+<institution>Research Software Engineering Group, Doctoral Training
+Centre, University of Oxford, Oxford, UK</institution>
+</institution-wrap>
+</aff>
+<aff id="aff-3">
+<institution-wrap>
+<institution>The Faraday Institution, Harwell Campus, Didcot,
+UK</institution>
+</institution-wrap>
+</aff>
+</contrib-group>
+<author-notes>
+<corresp id="cor-1">* E-mail: <email></email></corresp>
+</author-notes>
+<pub-date date-type="pub" publication-format="electronic" iso-8601-date="2024-12-02">
+<day>2</day>
+<month>12</month>
+<year>2024</year>
+</pub-date>
+<volume>¿VOL?</volume>
+<issue>¿ISSUE?</issue>
+<fpage>¿PAGE?</fpage>
+<permissions>
+<copyright-statement>Authors of papers retain copyright and release the
+work under a Creative Commons Attribution 4.0 International License (CC
+BY 4.0)</copyright-statement>
+<copyright-year>2022</copyright-year>
+<copyright-holder>The article authors</copyright-holder>
+<license license-type="open-access" xlink:href="https://creativecommons.org/licenses/by/4.0/">
+<license-p>Authors of papers retain copyright and release the work under
+a Creative Commons Attribution 4.0 International License (CC BY
+4.0)</license-p>
+</license>
+</permissions>
+<kwd-group kwd-group-type="author">
+<kwd>python</kwd>
+<kwd>battery</kwd>
+<kwd>data science</kwd>
+<kwd>metadata</kwd>
+<kwd>REST API</kwd>
+<kwd>management platform</kwd>
+</kwd-group>
+</article-meta>
+</front>
+<body>
+<sec id="summary">
+  <title>Summary</title>
+  <p>The <monospace>Galv</monospace> project is a data and metadata
+  management platform for battery science. Labs conducting battery
+  research can use the platform to store and share (meta)data created
+  from experimental electrochemical experiments. This data includes
+  information about the electrochemical cell, the experimental, and the
+  results. The platform provides a REST API for programmatic access to
+  the data and metadata, in addition to a web interface for user
+  interaction. The web interface acts provides additional functionality
+  for importing and exporting data to widely supported data science
+  languages, such as Python, Julia, and MatLab. This enables users to
+  curate the experimental data within a single platform before
+  completing advanced data analysis in their preferred language. The
+  platform is designed to be extensible, allowing users to define their
+  own metadata schemas and data types. This platform can be self-hosted
+  or used as a cloud service enabling wider collaborations and sharing
+  of experimental test data.</p>
+</sec>
+<sec id="statement-of-need">
+  <title>Statement of need</title>
+  <p><monospace>Galv</monospace> is designed to address the need for a
+  centralised data and metadata management platform for battery science.
+  Battery research is a rapidly growing field, with many labs conducting
+  experiments and generating data. This data is often stored in a
+  variety of formats, making it difficult to share and compare results.
+  By providing a centralised platform for storing and sharing data and
+  metadata, <monospace>Galv</monospace> aims to make it easier for
+  researchers to collaborate and build on each other’s work. Futhermore,
+  by defining a minimal structure for data, <monospace>Galv</monospace>
+  can help researchers to ensure that their data is interoperable for
+  meta-analysis and data science purposes.</p>
+</sec>
+<sec id="architecture">
+  <title>Architecture</title>
+  <p>The <monospace>Galv</monospace> platform is composed of three key
+  components, the <monospace>backend</monospace>, the
+  <monospace>frontend</monospace>, and the
+  <monospace>harvester</monospace>. The <monospace>backend</monospace>
+  stores the corresponding (meta)data in parquet containers with a REST
+  API that provides programmatic access for the frontend as well as
+  third-party applications. The <monospace>frontend</monospace> is a web
+  interface that allows users to interact, modify, and export the
+  (meta)data stored in the platform. Finally, the
+  <monospace>harvester</monospace> is a python package that can be used
+  to automatically collect data and metadata from experiments and store
+  it in the platform. The interaction of these three components is shown
+  in
+  <xref alt="[fig:architecture]" rid="figU003Aarchitecture">[fig:architecture]</xref>
+  below.</p>
+  <fig>
+    <caption><p>Galv’s core architecture (backend) alongside data
+    ingestion (harvesters), and the user web interface (frontend).
+    <styled-content id="figU003Aarchitecture"></styled-content></p></caption>
+    <graphic mimetype="image" mime-subtype="png" xlink:href="architecture_1.png" />
+  </fig>
+  <p>Galv is deployed as individual components with Docker images. These
+  images can be built from the current state of development, or through
+  images built during a Galv release and hosted on GitHub’s container
+  registry.</p>
+  <sec id="the-backend-server">
+    <title>The <monospace>backend</monospace> server</title>
+    <p>The Galv backend is implemented with the Django framework, with a
+    corresponding REST API. This backend provide storage,
+    authentication, and account management for the platform.</p>
+    <p>Items to discuss:
+    - Tweaks to the Django backend (superuser, example data)
+    - Parquet storage mechanism and performance over initial SQL
+    database (i.e. splitting data and metadata for speed)
+    - Local storage and S3 Bucket</p>
+  </sec>
+  <sec id="the-frontend-interface">
+    <title>The <monospace>frontend</monospace> interface</title>
+    <p>The web-based frontend is implemented with the React framework
+    and interfaces with the backend via the REST API. The frontend is
+    the direct access for users’ to the platform and is designed to
+    provide the majority of the metadata curation. The frontend is
+    structured to give end-users account management, split into
+    individual user level, team-based, and laboratory. Each of these
+    levels provides a structure tier for safe management of the
+    underlying experimental data. The aim is to provide a structure that
+    aligns with standard laboratory permissions and organisation.</p>
+    <p>Items to discuss:
+    - Metadata entry and organisation
+    - Time-series data rendering, application of CSV importing w/ header
+    application (and storage for future events)
+    - Attachement of additional metadata in general object format to the
+    underlying data (Image based datasheets, X-ray imaging, etc.)</p>
+  </sec>
+  <sec id="the-harvester-package">
+    <title>The <monospace>Harvester</monospace> package</title>
+    <p>The harvester package is deployed through PyPI and provides the
+    link between the experimental data acquisition within the laboratory
+    and the Galv platform hosted either locally or cloud-based. Where
+    possible, the harvesters parse the data files generated by the
+    electrochemical cyclers and provide the backend a parquet converted
+    container for storage. Currently, the supported proprietary data
+    files include: Biologic, Maccor, and Ivium; however, data files
+    stored in CSV format are parsed with the user providing mapping of
+    the headers to the exportable object vectors in the frontend.
+    Multiple harvesters can be setup on a single machine, with each
+    monitoring a specified directory. Each of these harvesters is
+    provided an API key on creation, which is generated from the
+    specific backend instance and accessible from the frontend. As each
+    harvester is connected to a specific instance of a Galv backend,
+    multiple Galv instances can be used to monitor specific machines,
+    which while not the main aim of the project, does showcase Galv’s
+    flexibility as a data acquisition platform.</p>
+    <p>Items to discuss:
+    - Harvester options
+    - The ability to regex the directory</p>
+  </sec>
+</sec>
+<sec id="acknowledgements">
+  <title>Acknowledgements</title>
+  <p>We would like to acknowledge all contributors to
+  <monospace>Galv</monospace> (link), and the funding bodies that
+  supported this work: IntelLiGent, DigiBatt, Energy Superhub?,
+  Digest.</p>
+</sec>
+</body>
+<back>
+</back>
+</article>
