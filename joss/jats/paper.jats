@@ -171,9 +171,11 @@ a Creative Commons Attribution 4.0 International License (CC BY
   registry.</p>
   <sec id="the-backend-server">
     <title>The <monospace>backend</monospace> server</title>
-    <p>The Galv backend is implemented with the Django framework, with a
-    corresponding REST API. This backend provide storage,
-    authentication, and account management for the platform.</p>
+    <p>The Galv backend is implemented with the Django framework
+    (<xref alt="Foundation, 2024" rid="ref-django" ref-type="bibr">Foundation,
+    2024</xref>), with a corresponding REST API. This backend provide
+    storage, authentication, and account management for the
+    platform.</p>
     <p>Items to discuss:
     - Tweaks to the Django backend (superuser, example data)
     - Parquet storage mechanism and performance over initial SQL
@@ -219,7 +221,8 @@ a Creative Commons Attribution 4.0 International License (CC BY
     flexibility as a data acquisition platform.</p>
     <p>Items to discuss:
     - Harvester options
-    - The ability to regex the directory</p>
+    - The ability to regex the directory
+    - Galvani repository reference</p>
   </sec>
 </sec>
 <sec id="acknowledgements">
@@ -231,5 +234,19 @@ a Creative Commons Attribution 4.0 International License (CC BY
 </sec>
 </body>
 <back>
+<ref-list>
+  <title></title>
+  <ref id="ref-django">
+    <element-citation publication-type="software">
+      <person-group person-group-type="author">
+        <name><surname>Foundation</surname><given-names>Django Software</given-names></name>
+      </person-group>
+      <article-title>Django: The web framework for perfectionists with deadlines</article-title>
+      <publisher-name>Django Software Foundation</publisher-name>
+      <year iso-8601-date="2024">2024</year>
+      <uri>https://github.com/django/django</uri>
+    </element-citation>
+  </ref>
+</ref-list>
 </back>
 </article>
