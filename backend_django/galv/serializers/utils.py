@@ -462,7 +462,7 @@ class PasswordField(serializers.CharField):
             return None
         stars = "*" * max(max(self.min_length, 1), len(v))
         if self.show_first_chars:
-            return f"{v[:self.show_first_chars]}{stars[self.show_first_chars:]}"
+            return f"{v[: self.show_first_chars]}{stars[self.show_first_chars :]}"
         return stars
 
 

@@ -50,9 +50,9 @@ class ObservedFileTests(GalvTestCase):
         self.specific_files = ObservedFileFactory.create_batch(
             size=2, harvester=self.harvester, path_root=self.specific_path.path
         )
-        assert ObservedFile.objects.filter(
-            pk=self.specific_files[0].pk
-        ).exists(), "File not created"
+        assert ObservedFile.objects.filter(pk=self.specific_files[0].pk).exists(), (
+            "File not created"
+        )
         self.other_files = ObservedFileFactory.create_batch(
             size=3, harvester=self.harvester, path_root=self.other_path.path
         )

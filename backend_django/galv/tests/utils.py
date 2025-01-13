@@ -179,9 +179,9 @@ class _GalvTeamResourceTestCase(GalvTestCase):
 
     def create_with_perms(self, **perms):
         obj = self.factory.create(team=self.lab_team, **perms)
-        assert self.factory._meta.model.objects.filter(
-            pk=obj.pk
-        ).exists(), f"Could not create {self.factory._meta.model.__name__} with {perms}"
+        assert self.factory._meta.model.objects.filter(pk=obj.pk).exists(), (
+            f"Could not create {self.factory._meta.model.__name__} with {perms}"
+        )
         return obj
 
     def create_test_resources(self):
