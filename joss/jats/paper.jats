@@ -330,9 +330,13 @@ a Creative Commons Attribution 4.0 International License (CC BY
     voltage, and Current_A for current. Users can either rely on default
     mappings or define custom ones tailored to their needs. For files
     with an applicable mapping, Galv automatically applies it, ensuring
-    consistent data structure. On the Files page, imported files are
-    displayed alongside a preview image of the data. Users can click on
-    a file to access detailed views or download the dataset.</p>
+    consistent data structure. Files can be downloaded by selecting an
+    IMPORTED file, choosing a ‘Parquet partition,’ and initiating the
+    download. By reducing redundant data points while preserving
+    essential information, the system ensures efficient storage and
+    computational performance. Adding metadata to these datasets
+    enhances their contextual relevance, supporting robust analysis and
+    decision-making.</p>
   </sec>
 </sec>
 <sec id="acknowledgements">
