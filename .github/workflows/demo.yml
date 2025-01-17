@@ -52,6 +52,7 @@ jobs:
           flyctl postgres create \
             --name $FLY_DEMO_DB_NAME \
             --org $FLY_ORG \
+            --region lhr \
             --volume-size 2 \
             --vm-size shared-cpu-1x \
             --initial-cluster-size 1
@@ -70,6 +71,7 @@ jobs:
             --image ghcr.io/galv-team/galv-backend:$DEMO_BACKEND_VERSION \
             --env VIRTUAL_HOST=$FLY_DEMO_NAME.fly.dev \
             --env FRONTEND_VIRTUAL_HOST=$FRONTEND_URL \
+            --regions lhr \
             --remote-only \
             --yes
 
