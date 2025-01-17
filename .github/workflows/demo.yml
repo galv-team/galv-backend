@@ -70,8 +70,7 @@ jobs:
       - name: Connect DB to Backend
         run: |
           echo "Connecting $FLY_DEMO_DB_NAME to $FLY_DEMO_NAME"
-          flyctl postgres attach \
-            --postgres $FLY_DEMO_DB_NAME \
+          flyctl postgres attach $FLY_DEMO_DB_NAME \
             --config ./fly.demo.toml \
             --app $FLY_DEMO_NAME \
             --yes
