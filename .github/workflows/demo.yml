@@ -31,16 +31,18 @@ jobs:
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - name: Destroy Existing apps
         run: |
-          # Search apps list for $FLY_DEMO_NAME using jq
-          flyctl apps list --org $FLY_ORG --json > apps.json
-          cat apps.json
-          if jq -e '.[] | select(.ID == "$FLY_DEMO_NAME")' apps.json; then
+          # Search apps list for existing services
+          flyctl apps list --org $FLY_ORG > apps.txt
+          cat apps.txt
+          # Check if the app exists with grep
+          if grep -q $FLY_DEMO_NAME apps.txt; then
               echo "Destroying app $FLY_DEMO_NAME"
               flyctl apps destroy $FLY_DEMO_NAME --yes
           else
               echo "App $FLY_DEMO_NAME does not exist - skipping destroy step"
           fi
-          if jq -e '.[] | select(.ID == "$FLY_DEMO_DB_NAME")' apps.json; then
+          # Check if the database exists
+          if grep -q $FLY_DEMO_DB_NAME apps.txt; then
               echo "Destroying app $FLY_DEMO_DB_NAME"
               flyctl apps destroy $FLY_DEMO_DB_NAME --yes
           else
