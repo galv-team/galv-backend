@@ -1,6 +1,8 @@
 # Galv backend (REST API)
 > A metadata secretary for battery science
 
+[![Demo](https://github.com/galv-team/galv-backend/actions/workflows/demo.yml/badge.svg)](https://galv-demo.fly.dev)
+
 [![GitHub Releases](https://img.shields.io/github/v/release/galv-team/galv-backend)](https://github.com/galv-team/galv-backend/releases/latest)
 [![Docker image](https://ghcr-badge.egpl.dev/galv-team/galv-backend/latest_tag?color=%2344cc11&ignore=latest&label=image&trim=0)](https://github.com/galv-team/galv-backend/pkgs/container/galv-backend)
 
