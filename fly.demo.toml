@@ -52,7 +52,7 @@ console_command = "/code/backend_django/manage.py shell"
   memory_mb = 2048
 
 [mounts]
-  source = "galv-demo-volume"
+  source = "galv_demo_data"
   destination = "/galv_files"
   initial_size = "10GB"
 
