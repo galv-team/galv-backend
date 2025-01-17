@@ -25,7 +25,8 @@ jobs:
       FLY_DEMO_DB_NAME: "galv-demo-db"
       FLY_ORG: "oxrse"
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_DEMO_SECRET_KEY }}
+      DJANGO_SUPERUSER_PASSWORD: ${{ secrets.DJANGO_DEMO_SUPERUSER_PASSWORD }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -83,7 +84,8 @@ jobs:
             --app $FLY_DEMO_NAME \
             --config ./fly.demo.toml \
             --stage \
-            DJANGO_SECRET_KEY="$DJANGO_SECRET_KEY"
+            DJANGO_SECRET_KEY="$DJANGO_SECRET_KEY" \
+            DJANGO_SUPERUSER_PASSWORD="$DJANGO_SUPERUSER_PASSWORD"
           echo "Deploying app $FLY_DEMO_NAME"
           flyctl deploy \
             --app $FLY_DEMO_NAME \
