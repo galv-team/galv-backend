@@ -60,12 +60,23 @@ jobs:
       - name: Create Demo Backend
         run: |
           echo "Creating app $FLY_DEMO_NAME"
-          fly apps create \
+          flyctl apps create \
             --name $FLY_DEMO_NAME \
             --org $FLY_ORG
 
+      - name: Connect DB to Backend
+        run: |
+          echo "Connecting $FLY_DEMO_DB_NAME to $FLY_DEMO_NAME"
+          flyctl postgres attach \
+            --postgres $FLY_DEMO_DB_NAME \
+            --config ./fly.demo.toml \
+            --app $FLY_DEMO_NAME \
+            --yes
+
+      - name: Deploy Demo Backend
+        run: |
           echo "Deploying app $FLY_DEMO_NAME"
-          fly deploy \
+          flyctl deploy \
             --app $FLY_DEMO_NAME \
             --config ./fly.demo.toml \
             --image ghcr.io/galv-team/galv-backend:$DEMO_BACKEND_VERSION \
@@ -73,13 +84,4 @@ jobs:
             --env FRONTEND_VIRTUAL_HOST=$FRONTEND_URL \
             --regions lhr \
             --remote-only \
-            --yes
-
-      - name: Connect DB to Backend
-        run: |
-          echo "Connecting $FLY_DEMO_DB_NAME to $FLY_DEMO_NAME"
-          fly postgres attach \
-            --postgres $FLY_DEMO_DB_NAME \
-            --config ./fly.demo.toml \
-            --app $FLY_DEMO_NAME \
             --yes
