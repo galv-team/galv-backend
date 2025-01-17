@@ -25,6 +25,7 @@ jobs:
       FLY_DEMO_DB_NAME: "galv-demo-db"
       FLY_ORG: "oxrse"
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -84,5 +85,6 @@ jobs:
             --image ghcr.io/galv-team/galv-backend:$DEMO_BACKEND_VERSION \
             --env VIRTUAL_HOST=$FLY_DEMO_NAME.fly.dev \
             --env FRONTEND_VIRTUAL_HOST=$FRONTEND_URL \
+            --env DJANGO_SECRET_KEY="$DJANGO_SECRET_KEY" \
             --remote-only \
             --yes
