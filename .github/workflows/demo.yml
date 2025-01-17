@@ -78,6 +78,12 @@ jobs:
 
       - name: Deploy Demo Backend
         run: |
+          echo "Setting secrets"
+          flyctl secrets set \
+            --app $FLY_DEMO_NAME \
+            --config ./fly.demo.toml \
+            --stage \
+            DJANGO_SECRET_KEY="$DJANGO_SECRET_KEY"
           echo "Deploying app $FLY_DEMO_NAME"
           flyctl deploy \
             --app $FLY_DEMO_NAME \
@@ -85,6 +91,5 @@ jobs:
             --image ghcr.io/galv-team/galv-backend:$DEMO_BACKEND_VERSION \
             --env VIRTUAL_HOST=$FLY_DEMO_NAME.fly.dev \
             --env FRONTEND_VIRTUAL_HOST=$FRONTEND_URL \
-            --env DJANGO_SECRET_KEY="$DJANGO_SECRET_KEY" \
             --remote-only \
             --yes
