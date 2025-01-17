@@ -29,7 +29,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - name: Destroy Existing apps
+      - name: ":bomb: Destroy Existing apps"
         run: |
           # Search apps list for existing services
           flyctl apps list --org $FLY_ORG > apps.txt
@@ -49,7 +49,7 @@ jobs:
               echo "App $FLY_DEMO_DB_NAME does not exist - skipping destroy step"
           fi
       # Until we can reliably link the backend to the DB, we'll create them separately
-      - name: Create DB
+      - name: ":hammer: Create DB"
         run: |
           echo "Creating app $FLY_DEMO_DB_NAME"
           flyctl postgres create \
@@ -60,14 +60,14 @@ jobs:
             --vm-size shared-cpu-1x \
             --initial-cluster-size 1
 
-      - name: Create Demo Backend
+      - name: ":hammer: Create Demo Backend"
         run: |
           echo "Creating app $FLY_DEMO_NAME"
           flyctl apps create \
             --name $FLY_DEMO_NAME \
             --org $FLY_ORG
 
-      - name: Connect DB to Backend
+      - name: ":point_right::point_left: Connect DB to Backend"
         run: |
           echo "Connecting $FLY_DEMO_DB_NAME to $FLY_DEMO_NAME"
           flyctl postgres attach $FLY_DEMO_DB_NAME \
@@ -75,7 +75,7 @@ jobs:
             --app $FLY_DEMO_NAME \
             --yes
 
-      - name: Deploy Demo Backend
+      - name: ":rocket: Deploy Demo Backend"
         run: |
           echo "Deploying app $FLY_DEMO_NAME"
           flyctl deploy \
@@ -84,6 +84,5 @@ jobs:
             --image ghcr.io/galv-team/galv-backend:$DEMO_BACKEND_VERSION \
             --env VIRTUAL_HOST=$FLY_DEMO_NAME.fly.dev \
             --env FRONTEND_VIRTUAL_HOST=$FRONTEND_URL \
-            --regions lhr \
             --remote-only \
             --yes
