@@ -33,6 +33,7 @@ jobs:
         run: |
           # Search apps list for $FLY_DEMO_NAME using jq
           flyctl apps list --org $FLY_ORG --json > apps.json
+          cat apps.json
           if jq -e '.[] | select(.ID == "$FLY_DEMO_NAME")' apps.json; then
               echo "Destroying app $FLY_DEMO_NAME"
               flyctl apps destroy $FLY_DEMO_NAME --yes
