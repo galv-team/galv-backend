@@ -78,8 +78,6 @@ from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
 from rest_framework import serializers
 from knox.models import AuthToken
 
-from galv_harvester.harvest import InternalHarvestProcessor
-
 from .utils import (
     CustomPropertiesModelSerializer,
     GetOrCreateTextField,
@@ -2225,6 +2223,9 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
         it's less of a headache than trying to create persistent temporary storage somewhere
         and police the limits on it.
         """
+        from galv_harvester.harvest import (
+            InternalHarvestProcessor,
+        )  # this pulls in a lot, so only import when needed
 
         def df_to_dict(df) -> dict:
             return json.loads(df.to_json())
