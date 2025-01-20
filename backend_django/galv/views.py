@@ -1599,7 +1599,7 @@ class ParquetPartitionViewSet(DescribeSelfMixin, viewsets.ReadOnlyModelViewSet):
             request,
             lambda f: {
                 "Content-Disposition": (
-                    f'inline; '
+                    f"inline; "
                     f'filename="{partition.observed_file.path.split("/")[-1]}.{partition.partition_number}.parquet"'
                 ),
                 "Content-Type": "application/octet-stream",
@@ -2170,7 +2170,7 @@ class CyclerTestViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
         "@cell__id",
         "@schedule__identifier",
         "@equipment__identifier",
-        "@experiment__title" "@cell__identifier",
+        "@experiment__title@cell__identifier",
         "=cell__family__id",
         "=schedule__family__id",
         "=equipment__family__id",

@@ -34,7 +34,7 @@ DEBUG_TOOLBAR_CONFIG = {
 
 CSRF_TRUSTED_ORIGINS = [
     *CORS_ALLOWED_ORIGINS,  # noqa: F405
-    f'https://{os.environ.get("VIRTUAL_HOST")}',
+    f"https://{os.environ.get('VIRTUAL_HOST')}",
 ]
 
 CSRF_COOKIE_SECURE = True
