@@ -2059,21 +2059,21 @@ class ObservedFileSerializer(
         help_text="First few rows of this file's data"
     )
 
-    def get_applicable_mappings(self, instance):
+    def get_applicable_mappings(self, instance) -> str:
         return reverse(
             "observedfile-applicable-mappings",
             args=[instance.pk],
             request=self.context.get("request"),
         )
 
-    def get_extra_metadata(self, instance):
+    def get_extra_metadata(self, instance) -> str:
         return reverse(
             "observedfile-extra-metadata",
             args=[instance.pk],
             request=self.context.get("request"),
         )
 
-    def get_summary(self, instance):
+    def get_summary(self, instance) -> str:
         return reverse(
             "observedfile-summary",
             args=[instance.pk],
@@ -2223,9 +2223,8 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
         it's less of a headache than trying to create persistent temporary storage somewhere
         and police the limits on it.
         """
-        from galv_harvester.harvest import (
-            InternalHarvestProcessor,
-        )  # this pulls in a lot, so only import when needed
+        # this pulls in a lot, so only import when needed
+        from galv_harvester.harvest import InternalHarvestProcessor
 
         def df_to_dict(df) -> dict:
             return json.loads(df.to_json())

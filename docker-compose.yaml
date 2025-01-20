@@ -72,6 +72,7 @@ services:
     volumes:
       - ./.test/.static_files:/galv_files/static
       - ./backend_django:/code/backend_django
+      - ./.dev/logs:/var/log/galv
     environment:
       FRONTEND_VIRTUAL_HOST: "http://localhost"
       VIRTUAL_HOST: "localhost"
