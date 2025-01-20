@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     concurrency: demo-group
     env:
-      DEMO_BACKEND_VERSION: "v2.4.2"
+      DEMO_BACKEND_VERSION: "v2.5.1-dev"
       FRONTEND_URL: "https://galv-demo.fly.dev"
       FLY_DEMO_NAME: "galv-demo-backend"
       FLY_DEMO_DB_NAME: "galv-demo-db"
