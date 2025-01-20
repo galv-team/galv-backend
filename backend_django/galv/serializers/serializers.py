@@ -2223,9 +2223,8 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
         it's less of a headache than trying to create persistent temporary storage somewhere
         and police the limits on it.
         """
-        from galv_harvester.harvest import (
-            InternalHarvestProcessor,
-        )  # this pulls in a lot, so only import when needed
+        # this pulls in a lot, so only import when needed
+        from galv_harvester.harvest import InternalHarvestProcessor
 
         def df_to_dict(df) -> dict:
             return json.loads(df.to_json())
