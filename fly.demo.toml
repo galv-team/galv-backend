@@ -48,7 +48,7 @@ console_command = "/code/backend_django/manage.py shell"
 
 [[vm]]
   cpu_kind = "shared"
-  cpus = 1
+  cpus = 2
   memory_mb = 2048
 
 [mounts]
