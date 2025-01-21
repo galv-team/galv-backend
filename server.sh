@@ -12,7 +12,7 @@ if [ -z "$1" ]; then
     # No custom command provided, so run the default
     # Determine the number of workers from number of cores * 4
     WORKERS=$(nproc)
-    WORKERS=$((WORKERS * 4))
+    WORKERS=$((WORKERS * 1))
     COMMAND="gunicorn --bind localhost:8000 --workers $WORKERS config.wsgi"
     MESSAGE="Starting server: $COMMAND"
 else

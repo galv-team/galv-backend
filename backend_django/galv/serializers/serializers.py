@@ -2332,7 +2332,7 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
             raise ValidationError("Unsupported file type")
         except Exception as e:
             logger.exception("Error processing file.")
-            raise ValidationError("Error processing file.") from e
+            raise e
         finally:
             os.unlink(temp_file.name)
 
