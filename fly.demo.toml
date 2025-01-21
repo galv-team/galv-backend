@@ -38,6 +38,7 @@ console_command = "/code/backend_django/manage.py shell"
   DJANGO_DEFAULT_FROM_EMAIL = 'oxfordbatterymodelling@gmail.com'
   DJANGO_LAB_STORAGE_QUOTA_BYTES = "10_000_000_000"  # 10GB
   DJANGO_LOG_LEVEL = "DEBUG"
+  WORKERS_PER_CORE = "1"
 
 [http_service]
   internal_port = 80
