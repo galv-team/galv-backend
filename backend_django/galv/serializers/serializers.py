@@ -122,6 +122,7 @@ logger = logging.getLogger(__name__)
                     "write": True,
                     "read": True,
                 },
+                "activation_requires_approval": False,
             },
             response_only=True,  # signal that example only applies to responses
         ),

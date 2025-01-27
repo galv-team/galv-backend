@@ -364,6 +364,10 @@ class UserProxy(User):
                 return False
         return True
 
+    @property
+    def activation_requires_approval(self):
+        return settings.USER_ACTIVATION_TOKEN_EXPIRY_S is not None
+
 
 class GroupProxy(Group):
     class Meta:
