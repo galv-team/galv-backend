@@ -14,7 +14,7 @@
 # To update the app from a new release tag, use
 # fly deploy --config fly.stage.toml --app galv-backend-stage
 
-app = "galv-backend-stage"
+app = "galv-stage-backend"
 primary_region = "lhr"
 console_command = "/code/backend_django/manage.py shell"
 
@@ -26,8 +26,8 @@ console_command = "/code/backend_django/manage.py shell"
 
 [env]
 #  PORT = "80"
-  VIRTUAL_HOST = "galv-backend-stage.fly.dev"
-  FRONTEND_VIRTUAL_HOST = "http://galv-frontend-stage.fly.dev,https://galv-frontend-stage.fly.dev"
+  VIRTUAL_HOST = "galv-stage-backend.fly.dev"
+  FRONTEND_VIRTUAL_HOST = "https://galv-stage.fly.dev"
   DJANGO_SETTINGS_MODULE = "config.settings"
 #  DJANGO_SETTINGS = "dev"
   DJANGO_EMAIL_HOST = 'smtp.gmail.com'
@@ -42,6 +42,8 @@ console_command = "/code/backend_django/manage.py shell"
   DJANGO_AWS_STORAGE_BUCKET_NAME = "galv-stage"
   DJANGO_AWS_S3_REGION_NAME = "eu-west-2"
   # Other AWS stuff set in secrets (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+  # The staging S3 Bucket is the target of S3 Same Region Replication from the BIL S3 Bucket
+  # https://cloudian.com/blog/s3-replication-a-practical-guide/
 
 [http_service]
   internal_port = 80
@@ -53,8 +55,8 @@ console_command = "/code/backend_django/manage.py shell"
 
 [[vm]]
   cpu_kind = "shared"
-  cpus = 1
-  memory_mb = 1024
+  cpus = 2
+  memory_mb = 2048
 
 #[[statics]]
 #  guest_path = "/static/"
