@@ -365,7 +365,7 @@ class UserProxy(User):
         return True
 
     @property
-    def activation_requires_approval(self):
+    def activation_requires_approval(self) -> boolean:
         return settings.USER_ACTIVATION_TOKEN_EXPIRY_S is not None
 
 
