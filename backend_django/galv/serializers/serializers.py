@@ -182,6 +182,7 @@ class UserSerializer(serializers.HyperlinkedModelSerializer, PermissionsMixin):
             "is_superuser",
             "is_lab_admin",
             "permissions",
+            "activation_requires_approval",
         ]
         fields = [*write_fields, *read_only_fields, *write_only_fields]
         extra_kwargs = augment_extra_kwargs(
