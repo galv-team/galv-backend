@@ -61,7 +61,7 @@ jobs:
         with:
           images: "ghcr.io/${{ github.repository }}"
           flavor: |
-            latest=${{ steps.latest.outputs.IS_LATEST }}
+            latest=${{ env.IS_LATEST }}
 
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
       - name: Setup tmate session
