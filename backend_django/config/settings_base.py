@@ -31,7 +31,7 @@ try:
         os.environ.get("DJANGO_USER_ACTIVATION_TOKEN_EXPIRY_S")
     )
 except (ValueError, TypeError):
-    if USER_ACTIVATION_TOKEN_EXPIRY_S is None:
+    if USER_ACTIVATION_OVERRIDE_ADDRESSES is None:
         USER_ACTIVATION_TOKEN_EXPIRY_S = 60 * 15  # 15 minutes
     else:
         USER_ACTIVATION_TOKEN_EXPIRY_S = 60 * 60  # 1 hour
