@@ -210,18 +210,35 @@ class UserActivation(TimestampedModel):
     def send_email(self, request):
         from django.core.mail import send_mail
 
-        print(f"Sending activation email for {self.user.username}")
-        send_mail(
-            "Galv account activation",
-            (
-                f"Your activation token is {self.token}\n\n"
-                f"Your token is valid for {int(settings.USER_ACTIVATION_TOKEN_EXPIRY_S / 60)} minutes.\n\n"
-                f"Galv administrative team."
-            ),
-            settings.DEFAULT_FROM_EMAIL,
-            [self.user.email],
-            fail_silently=False,
-        )
+        if settings.USER_ACTIVATION_OVERRIDE_ADDRESSES is not None:
+            print(f"Sending activation request email for {self.user.username}")
+            send_mail(
+                f"Galv - Activation Request for {self.user.username}",
+                (
+                    f"A new user, {self.user.username} requests access to Galv.\n"
+                    f"The user's email address is {self.user.email}\n"
+                    f"To grant the user access, send them the token below, which they can redeem.\n\n"
+                    f"{self.token}\n\n"
+                    f"The token will be valid for {int(settings.USER_ACTIVATION_TOKEN_EXPIRY_S / 60)} minutes.\n\n"
+                ),
+                settings.DEFAULT_FROM_EMAIL,
+                settings.USER_ACTIVATION_EMAIL_ADDRESS,
+                fail_silently=False,
+            )
+
+        else:
+            print(f"Sending activation email for {self.user.username}")
+            send_mail(
+                "Galv account activation",
+                (
+                    f"Your activation token is {self.token}\n\n"
+                    f"Your token is valid for {int(settings.USER_ACTIVATION_TOKEN_EXPIRY_S / 60)} minutes.\n\n"
+                    f"Galv administrative team."
+                ),
+                settings.DEFAULT_FROM_EMAIL,
+                [self.user.email],
+                fail_silently=False,
+            )
 
     def generate_token(self):
         self.token = get_random_string(

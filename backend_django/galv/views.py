@@ -332,6 +332,8 @@ def activate_user(request):
         try:
             activation = UserActivation.objects.get(user=user)
             activation.send_email(request)
+            if settings.USER_ACTIVATION_OVERRIDE_ADDRESSES:
+                return Response({"detail": f"A new activation request has been sent for {username}"})
             return Response({"detail": f"Activation email sent for {username}"})
         except UserActivation.DoesNotExist:
             return error_response(f"Unable to send activation email for {username}")
