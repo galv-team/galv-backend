@@ -127,7 +127,7 @@ jobs:
           tags.sort(key=lambda s: (major(s[1:]), minor(s), patch(s)))  # strip 'v' prefix for major
           
           print(tags)
-          print(f"Searching for ${{ steps.scrape.outputs.api-version }} in tags")
+          print(f'Searching for ${{ steps.scrape.outputs.api-version }} in tags')
           
           i = tags.index('${{ steps.scrape.outputs.api-version }}')
           if i == 0:
