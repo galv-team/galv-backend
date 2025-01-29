@@ -109,7 +109,7 @@ jobs:
               if [[ $IS_SEMVER -gt 0 ]]; then
                   RELEASE=true
                   echo "Issuing release because we're on a tag matching semver"
-                  if [[ "${{ needs.version.outputs.version }} == "${{ needs.version.outputs.version-clean }}" ]]; then
+                  if [[ "${{ needs.version.outputs.version }}" == "${{ needs.version.outputs.version-clean }}" ]]; then
                       echo "Version matches clean semver. Issuing real release."
                   else
                       echo "Version does not match clean semver. Issuing dry-run."
