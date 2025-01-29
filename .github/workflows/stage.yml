@@ -17,7 +17,7 @@ permissions:
   packages: read
 
 jobs:
-  recreate-fly-demo:
+  recreate-fly-stage:
     runs-on: ubuntu-latest
     concurrency: demo-group
     env:
@@ -68,6 +68,7 @@ jobs:
             --volume-size 10 \
             --vm-size shared-cpu-2x \
             --initial-cluster-size 1
+            --yes
 
       - name: Rewrite AWS bucket links
         run: |
@@ -80,6 +81,7 @@ jobs:
           flyctl apps create \
             --name $FLY_APP_NAME \
             --org $FLY_ORG
+            --yes
 
       - name: Connect DB to Backend
         run: |
@@ -118,8 +120,7 @@ jobs:
       - name: Deploy Backend building from source
         run: |
           echo "Deploying app $FLY_APP_NAME with build"
-          echo "This will run migrations etc."
-          
+          echo "This will run migrations etc."          
           flyctl deploy \
             --app $FLY_APP_NAME \
             --config ./fly.stage.toml \
