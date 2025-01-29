@@ -50,3 +50,5 @@ node_modules/
 docs/build-dev/
 
 debug.sh
+
+tags.txt
