@@ -10,17 +10,17 @@ on:
         required: false
         default: false
     outputs:
+      api-version:
+        description: "API_VERSION defined in settings_base.py (with 'v' prefix). Test against version-clean for matches."
+        value: ${{ steps.scrape.outputs.api-version }}
       version:
-        description: "API_VERSION defined in settings_base.py (with 'v' prefix)"
+        description: "The GitHub tag if a semver"
         value: ${{ jobs.get-version.outputs.version }}
-      version-plain:
-        description: "API_VERSION defined in settings_base.py"
-        value: ${{ jobs.get-version.outputs.version-plain }}
       version-clean:
-        description: "API_VERSION defined in settings_base.py (without 'v' prefix or -.* suffix)"
+        description: "The GitHub tag (if a semver) without -* suffix"
         value: ${{ jobs.get-version.outputs.version-clean }}
       version-suffix:
-        description: "API_VERSION after the semver version (e.g. -rc1)"
+        description: "The GitHub tag (if a semver) part after the semver version (e.g. -rc1)"
         value: ${{ jobs.get-version.outputs.version-suffix }}
       prev-version-tag:
         description: "Previous version tag"
@@ -36,9 +36,9 @@ jobs:
   get-version:
     runs-on: ubuntu-latest
     outputs:
+      api-version: ${{ steps.scrape.outputs.api-version }}  # should always be 'clean'
       version: ${{ steps.scrape.outputs.version }}
-      version-plain: ${{ steps.scrape.outputs.version-plain }}
-      version-clean: ${{ steps.scrape.outputs.version-plain }}
+      version-clean: ${{ steps.scrape.outputs.version-clean }}
       version-suffix: ${{ steps.scrape.outputs.version-suffix }}
       prev-version-tag: ${{ steps.search.outputs.prev-version-tag }}
       is-major-release: ${{ steps.search.outputs.previous-major-version-tag != steps.search.outputs.prev-version-tag }}
@@ -53,15 +53,26 @@ jobs:
           # Extract release version from settings
           API_VERSION=$(cat backend_django/config/settings_base.py | grep "API_VERSION =" | cut -d'"' -f2)
           # Assert version is valid semver
-          if ! [[ "$API_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-              echo "Release version v$API_VERSION is not valid semver"
+          if ! [[ "$API_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "API version v$API_VERSION is not valid clean semver"
+              echo "Please check the API_VERSION in settings_base.py matches semver e.g. 1.2.3"
               exit 1
-          fi
+          fi         
+          
           echo "API_VERSION: v$API_VERSION"
-          echo "version=v$API_VERSION" >> $GITHUB_OUTPUT
-          echo "version-plain=$API_VERSION" >> $GITHUB_OUTPUT
-          echo "version-clean=$(echo $API_VERSION | grep -oP '^[0-9]+\.[0-9]+\.[0-9]+' || true)" >> $GITHUB_OUTPUT
-          echo "version-suffix=$(echo $API_VERSION | grep -oP '(?<=-).*$' || true)" >> $GITHUB_OUTPUT
+          echo "api-version=v$API_VERSION" >> $GITHUB_ENV
+          
+          # Extract other version info from tag name
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          if ! [[ "TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+              echo "Tag $TAG_NAME is not valid semver"
+              exit 0
+          fi         
+          
+          echo "Tag version: $TAG_NAME"
+          echo "version=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "version-clean=$(echo $TAG_NAME | grep -oP '^v[0-9]+\.[0-9]+\.[0-9]+' || true)" >> $GITHUB_OUTPUT
+          echo "version-suffix=$(echo $TAG_NAME | grep -oP '(?<=-).*$' || true)" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
 
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
@@ -74,7 +85,7 @@ jobs:
         run: |
           # Get a list of all repository tags
           git fetch --tags --force
-          # Create our tag if this is a branch rather than a tag
+          # Create our tag if this is a branch rather than a tag. Tag will match current API Version.
           UNTAGGED=false
           if [ "${{ github.ref_type }}" == "branch" ]; then
             git config --global user.email gg@example.com
@@ -114,7 +125,7 @@ jobs:
           minor = lambda s: int(s.split('.')[1])
           patch = lambda s: int(s.split('.')[2].split('-')[0])
           tags.sort(key=lambda s: (major(s), minor(s), patch(s)))  # strip 'v' prefix for major
-          i = tags.index('${{ steps.scrape.outputs.version-clean }}')
+          i = tags.index('${{ steps.scrape.outputs.api-version }}')
           if i == 0:
             os.system('echo prev-version-tag= >> $GITHUB_OUTPUT')
           else:
