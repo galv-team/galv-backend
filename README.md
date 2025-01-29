@@ -34,6 +34,7 @@ You can deploy the Galv backend in a number of ways.
 ### Docker image
 
 Each [release](/galv-team/galv-backend/releases) is accompanied by a [Docker image](/galv-team/packages?repo_name=galv-backend).
+The latest stable version is tagged as `latest`.
 You can acquire the image by pulling it from GitHub Packages:
 
 ```bash
@@ -98,6 +99,8 @@ By default, it will serve at http://localhost:8005.
 The documentation supports multiple versions.
 To add a new version, add a new entry to `docs/tags.json`.
 These tags must be in the format `v*.*.*` and must be available as a git tag.
+Tags that match `v\d+\.\d+\.\d+` will be tagged as `latest` when released.
+Tags with a suffix, e.g. `v1.0.0-beta`, will not be tagged as `latest`.
 
 There is a fairly complex workflow that will update the documentation for all versions when a new version is released.
 This workflow is defined in `.github/workflows/docs.yml`, with help from `docs/build_docs.py`.
@@ -137,3 +140,27 @@ cp my_spec.json .dev/spec
 # .dev/spec is mounted as a volume at /spec in the container
 docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/my_spec.json check_spec
 ```
+
+## Releasing with Fly.io
+
+We use Fly.io to host a few instances.
+The configuration files are `fly.*.toml` in the root of the repository.
+To deploy to Fly.io, you will need to install the Fly CLI and authenticate.
+Once done, use `fly deploy --app <app-name> --config <config-file>` to deploy.
+E.g. for the Battery Intelligence Lab staging instance, we would use:
+```bash
+fly deploy --app galv-stage-backend --config fly.stage.toml
+```
+
+You'll have to create and attach the Postgres DB to the app manually.
+
+```bash
+fly postgres create --name <app-name>-db --org <org-name-if-applicable> --vm-size shared-cpu-2x
+fly postgres attach <app-name>-db --app <app-name>
+```
+
+Attaching will set the `DATABASE_URL` environment variable in the app to the connection string for the database.
+It gets set as a secret so it's not visible in the logs.
+
+You may need to set other secrets using `fly secrets set --app <app-name> --config <config-file> <SECRET_NAME>=<SECRET_VALUE>`
+if you're using AWS S3 for storage, etc.

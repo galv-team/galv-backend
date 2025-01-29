@@ -63,7 +63,12 @@ jobs:
           # Assert that the release version matches the branch name
           if [ "${{ needs.version.outputs.version }}" != "${{ github.ref_name }}" ]; then
               echo "Release version ${{ needs.version.outputs.version }} does not match version in tag name ${{ github.ref_name }}"
-              exit 1
+              if [ "v${{ needs.version.outputs.version-clean }}" != "${{ github.ref_name }}" ]; then
+                  echo "Release version v${{ needs.version.outputs.version-clean }} does not match version in tag name ${{ github.ref_name }}"
+                  exit 1
+              else
+                  echo "Release version v${{ needs.version.outputs.version-clean }} matches version in tag name ${{ github.ref_name }}"
+              fi
           fi
 
       - name: Setup docker-compose

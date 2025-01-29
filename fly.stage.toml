@@ -14,22 +14,15 @@
 # To update the app from a new release tag, use
 # fly deploy --config fly.stage.toml --app galv-backend-stage
 
-app = "galv-backend-stage"
+app = "galv-stage-backend"
 primary_region = "lhr"
 console_command = "/code/backend_django/manage.py shell"
 
-[build]
-#  image = "ghcr.io/galv-team/galv-backend:latest"
-
-[deploy]
-#  release_command = "/code/fly_setup.sh"
-
 [env]
-#  PORT = "80"
-  VIRTUAL_HOST = "galv-backend-stage.fly.dev"
-  FRONTEND_VIRTUAL_HOST = "http://galv-frontend-stage.fly.dev,https://galv-frontend-stage.fly.dev"
+  VIRTUAL_HOST = "galv-stage-backend.fly.dev"
+  FRONTEND_VIRTUAL_HOST = "https://galv-stage.fly.dev"
   DJANGO_SETTINGS_MODULE = "config.settings"
-#  DJANGO_SETTINGS = "dev"
+  DJANGO_LOG_LEVEL = "DEBUG"
   DJANGO_EMAIL_HOST = 'smtp.gmail.com'
   DJANGO_EMAIL_USE_TLS = "False"
   DJANGO_EMAIL_PORT = "465"
@@ -37,25 +30,23 @@ console_command = "/code/backend_django/manage.py shell"
   DJANGO_EMAIL_HOST_USER = 'oxfordbatterymodelling@gmail.com'
   DJANGO_DEFAULT_FROM_EMAIL = 'oxfordbatterymodelling@gmail.com'
   DJANGO_LABS_USE_OUR_S3_STORAGE = "True"
-  DJANGO_LAB_STORAGE_QUOTA_BYTES = "10_000_000_000"  # 10GB
+  DJANGO_LAB_STORAGE_QUOTA_BYTES = "1_000_000_000_000"  # 1TB
   DJANGO_AWS_DEFAULT_ACL = "private"
-  DJANGO_AWS_STORAGE_BUCKET_NAME = "galv-stage"
+  DJANGO_AWS_STORAGE_BUCKET_NAME = "galv-bil-stage"
   DJANGO_AWS_S3_REGION_NAME = "eu-west-2"
   # Other AWS stuff set in secrets (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+  # The staging S3 Bucket is the target of S3 Same Region Replication from the BIL S3 Bucket
+  # https://cloudian.com/blog/s3-replication-a-practical-guide/
 
 [http_service]
   internal_port = 80
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
-  min_machines_running = 1
+  min_machines_running = 0
   processes = ["app"]
 
 [[vm]]
   cpu_kind = "shared"
-  cpus = 1
-  memory_mb = 1024
-
-#[[statics]]
-#  guest_path = "/static/"
-#  url_prefix = "/django_static/"
+  cpus = 2
+  memory_mb = 2048
