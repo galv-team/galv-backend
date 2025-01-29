@@ -151,3 +151,16 @@ E.g. for the Battery Intelligence Lab staging instance, we would use:
 ```bash
 fly deploy --app galv-stage-backend --config fly.stage.toml
 ```
+
+You'll have to create and attach the Postgres DB to the app manually.
+
+```bash
+fly postgres create --name <app-name>-db --org <org-name-if-applicable> --vm-size shared-cpu-2x
+fly postgres attach <app-name>-db --app <app-name>
+```
+
+Attaching will set the `DATABASE_URL` environment variable in the app to the connection string for the database.
+It gets set as a secret so it's not visible in the logs.
+
+You may need to set other secrets using `fly secrets set --app <app-name> --config <config-file> <SECRET_NAME>=<SECRET_VALUE>`
+if you're using AWS S3 for storage, etc.
