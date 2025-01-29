@@ -69,7 +69,7 @@ jobs:
           echo "Creating app $FLY_DB_NAME"
           flyctl postgres create \
             --name $FLY_DB_NAME \
-            --fork-from $FLY_PROD_DB_NAME
+            --fork-from $FLY_PROD_DB_NAME \
             --org $FLY_ORG \
             --region lhr \
             --volume-size 10 \
