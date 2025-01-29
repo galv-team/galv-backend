@@ -60,7 +60,7 @@ jobs:
           fi         
           
           echo "API_VERSION: v$API_VERSION"
-          echo "api-version=v$API_VERSION" >> $GITHUB_ENV
+          echo "api-version=v$API_VERSION" >> $GITHUB_OUTPUT
           
           # Extract other version info from tag name
           TAG_NAME=${GITHUB_REF#refs/tags/}
