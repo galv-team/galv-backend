@@ -114,7 +114,7 @@ jobs:
             all_tags = f.read().splitlines()
           tags = []
           for t in all_tags:
-            search = re.search(r'^v([0-9]+\.[0-9]+\.[0-9]+)(-.+)?$', t)
+            search = re.search(r'^(v[0-9]+\.[0-9]+\.[0-9]+)(-.+)?$', t)
             if search and len(search.groups()) > 1:
               tag = search.groups()[0]
               if tag not in tags:
@@ -124,7 +124,11 @@ jobs:
           major = lambda s: int(s.split('.')[0])
           minor = lambda s: int(s.split('.')[1])
           patch = lambda s: int(s.split('.')[2].split('-')[0])
-          tags.sort(key=lambda s: (major(s), minor(s), patch(s)))  # strip 'v' prefix for major
+          tags.sort(key=lambda s: (major(s[1:]), minor(s), patch(s)))  # strip 'v' prefix for major
+          
+          print(tags)
+          print(f"Searching for ${{ steps.scrape.outputs.api-version }} in tags")
+          
           i = tags.index('${{ steps.scrape.outputs.api-version }}')
           if i == 0:
             os.system('echo prev-version-tag= >> $GITHUB_OUTPUT')
