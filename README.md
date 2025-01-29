@@ -143,7 +143,7 @@ docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/my_spec.json check_spec
 
 ## Releasing with Fly.io
 
-We use Fly.io to host a few instances. 
+We use Fly.io to host a few instances.
 The configuration files are `fly.*.toml` in the root of the repository.
 To deploy to Fly.io, you will need to install the Fly CLI and authenticate.
 Once done, use `fly deploy --app <app-name> --config <config-file>` to deploy.

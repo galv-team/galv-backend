@@ -73,7 +73,7 @@ jobs:
       - name: Rewrite AWS bucket links
         run: |
           echo "Rewriting AWS bucket links"
-          echo "This MAY NOT BE NECESSARY because we automatically use envvars for determining the AWS bucket."          
+          echo "This MAY NOT BE NECESSARY because we automatically use envvars for determining the AWS bucket."
 
       - name: Create Backend
         run: |
@@ -120,7 +120,7 @@ jobs:
         run: |
           echo "Deploying app $FLY_APP_NAME with build"
           echo "This will run migrations etc."
-          
+
           flyctl deploy \
             --app $FLY_APP_NAME \
             --config ./fly.stage.toml \
