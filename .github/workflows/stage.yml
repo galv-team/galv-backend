@@ -62,7 +62,7 @@ jobs:
           fi
       - name: Debug
         uses: owenthereal/action-upterm@v1
-        if: ${{ github.event.inputs.debug == 'true' }}
+      #  if: ${{ github.event.inputs.debug == 'true' }}
       # Until we can reliably link the backend to the DB, we'll create them separately
       - name: Create DB
         run: |
