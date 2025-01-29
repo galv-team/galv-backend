@@ -12,7 +12,7 @@ on:
     outputs:
       api-version:
         description: "API_VERSION defined in settings_base.py (with 'v' prefix). Test against version-clean for matches."
-        value: ${{ steps.get-version.outputs.api-version }}
+        value: ${{ jobs.get-version.outputs.api-version }}
       version:
         description: "The GitHub tag if a semver"
         value: ${{ jobs.get-version.outputs.version }}
