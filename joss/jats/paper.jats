@@ -48,6 +48,22 @@ Science</article-title>
 <xref ref-type="aff" rid="aff-2"/>
 </contrib>
 <contrib contrib-type="author">
+<contrib-id contrib-id-type="orcid">https://orcid.org/0000-0001-9451-0631</contrib-id>
+<name>
+<surname>Lewis-Douglas</surname>
+<given-names>Adam</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+</contrib>
+<contrib contrib-type="author">
+<contrib-id contrib-id-type="orcid">https://orcid.org/0000-0003-0198-8340</contrib-id>
+<name>
+<surname>Ghosh</surname>
+<given-names>Dibyendu</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+</contrib>
+<contrib contrib-type="author">
 <contrib-id contrib-id-type="orcid">https://orcid.org/0000-0002-0620-3955</contrib-id>
 <name>
 <surname>Howey</surname>
@@ -118,15 +134,14 @@ a Creative Commons Attribution 4.0 International License (CC BY
   information about the electrochemical cell, the experiments, and the
   results. The platform provides a REST API for programmatic access to
   the data and metadata, in addition to a web interface for user
-  interaction. The web interface provides additional functionality for
-  importing and exporting data to widely supported data science
-  languages, such as Python, Julia, and MatLab. This enables users to
-  curate the experimental data within a single platform before
-  completing advanced data analysis in their preferred language. The
-  platform is designed to be extensible, allowing users to define their
-  own metadata schemas and data types. This platform can be self-hosted
-  or used as a cloud service enabling wider collaborations and sharing
-  of experimental test data.</p>
+  interaction. The web interface provides tailored code for using the
+  REST API in Python, Julia, and MatLab. This enables users to curate
+  the experimental data within a single platform before completing
+  advanced data analysis in their preferred language. The platform is
+  designed to be extensible, allowing users to define their own metadata
+  schemas and data types. This platform can be self-hosted or used as a
+  cloud service enabling wider collaborations and sharing of
+  experimental test data.</p>
 </sec>
 <sec id="statement-of-need">
   <title>Statement of need</title>
@@ -218,7 +233,10 @@ a Creative Commons Attribution 4.0 International License (CC BY
     harvester is connected to a specific instance of a Galv backend,
     multiple Galv instances can be used to monitor specific machines,
     which while not the main aim of the project, does showcase Galv’s
-    flexibility as a data acquisition platform.</p>
+    flexibility as a data acquisition platform. The harvester package
+    also includes a user-friendly setup wizard accessible via the
+    command-line interface, making deployment and configuration
+    straightforward.</p>
     <p>Items to discuss:
     - Harvester options
     - The ability to regex the directory
@@ -295,6 +313,11 @@ a Creative Commons Attribution 4.0 International License (CC BY
     cyclers, such as Biologic, Maccor, and Ivium. Additionally, the
     Harvesters can be set up to monitor multiple directories, allowing
     for continuous, real-time data collection and storage.</p>
+    <fig>
+      <caption><p>Galv’s data structure.
+      <styled-content id="figU003Adata_structure"></styled-content></p></caption>
+      <graphic mimetype="image" mime-subtype="png" xlink:href="data_structure.png" />
+    </fig>
   </sec>
   <sec id="e.-design-battery-cycler-experiment">
     <title>e. Design battery cycler experiment</title>
