@@ -96,8 +96,8 @@ jobs:
               exit 0
           fi
           wget -O .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json https://github.com/galv-team/galv-backend/releases/download/${{ needs.version.outputs.prev-version-tag }}/openapi-${{ needs.version.outputs.prev-version-tag }}.json || true
-          # Check whether we downloaded a file
-          if [ ! -f .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json ]; then
+          # Check whether we downloaded a file (i.e. whether that file has a size greater than 0)
+          if [ ! -s .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json ]; then
               echo "Failed to download spec for previous version: ${{ needs.version.outputs.prev-version-tag }}."
               echo "This can happen if something went wrong in publishing the previous version."
               echo "Generating spec from scratch..."
