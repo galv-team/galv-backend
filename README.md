@@ -26,6 +26,11 @@ The Galv backend provides a REST API powered by [Django](https://www.djangoproje
 For more complete documentation, see the
 [Galv Server documentation](https://galv-team.github.io/galv-backend/).
 
+
+## Demo instance
+
+There is a public demo instance of Galv (reset every week) available at [galv-demo.fly.dev](https://galv-demo.fly.dev).
+
 ## Deploying
 
 The Galv backend is deployed using [Docker](https://www.docker.com/).
@@ -112,7 +117,42 @@ The following command will run the tests:
 docker-compose run --rm app_test
 ```
 
-## GitHub Actions
+## Publishing
+
+### Versioning
+
+We use [Semantic Versioning](https://semver.org/).
+When you make a change, you should update the `API_VERSION` in `galv_backend/config/settings_base.py`.
+
+If you update the documentation, you should also update the `release` version in `docs/source/conf.py` and add the new version tag to `docs/tags.json`.
+
+These versions should all use clean SemVer versioning, i.e. `v*.*.*`.
+
+### Tagged releases
+
+When you want to release a new version, using the GitHub Actions workflow, create a new tag.
+The tag should be a SemVer version, optionally with a qualifier (e.g. `v1.2.3-alpha`).
+
+Make sure the tag's version matches the `API_VERSION` in `galv_backend/config/settings_base.py`.
+
+E.g. if your `API_VERSION` is `1.2.3` you can create tags like `v1.2.3`, `v1.2.3-alpha`, `v1.2.3-rc1`, etc.
+
+#### Release candidates
+
+Tags that end with `-rc#` will be treated as release candidates.
+
+When you create a release candidate, the GitHub Actions will deploy the candidate version to the `staging` server.
+
+This deployment will run the migrations, etc. so we can detect if something is likely to break in production.
+
+#### Demo version
+
+The `demo` instance is published every week.
+It will use the `DEMO_BACKEND_VERSION` listed in `.github/workflows/demo.yml` as the version to deploy.
+
+You can also trigger the workflow manually, or by pushing to a `demo` or `demo-*` branch.
+
+### GitHub Actions
 
 We use a fairly complicated GitHub Actions flow to ensure we don't publish breaking changes.
 When you push to a branch, we do the following:
