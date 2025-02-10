@@ -14,19 +14,19 @@ on:
         description: "API_VERSION defined in settings_base.py (with 'v' prefix). Test against version-clean for matches."
         value: ${{ jobs.get-version.outputs.api-version }}
       version:
-        description: "The GitHub tag if a semver"
+        description: "The GitHub tag if a semver, e.g. v1.2.3-rc1"
         value: ${{ jobs.get-version.outputs.version }}
       version-clean:
-        description: "The GitHub tag (if a semver) without -* suffix"
+        description: "The GitHub tag (if a semver) without -* suffix, e.g. v1.2.3"
         value: ${{ jobs.get-version.outputs.version-clean }}
       version-suffix:
-        description: "The GitHub tag (if a semver) part after the semver version (e.g. -rc1)"
+        description: "The GitHub tag (if a semver) part after the semver version, e.g. -rc1"
         value: ${{ jobs.get-version.outputs.version-suffix }}
       prev-version-tag:
-        description: "Previous version tag"
+        description: "Previous version tag, e.g. v1.2.3-beta9"
         value: ${{ jobs.get-version.outputs.prev-version-tag }}
       prev-clean-version:
-        description: "Most recent previous version that doesn't have a -* suffix"
+        description: "Most recent previous version that doesn't have a -* suffix, e.g. v1.2.2"
         value: ${{ jobs.get-version.outputs.prev-clean-version }}
       is-major-release:
         description: "Is this a major release?"

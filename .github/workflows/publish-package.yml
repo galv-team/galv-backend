@@ -30,6 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
+    needs:
+      - get-version
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,27 +43,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Determine `latest` status
-        run: |
-          # A tag with the format "v1.2.3" is considered a release version.
-          # Other tags (e.g. v1.2.3-dev) are considered pre-release versions.
-          export IS_LATEST=false
-          if [[ "${GITHUB_REF}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              echo "${GITHUB_REF} is a release version"
-              export IS_LATEST=true
-          else
-              echo "${GITHUB_REF} is not a release version"
-          fi
-          echo "IS_LATEST=${IS_LATEST}" >> $GITHUB_ENV
-
       # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: "ghcr.io/${{ github.repository }}"
+          # if the tag is clean, this is a latest version
           flavor: |
-            latest=${{ env.IS_LATEST }}
+            latest=${{ job.needs.get-version.outputs.version-clean == job.needs.get-version.outputs.version }}
 
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
       - name: Setup tmate session

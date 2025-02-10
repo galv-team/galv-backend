@@ -162,9 +162,9 @@ jobs:
       - name: Specify openapi-generator version
         run: docker pull openapitools/openapi-generator-cli:v6.6.0
 
-      - name: Create python config
+      - name: Create python config using clean version
         run: |
-          echo '{"packageName": "galv", "packageVersion": "${{ needs.version.outputs.version }}"}' >> python-config.json
+          echo '{"packageName": "galv", "packageVersion": "${{ needs.version.outputs.version-clean }}"}' >> python-config.json
           cat python-config.json
 
       - name: Create API client - python
