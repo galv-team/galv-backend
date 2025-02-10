@@ -59,15 +59,6 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Check ref is semver
-        if: ${{ !inputs.dry-run }}
-        run: |
-          # Assert that the release version matches the branch name
-          if ! [[ "${{ github.ref_name }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-              echo "Release version ${{ github.ref_name }} is not valid semver, expected vMajor.Minor.Patch"
-              exit 1
-          fi
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -78,6 +69,7 @@ jobs:
         if: ${{ !inputs.dry-run }}
         uses: softprops/action-gh-release@v2
         with:
+          tag-name: ${{ needs.check-spec.outputs.version-clean }}
           files: |
             clients/**
             spec/**
