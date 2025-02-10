@@ -44,12 +44,51 @@ jobs:
         debug_enabled: ${{ inputs.debug_enabled }}
         dry-run: ${{ inputs.dry-run }}
         allow_breaking_changes: ${{ inputs.allow_breaking_changes }}
-  publish-package:
-    uses: ./.github/workflows/publish-package.yml
+
+  version:
+    uses: ./.github/workflows/get-version.yml
     secrets: inherit
-    with:
-        debug_enabled: ${{ inputs.debug_enabled }}
-        dry-run: ${{ inputs.dry-run }}
+
+  publish-package:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    needs:
+      - version
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: "ghcr.io"
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: "ghcr.io/${{ github.repository }}"
+          # if the tag is clean, this is a latest version
+          flavor: |
+            latest=${{ job.needs.version.outputs.version-clean == job.needs.version.outputs.version }}
+
+      # Enable tmate debugging of manually-triggered workflows if the input option was provided
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ inputs.debug_enabled }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ !inputs.dry-run }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   issue-release:
     needs:
@@ -59,15 +98,6 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Check ref is semver
-        if: ${{ !inputs.dry-run }}
-        run: |
-          # Assert that the release version matches the branch name
-          if ! [[ "${{ github.ref_name }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-              echo "Release version ${{ github.ref_name }} is not valid semver, expected vMajor.Minor.Patch"
-              exit 1
-          fi
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -78,6 +108,7 @@ jobs:
         if: ${{ !inputs.dry-run }}
         uses: softprops/action-gh-release@v2
         with:
+          tag-name: ${{ needs.check-spec.outputs.version-clean }}
           files: |
             clients/**
             spec/**

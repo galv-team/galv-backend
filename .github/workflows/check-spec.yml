@@ -61,14 +61,9 @@ jobs:
         if: ${{ !inputs.dry-run && (github.event_name != 'workflow_dispatch' || !inputs.skip_match_check) }}
         run: |
           # Assert that the release version matches the branch name
-          if [ "${{ needs.version.outputs.version }}" != "${{ github.ref_name }}" ]; then
-              echo "Release version ${{ needs.version.outputs.version }} does not match version in tag name ${{ github.ref_name }}"
-              if [ "v${{ needs.version.outputs.version-clean }}" != "${{ github.ref_name }}" ]; then
-                  echo "Release version v${{ needs.version.outputs.version-clean }} does not match version in tag name ${{ github.ref_name }}"
-                  exit 1
-              else
-                  echo "Release version v${{ needs.version.outputs.version-clean }} matches version in tag name ${{ github.ref_name }}"
-              fi
+          if [ "${{ needs.version.outputs.api-version }}" != "${{ needs.version.outputs.version-clean }}" ]; then
+              echo "API version in settings_base.py (${{ needs.version.outputs.api-version }}) does not match version in tag name (${{ needs.version.outputs.version-clean }})"
+              exit 1
           fi
 
       - name: Setup docker-compose
@@ -86,40 +81,40 @@ jobs:
           # Copy spec for upload
           cp .dev/spec/openapi-x.json .dev/spec/openapi-${{ needs.version.outputs.version }}.json
 
-      - name: Check vs previous spec
-        if: ${{ needs.version.outputs.prev-version-tag != '' }}
+      - name: Check vs previous release spec
+        if: ${{ needs.version.outputs.prev-clean-version != '' }}
         run: |
           sudo chmod 777 .dev/spec/*
           # If previous version tag is empty, skip this step
-          if [ -z "${{ needs.version.outputs.prev-version-tag }}" ]; then
+          if [ -z "${{ needs.version.outputs.prev-clean-version }}" ]; then
               echo "No previous version tag found. This is probably the first version. Skipping spec check."
               exit 0
           fi
-          wget -O .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json https://github.com/galv-team/galv-backend/releases/download/${{ needs.version.outputs.prev-version-tag }}/openapi-${{ needs.version.outputs.prev-version-tag }}.json || true
+          wget -O .dev/spec/openapi-${{ needs.version.outputs.prev-clean-version }}.json https://github.com/galv-team/galv-backend/releases/download/${{ needs.version.outputs.prev-clean-version }}/openapi-${{ needs.version.outputs.prev-clean-version }}.json || true
           # Check whether we downloaded a file (i.e. whether that file has a size greater than 0)
-          if [ ! -s .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json ]; then
-              echo "Failed to download spec for previous version: ${{ needs.version.outputs.prev-version-tag }}."
+          if [ ! -s .dev/spec/openapi-${{ needs.version.outputs.prev-clean-version }}.json ]; then
+              echo "Failed to download spec for previous version: ${{ needs.version.outputs.prev-clean-version }}."
               echo "This can happen if something went wrong in publishing the previous version."
               echo "Generating spec from scratch..."
-              echo "Checking out previous version tag: ${{ needs.version.outputs.prev-version-tag }}"
+              echo "Checking out previous version tag: ${{ needs.version.outputs.prev-clean-version }}"
               git fetch --tags
-              git checkout ${{ needs.version.outputs.prev-version-tag }}
-              echo "Generating spec for previous version: ${{ needs.version.outputs.prev-version-tag }}"
+              git checkout ${{ needs.version.outputs.prev-clean-version }}
+              echo "Generating spec for previous version: ${{ needs.version.outputs.prev-clean-version }}"
               docker-compose run --rm -e AWS_SECRET_ACCESS_KEY="not_set" --entrypoint "/bin/bash -c" app "python manage.py spectacular --format openapi-json >> /spec/openapi-x.json"
-              cp .dev/spec/openapi-x.json .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json
+              cp .dev/spec/openapi-x.json .dev/spec/openapi-${{ needs.version.outputs.prev-clean-version }}.json
               echo "Success. Switching to workflow branch."
               git checkout -
               echo "Spec generated. First 10 lines:"
           else
-            echo "Downloaded spec for previous version: ${{ needs.version.outputs.prev-version-tag }}. First 10 lines:"
+            echo "Downloaded spec for previous version: ${{ needs.version.outputs.prev-clean-version }}. First 10 lines:"
           fi
-          head -n 10 .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json
+          head -n 10 .dev/spec/openapi-${{ needs.version.outputs.prev-clean-version }}.json
           echo "---------"
-          echo "Check spec against previous version: ${{ needs.version.outputs.prev-version-tag }}"
+          echo "Check spec against previous version: ${{ needs.version.outputs.prev-clean-version }}"
           if [[ "${{ needs.version.outputs.is-major-release }}" == "true" || "${{ inputs.allow_breaking_changes }}" == "true" ]]; then
-            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json check_spec || true
+            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/openapi-${{ needs.version.outputs.prev-clean-version }}.json check_spec || true
           else
-            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json check_spec
+            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/openapi-${{ needs.version.outputs.prev-clean-version }}.json check_spec
           fi
           ls -l .dev/spec
           echo ".dev/spec/diff.md:"
@@ -167,9 +162,9 @@ jobs:
       - name: Specify openapi-generator version
         run: docker pull openapitools/openapi-generator-cli:v6.6.0
 
-      - name: Create python config
+      - name: Create python config using clean version
         run: |
-          echo '{"packageName": "galv", "packageVersion": "${{ needs.version.outputs.version-plain }}"}' >> python-config.json
+          echo '{"packageName": "galv", "packageVersion": "${{ needs.version.outputs.version-clean }}"}' >> python-config.json
           cat python-config.json
 
       - name: Create API client - python
@@ -191,7 +186,7 @@ jobs:
 
       - name: Create API client - typescript-axios
         env:
-          VERSION: ${{ needs.version.outputs.version-plain }}
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
           # Create a config json file using EOF notation
           echo '{"useSingleRequestParameter": true}' >> typescript-axios-config.json
