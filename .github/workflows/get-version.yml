@@ -43,6 +43,7 @@ jobs:
       version: ${{ steps.scrape.outputs.version }}
       version-clean: ${{ steps.scrape.outputs.version-clean }}
       version-suffix: ${{ steps.scrape.outputs.version-suffix }}
+      is-release-version: ${{ steps.scrape.outputs.is-release-version }}
       prev-version-tag: ${{ steps.search.outputs.prev-version-tag }}
       prev-clean-version: ${{ steps.search.outputs.prev-clean-version }}
       is-major-release: ${{ steps.search.outputs.previous-major-version-tag != steps.search.outputs.prev-version-tag }}
@@ -69,14 +70,28 @@ jobs:
           # Extract other version info from tag name
           TAG_NAME=${GITHUB_REF#refs/tags/}
           if ! [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-              echo "Tag $TAG_NAME is not valid semver"
+              echo "Tag $TAG_NAME is not valid semver. Setting version to API_VERSION"
+              echo "version=v$API_VERSION" >> $GITHUB_OUTPUT
+              echo "version-clean=v$API_VERSION" >> $GITHUB_OUTPUT
+              echo "version-suffix=" >> $GITHUB_OUTPUT
+              # Only tags get to be release versions
+              echo "is-release-version=false" >> $GITHUB_OUTPUT
               exit 0
           fi
 
+          VERSION_CLEAN=$(echo $TAG_NAME | grep -oP '^v[0-9]+\.[0-9]+\.[0-9]+' || true)
+          VERSION_SUFFIX=$(echo $TAG_NAME | grep -oP '(?<=-).*$' || true)
+
           echo "Tag version: $TAG_NAME"
           echo "version=$TAG_NAME" >> $GITHUB_OUTPUT
-          echo "version-clean=$(echo $TAG_NAME | grep -oP '^v[0-9]+\.[0-9]+\.[0-9]+' || true)" >> $GITHUB_OUTPUT
-          echo "version-suffix=$(echo $TAG_NAME | grep -oP '(?<=-).*$' || true)" >> $GITHUB_OUTPUT
+          echo "version-clean=$VERSION_CLEAN >> $GITHUB_OUTPUT
+          echo "version-suffix=$VERSION_SUFFIX >> $GITHUB_OUTPUT
+          # Release versions are clean semver
+          if [[ "$TAG_NAME" == "$VERSION_CLEAN" ]]; then
+              echo "is-release-version=true" >> $GITHUB_OUTPUT
+          else
+              echo "is-release-version=false" >> $GITHUB_OUTPUT
+          fi
           cat $GITHUB_OUTPUT
 
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
