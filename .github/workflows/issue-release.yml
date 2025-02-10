@@ -44,12 +44,17 @@ jobs:
         debug_enabled: ${{ inputs.debug_enabled }}
         dry-run: ${{ inputs.dry-run }}
         allow_breaking_changes: ${{ inputs.allow_breaking_changes }}
+
+  version:
+    uses: ./.github/workflows/get-version.yml
+    secrets: inherit
+
   publish-package:
     runs-on: ubuntu-latest
     permissions:
       packages: write
     needs:
-      - get-version
+      - version
     steps:
       - name: Checkout
         uses: actions/checkout@v4
