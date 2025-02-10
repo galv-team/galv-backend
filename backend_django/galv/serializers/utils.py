@@ -1,6 +1,6 @@
 import json
 from collections import OrderedDict
-from typing import Union, Literal, Any
+from typing import Union, Literal, Any, Tuple
 
 import django.db.models
 from django.core.serializers.json import DjangoJSONEncoder
@@ -619,6 +619,7 @@ class SerializerDescription(TypedDict):
         Literal["choice"],
         Literal["json"],
     ]
+    galv_resource: bool
     help_text: str
     required: bool
     read_only: bool
@@ -640,13 +641,18 @@ class SerializerDescriptionSerializer(serializers.Serializer):
                 "SerializerDescriptionSerializer instance must be a Serializer"
             )
 
-    def _get_type(self, field):
+    def _get_type(self, field) -> Tuple[str, bool]:
+        """
+        Return the type of a field and whether it is a Galv resource (i.e. has its own serializer)
+
+        "Proxy" models are treated as their base model.
+        """
         if isinstance(field, TruncatedHyperlinkedRelatedIdField):
             ss = import_string("galv.serializers")
             serializer = ss.__dict__[field.child_serializer_class]()
-            return serializer.Meta.model.__name__
+            return serializer.Meta.model.__name__.replace("Proxy", ""), True
         if isinstance(field, serializers.ModelSerializer):
-            return field.__class__.__name__
+            return field.__class__.__name__.replace("Proxy", ""), True
         type_map = {
             "url": [
                 serializers.HyperlinkedIdentityField,
@@ -680,14 +686,15 @@ class SerializerDescriptionSerializer(serializers.Serializer):
         }
         for key, types in type_map.items():
             if any(isinstance(field, t) for t in types):
-                return key
-        return f"Unknown[{field.__class__.__name__}]"
+                return key, False
+        return f"Unknown[{field.__class__.__name__}]", False
 
     def to_representation(self, instance) -> SerializerDescription:
         """
         Return a dictionary describing the serializer.
         Each key will be a field name, and the value will be a dictionary with the following keys:
         - type: the field type
+        - galv_resource: whether the field type is a Galv resource
         - help_text: the field's help text
         - required: whether the field is required
         - read_only: whether the field is read-only
@@ -709,10 +716,20 @@ class SerializerDescriptionSerializer(serializers.Serializer):
                     child = (
                         field.child if hasattr(field, "child") else field.child_relation
                     )
-                    type_properties = {"type": self._get_type(child), "many": True}
+                    my_type, is_resource = self._get_type(child)
+                    type_properties = {
+                        "type": my_type,
+                        "galv_resource": is_resource,
+                        "many": True,
+                    }
                     break
             else:
-                type_properties = {"type": self._get_type(field), "many": False}
+                my_type, is_resource = self._get_type(field)
+                type_properties = {
+                    "type": my_type,
+                    "galv_resource": is_resource,
+                    "many": False,
+                }
 
             representation[field_name] = {
                 **type_properties,
