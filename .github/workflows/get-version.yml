@@ -139,7 +139,9 @@ jobs:
             os.system('echo prev-clean-version= >> $GITHUB_OUTPUT')
           else:
             os.system(f'echo prev-version-tag={tags[i-1]} >> $GITHUB_OUTPUT')
-            prev_clean = [tag for tag in tags[:i] if '-' not in tag]
+            # Search all_tags for the previous clean version
+            n = all_tags.index('${{ steps.scrape.outputs.version }}')
+            prev_clean = [tag for tag in all_tags[:n] if '-' not in tag]
             if len(prev_clean) == 0:
               os.system('echo prev-clean-version= >> $GITHUB_OUTPUT')
             else:
