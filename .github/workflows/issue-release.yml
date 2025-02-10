@@ -74,7 +74,7 @@ jobs:
           images: "ghcr.io/${{ github.repository }}"
           # if the tag is clean, this is a latest version
           flavor: |
-            latest=${{ job.needs.get-version.outputs.version-clean == job.needs.get-version.outputs.version }}
+            latest=${{ job.needs.version.outputs.version-clean == job.needs.version.outputs.version }}
 
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
       - name: Setup tmate session
