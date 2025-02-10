@@ -90,8 +90,29 @@ jobs:
         if: ${{ needs.version.outputs.prev-version-tag != '' }}
         run: |
           sudo chmod 777 .dev/spec/*
-          wget -O .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json https://github.com/galv-team/galv-backend/releases/download/${{ needs.version.outputs.prev-version-tag }}/openapi-${{ needs.version.outputs.prev-version-tag }}.json
-          echo "Downloaded spec for previous version: ${{ needs.version.outputs.prev-version-tag }}. First 10 lines:"
+          # If previous version tag is empty, skip this step
+          if [ -z "${{ needs.version.outputs.prev-version-tag }}" ]; then
+              echo "No previous version tag found. This is probably the first version. Skipping spec check."
+              exit 0
+          fi
+          wget -O .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json https://github.com/galv-team/galv-backend/releases/download/${{ needs.version.outputs.prev-version-tag }}/openapi-${{ needs.version.outputs.prev-version-tag }}.json || true
+          # Check whether we downloaded a file
+          if [ ! -f .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json ]; then
+              echo "Failed to download spec for previous version: ${{ needs.version.outputs.prev-version-tag }}."
+              echo "This can happen if something went wrong in publishing the previous version."
+              echo "Generating spec from scratch..."
+              echo "Checking out previous version tag: ${{ needs.version.outputs.prev-version-tag }}"
+              git fetch --tags
+              git checkout ${{ needs.version.outputs.prev-version-tag }}
+              echo "Generating spec for previous version: ${{ needs.version.outputs.prev-version-tag }}"
+              docker-compose run --rm -e AWS_SECRET_ACCESS_KEY="not_set" --entrypoint "/bin/bash -c" app "python manage.py spectacular --format openapi-json >> /spec/openapi-x.json"
+              cp .dev/spec/openapi-x.json .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json
+              echo "Success. Switching to workflow branch."
+              git checkout -
+              echo "Spec generated. First 10 lines:"
+          else
+            echo "Downloaded spec for previous version: ${{ needs.version.outputs.prev-version-tag }}. First 10 lines:"
+          fi
           head -n 10 .dev/spec/openapi-${{ needs.version.outputs.prev-version-tag }}.json
           echo "---------"
           echo "Check spec against previous version: ${{ needs.version.outputs.prev-version-tag }}"
