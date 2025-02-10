@@ -20,14 +20,23 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.5.7"
+API_VERSION = "2.6.1"
+
+USER_ACTIVATION_OVERRIDE_ADDRESSES = os.environ.get(
+    "DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES"
+)
+if USER_ACTIVATION_OVERRIDE_ADDRESSES:
+    USER_ACTIVATION_OVERRIDE_ADDRESSES = USER_ACTIVATION_OVERRIDE_ADDRESSES.split(",")
 
 try:
     USER_ACTIVATION_TOKEN_EXPIRY_S = int(
         os.environ.get("DJANGO_USER_ACTIVATION_TOKEN_EXPIRY_S")
     )
 except (ValueError, TypeError):
-    USER_ACTIVATION_TOKEN_EXPIRY_S = 60 * 15  # 15 minutes
+    if USER_ACTIVATION_OVERRIDE_ADDRESSES is None:
+        USER_ACTIVATION_TOKEN_EXPIRY_S = 60 * 15  # 15 minutes
+    else:
+        USER_ACTIVATION_TOKEN_EXPIRY_S = 60 * 60  # 1 hour
 
 try:
     USER_PW_RESET_TOKEN_EXPIRY_S = int(

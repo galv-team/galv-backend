@@ -1,33 +1,32 @@
-# fly.toml app configuration file generated for galv-backend-dev-debug on 2023-12-30T07:23:48Z
+# fly.bil.toml app configuration file
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
+# This file defines the Fly deployment for the Battery Intelligence Lab in Oxford, UK.
 
-app = "galv-backend-dev"
+app = "galv-dev-backend"
 primary_region = "lhr"
 console_command = "/code/backend_django/manage.py shell"
 
 [build]
   image = "ghcr.io/galv-team/galv-backend:latest"
 
-[deploy]
-#  release_command = "/code/fly_setup.sh"
-
 [env]
-#  PORT = "80"
-  VIRTUAL_HOST = "galv-backend-dev.fly.dev"
-  FRONTEND_VIRTUAL_HOST = "http://galv-frontend-dev.fly.dev,https://galv-frontend-dev.fly.dev"
+  VIRTUAL_HOST = "galv-backend.fly.dev"
+  FRONTEND_VIRTUAL_HOST = "https://galv.fly.dev"
   DJANGO_SETTINGS_MODULE = "config.settings"
-#  DJANGO_SETTINGS = "dev"
   DJANGO_EMAIL_HOST = 'smtp.gmail.com'
   DJANGO_EMAIL_USE_TLS = "False"
   DJANGO_EMAIL_PORT = "465"
   DJANGO_EMAIL_USE_SSL = "True"
   DJANGO_EMAIL_HOST_USER = 'oxfordbatterymodelling@gmail.com'
   DJANGO_DEFAULT_FROM_EMAIL = 'oxfordbatterymodelling@gmail.com'
-#  AWS_ACCESS_KEY_ID = "AKIAZQ3DU5GQ7Y5V7TFJ"
-#  DJANGO_AWS_STORAGE_BUCKET_NAME = "galv"
-#  DJANGO_AWS_S3_REGION_NAME = "eu-west-2"
+  DJANGO_LABS_USE_OUR_S3_STORAGE = "True"
+  DJANGO_LAB_STORAGE_QUOTA_BYTES = "1_000_000_000_000"  # 1TB
+  DJANGO_AWS_DEFAULT_ACL = "private"
+  DJANGO_AWS_STORAGE_BUCKET_NAME = "galv-bil"
+  DJANGO_AWS_S3_REGION_NAME = "eu-west-2"
+  #  AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, in secrets
 
 [http_service]
   internal_port = 80
@@ -39,9 +38,5 @@ console_command = "/code/backend_django/manage.py shell"
 
 [[vm]]
   cpu_kind = "shared"
-  cpus = 1
+  cpus = 2
   memory_mb = 2048
-
-#[[statics]]
-#  guest_path = "/static/"
-#  url_prefix = "/django_static/"

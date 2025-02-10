@@ -48,3 +48,5 @@ node_modules/
 .dev/
 
 docs/build-dev/
+
+debug.sh
