@@ -25,6 +25,9 @@ on:
       prev-version-tag:
         description: "Previous version tag"
         value: ${{ jobs.get-version.outputs.prev-version-tag }}
+      prev-clean-version:
+        description: "Most recent previous version that doesn't have a -* suffix"
+        value: ${{ jobs.get-version.outputs.prev-clean-version }}
       is-major-release:
         description: "Is this a major release?"
         value: ${{ jobs.get-version.outputs.is-major-release }}
@@ -41,6 +44,7 @@ jobs:
       version-clean: ${{ steps.scrape.outputs.version-clean }}
       version-suffix: ${{ steps.scrape.outputs.version-suffix }}
       prev-version-tag: ${{ steps.search.outputs.prev-version-tag }}
+      prev-clean-version: ${{ steps.search.outputs.prev-clean-version }}
       is-major-release: ${{ steps.search.outputs.previous-major-version-tag != steps.search.outputs.prev-version-tag }}
       untagged: ${{ steps.tags.outputs.untagged == 'true' }}
     steps:
@@ -57,18 +61,18 @@ jobs:
               echo "API version v$API_VERSION is not valid clean semver"
               echo "Please check the API_VERSION in settings_base.py matches semver e.g. 1.2.3"
               exit 1
-          fi         
-          
+          fi
+
           echo "API_VERSION: v$API_VERSION"
           echo "api-version=v$API_VERSION" >> $GITHUB_OUTPUT
-          
+
           # Extract other version info from tag name
           TAG_NAME=${GITHUB_REF#refs/tags/}
           if ! [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
               echo "Tag $TAG_NAME is not valid semver"
               exit 0
-          fi         
-          
+          fi
+
           echo "Tag version: $TAG_NAME"
           echo "version=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "version-clean=$(echo $TAG_NAME | grep -oP '^v[0-9]+\.[0-9]+\.[0-9]+' || true)" >> $GITHUB_OUTPUT
@@ -119,21 +123,27 @@ jobs:
               tag = search.groups()[0]
               if tag not in tags:
                 tags.append(tag)
-          
+
           # split into major, minor, patch, note and sort by each part
           major = lambda s: int(s.split('.')[0])
           minor = lambda s: int(s.split('.')[1])
           patch = lambda s: int(s.split('.')[2].split('-')[0])
           tags.sort(key=lambda s: (major(s[1:]), minor(s), patch(s)))  # strip 'v' prefix for major
-          
+
           print(tags)
           print(f'Searching for ${{ steps.scrape.outputs.api-version }} in tags')
-          
+
           i = tags.index('${{ steps.scrape.outputs.api-version }}')
           if i == 0:
             os.system('echo prev-version-tag= >> $GITHUB_OUTPUT')
+            os.system('echo prev-clean-version= >> $GITHUB_OUTPUT')
           else:
             os.system(f'echo prev-version-tag={tags[i-1]} >> $GITHUB_OUTPUT')
+            prev_clean = [tag for tag in tags[:i] if '-' not in tag]
+            if len(prev_clean) == 0:
+              os.system('echo prev-clean-version= >> $GITHUB_OUTPUT')
+            else:
+              os.system(f'echo prev-clean-version={prev_clean[-1]} >> $GITHUB_OUTPUT')
           # Get the previous major version tag
           if i == 0:
             os.system('echo previous-major-version-tag= >> $GITHUB_OUTPUT')
