@@ -51,14 +51,15 @@ jobs:
 
       - name: Determine Python package version
         run: |
+          V=${VERSION_CLEAN#v}
+
           # Real releases always use the clean tag version
           if [[ "${{ inputs.dry_run }}" == "false" ]]; then
-            echo PYPI_VERSION=$VERSION_CLEAN" >> $GITHUB_ENV
+            echo PYPI_VERSION=$V" >> $GITHUB_ENV
             exit 0
           fi
 
           # Get the list of currently published versions from the test repository
-          V=$VERSION_CLEAN
           PYTHON_VERSIONS=$(pip index version --pre --index-url https://test.pypi.org/simple/ galv)
           while true; do
             if [[ -z $PYTHON_VERSIONS | grep '$V[, \n] ]]; then
@@ -74,6 +75,8 @@ jobs:
 
       - name: Determine NPM package version
         run: |
+          V=${VERSION#v}
+
           # Real releases always use the clean tag version
           if [[ "${{ inputs.dry_run }}" == "false" ]]; then
               echo NPM_VERSION=$VERSION_CLEAN" >> $GITHUB_ENV
@@ -82,7 +85,6 @@ jobs:
 
           # Get the list of currently published versions
           NPM_VERSIONS=$(npm show @galv/galv versions --json)
-          V=$VERSION
           while true; do
             if [[ -z $NPM_VERSIONS | grep '$V[, \n] ]]; then
               break
