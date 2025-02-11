@@ -2,7 +2,7 @@ name: Docker image
 
 on:
   workflow_call:
-      dry-run:
+      dry_run:
         type: boolean
         description: 'Do not actually release the package, just check that it is valid.'
         required: false
@@ -14,7 +14,7 @@ on:
         description: 'Run the build with debugging enabled'
         required: false
         default: false
-      dry-run:
+      dry_run:
         type: boolean
         description: 'Do not actually release the package, just check that it is valid.'
         required: false
@@ -56,6 +56,6 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          push: ${{ !inputs.dry-run }}
+          push: ${{ !inputs.dry_run }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

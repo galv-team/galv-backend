@@ -2,14 +2,14 @@ name: Docker image
 
 on:
   workflow_call:
-      dry-run:
+      dry_run:
         type: boolean
         description: 'Do not actually issue the release, just check that it is valid.'
         required: false
         default: false
   workflow_dispatch:
     inputs:
-      dry-run:
+      dry_run:
         type: boolean
         description: 'Do not actually issue the release, just check that it is valid.'
         required: false
@@ -28,7 +28,7 @@ jobs:
         uses: actions/download-artifact@v4
 
       - name: Release
-        if: ${{ !inputs.dry-run }}
+        if: ${{ !inputs.dry_run }}
         uses: softprops/action-gh-release@v2
         with:
           tag-name: ${{ env.VERSION_CLEAN }}

@@ -2,7 +2,7 @@ name: API Clients
 on:
   workflow_call:
     inputs:
-      dry-run:
+      dry_run:
         type: boolean
         description: 'Publish to test registries only. Do not actually release the package.'
         required: false
@@ -22,7 +22,7 @@ on:
         description: 'Run the build with debugging enabled'
         required: false
         default: false
-      dry-run:
+      dry_run:
         type: boolean
         description: 'Publish to test registries only. Do not actually release the package.'
         required: false
@@ -43,8 +43,8 @@ jobs:
       packages: write
       id-token: write  # IMPORTANT: mandatory for trusted publishing
     environment:
-      name: ${{ inputs.dry-run == 'true' && 'testpypi' || 'pypi' }}
-      url: ${{ inputs.dry-run == 'true' && 'https://test.pypi.org/p/galv-client' || 'https://pypi.org/p/galv-client' }}
+      name: ${{ inputs.dry_run == 'true' && 'testpypi' || 'pypi' }}
+      url: ${{ inputs.dry_run == 'true' && 'https://test.pypi.org/p/galv-client' || 'https://pypi.org/p/galv-client' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -184,13 +184,13 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Publish typescript client to packages ${{ inputs.dry-run == 'true' && '[dry-run]' || '' }}
+      - name: Publish typescript client to packages ${{ inputs.dry_run == 'true' && '[dry_run]' || '' }}
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_PUBLISH_TOKEN }}
           package: "clients/typescript-axios"
           access: "public"
-          dry-run: ${{ inputs.dry-run }}
+          dry_run: ${{ inputs.dry_run }}
 
       - name: Upload clients
         uses: actions/upload-artifact@v4
@@ -209,7 +209,7 @@ jobs:
       - name: Build distribution 📦
         run: python setup.py sdist bdist_wheel
 
-      - name: Publish distribution 📦 to PyPI ${{ inputs.dry-run == 'true' && '[dry-run]' || '' }}
+      - name: Publish distribution 📦 to PyPI ${{ inputs.dry_run == 'true' && '[dry_run]' || '' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: ${{ inputs.dry-run == 'true' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+          repository-url: ${{ inputs.dry_run == 'true' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
