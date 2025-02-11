@@ -114,12 +114,13 @@ jobs:
         id: create_tag_list
         run: |
           # Get a list of all repository tags and branches
-          git fetch --tags --force
+          git fetch --tags --force --quiet
 
           # Save tag list to a temporary file
           git tag --list > tags.txt
           # Save clean tags
-          cat tags.txt | grep -o '^v[0-9]+\.[0-9]+\.[0-9]+$' > clean_tags.txt
+          (cat tags.txt | grep -oE '^v[0-9]+\.[0-9]+\.[0-9]+$' > clean_tags.txt) || true
+          cat clean_tags.txt
 
       - name: Search for previous version tag
         # The previous version meets the following criteria:
