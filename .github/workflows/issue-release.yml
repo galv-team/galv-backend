@@ -2,6 +2,7 @@ name: Docker image
 
 on:
   workflow_call:
+    inputs:
       dry_run:
         type: boolean
         description: 'Do not actually issue the release, just check that it is valid.'
