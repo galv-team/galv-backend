@@ -158,8 +158,8 @@ jobs:
           fi
 
           # Check if `backend_django` directory has changed using git diff vs the previous version
-          if [[ -z cat diff.txt | grep ^backend_django ]]; then
-              if [[ -z cat diff.txt | grep -v -E '^(\.gitignore|\.pre-commit-config.yaml|LICENCE|README\.md)$' | grep -E ^[^/]+$ ]]; then
+          if [[ -z $(cat diff.txt | grep ^backend_django) ]]; then
+              if [[ -z $(cat diff.txt | grep -v -E '^(\.gitignore|\.pre-commit-config.yaml|LICENCE|README\.md)$' | grep -E ^[^/]+$) ]]; then
                   echo "No changes to settings_base.py or root directory files"
                   echo "(.gitignore, .pre-commit-config.yaml, LICENCE, README.md are ignored)"
                   echo "BACKEND_CHANGED=false" >> $GITHUB_ENV
@@ -174,7 +174,7 @@ jobs:
           fi
 
           # Check if the demo instance workflow has been changed
-          if [[ -z git diff $PREVIOUS_VERSION -- .github/workflows/demo.yml | grep DEMO_BACKEND_VERSION ]]; then
+          if [[ -z $(git diff $PREVIOUS_VERSION -- .github/workflows/demo.yml | grep DEMO_BACKEND_VERSION) ]]; then
               echo "No changes to DEMO_BACKEND_VERSION detected"
               echo "DEMO_UPDATE=false" >> $GITHUB_ENV
           else
