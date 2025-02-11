@@ -48,6 +48,7 @@ if i == 0:
     )
     os.system("echo PREVIOUS_VERSION= >> $GITHUB_OUTPUT")
     os.system("echo PREVIOUS_MAJOR_VERSION= >> $GITHUB_OUTPUT")
+    os.system("echo IS_MAJOR_VERSION=true >> $GITHUB_OUTPUT")
 else:
     os.system(f"echo PREVIOUS_VERSION={tags[i - 1]} >> $GITHUB_OUTPUT")
     print(f"Previous version: {tags[i - 1]}")
@@ -57,6 +58,12 @@ else:
     if len(prev_ver_tags) == 0:
         print(f"{major_version} is the first major version, no previous major version.")
         os.system("echo PREVIOUS_MAJOR_VERSION= >> $GITHUB_OUTPUT")
+        os.system("echo IS_MAJOR_VERSION=true >> $GITHUB_OUTPUT")
     else:
         os.system(f"echo PREVIOUS_MAJOR_VERSION={prev_ver_tags[-1]} >> $GITHUB_OUTPUT")
         print(f"Previous major version: {prev_ver_tags[-1]}")
+        if tags[i - 1] == prev_ver_tags[-1]:
+            print(f"{my_clean_version} is a major version.")
+            os.system("echo IS_MAJOR_VERSION=true >> $GITHUB_OUTPUT")
+        else:
+            os.system("echo IS_MAJOR_VERSION=false >> $GITHUB_OUTPUT")
