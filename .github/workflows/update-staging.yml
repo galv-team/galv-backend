@@ -18,7 +18,7 @@ jobs:
   recreate-fly-stage:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    concurrency: demo-group
+    concurrency: staging-group
     env:
       FRONTEND_URL: "https://galv-stage.fly.dev"
       FLY_APP_NAME: "galv-stage-backend"
