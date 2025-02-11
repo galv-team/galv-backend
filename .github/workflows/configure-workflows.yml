@@ -149,7 +149,7 @@ jobs:
         run: |
           # Check if `docs` directory has changed using git diff vs the previous version
           git diff --name-only $PREVIOUS_VERSION > diff.txt
-          if [[ -z cat diff.txt | grep ^docs ]]; then
+          if [[ -z $(cat diff.txt | grep ^docs) ]]; then
               echo "No changes to docs directory"
               echo "DOCS_CHANGED=false" >> $GITHUB_ENV
           else
