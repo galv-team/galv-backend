@@ -193,4 +193,4 @@ jobs:
       - name: Publish distribution 📦 to PyPI ${{ inputs.dry-run == 'true' && '[dry-run]' || '' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: ${{ inputs.dry-run == 'true' && 'https://pypi.org/legacy/' || undefined }}
+          repository-url: ${{ inputs.dry-run == 'true' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
