@@ -7,6 +7,14 @@ on:
         description: 'Publish to test registries only. Do not actually release the package.'
         required: false
         default: false
+      version:
+        type: string
+        description: 'Base version to use for the NPM package'
+        required: true
+      version_clean:
+        type: string
+        description: 'Base (clean) version to use for the PyPI package'
+        required: true
   workflow_dispatch:
     inputs:
       debug_enabled:
@@ -19,6 +27,14 @@ on:
         description: 'Publish to test registries only. Do not actually release the package.'
         required: false
         default: false
+      version:
+        type: string
+        description: 'Base version to use for the NPM package'
+        required: true
+      version_clean:
+        type: string
+        description: 'Base (clean) version to use for the PyPI package'
+        required: true
 
 jobs:
   make-clients:
@@ -52,6 +68,7 @@ jobs:
 
       - name: Determine Python package version
         run: |
+          VERSION_CLEAN=${{ inputs.version_clean }}
           V=${VERSION_CLEAN#v}
 
           # Real releases always use the clean tag version
@@ -76,11 +93,12 @@ jobs:
 
       - name: Determine NPM package version
         run: |
+          VERSION=${{ inputs.version }}
           V=${VERSION#v}
 
           # Real releases always use the clean tag version
           if [[ "${{ inputs.dry_run }}" == "false" ]]; then
-              echo NPM_VERSION=$VERSION_CLEAN" >> $GITHUB_ENV
+              echo NPM_VERSION=$V" >> $GITHUB_ENV
               exit 0
           fi
 

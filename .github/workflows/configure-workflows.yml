@@ -310,7 +310,8 @@ jobs:
     uses: ./.github/workflows/api-clients.yml
     with:
       dry_run: ${{ needs.version.outputs.IS_RELEASE != 'true' }}
-      base_version: ${{ needs.version.outputs.VERSION_CLEAN }}
+      version: ${{ needs.version.outputs.VERSION }}
+      version_clean: ${{ needs.version.outputs.VERSION_CLEAN }}
 
   docker:
     needs:
