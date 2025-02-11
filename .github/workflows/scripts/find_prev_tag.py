@@ -1,13 +1,13 @@
 import os
 import sys
 
-if len(sys.argv) < 2:
+if len(sys.argv) < 3:
     print("Usage: find_prev_tag.py <tags.txt file> <clean_version string>")
     sys.exit(1)
 
 # Parse args
-tags_file = sys.argv[0]
-my_clean_version = sys.argv[1]
+tags_file = sys.argv[1]
+my_clean_version = sys.argv[2]
 
 with open(tags_file, "r") as f:
     tags = f.read().splitlines()
