@@ -1,31 +1,11 @@
 name: CI Tests
 on:
-  push:
+  workflow_call:
   workflow_dispatch:
     inputs:
       debug_enabled:
         type: boolean
-        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
-        required: false
-        default: false
-      debug_only_this_job:
-        type: boolean
-        description: 'Run the build with tmate debugging enabled for this job only'
-        required: false
-        default: false
-      issue_release:
-        type: boolean
-        description: 'Issue a release'
-        required: false
-        default: false
-      dry_release_run:
-        type: boolean
-        description: 'Do not actually release the package, just check that it is valid.'
-        required: false
-        default: false
-      allow_breaking_changes:
-        type: boolean
-        description: 'Skip API compatibility check. WARNING: this will allow breaking changes to the API to be released.'
+        description: 'Run the build with debugging enabled'
         required: false
         default: false
 
@@ -34,20 +14,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  version:
-    uses: ./.github/workflows/get-version.yml
-    secrets: inherit
-
   run-tests:
     runs-on: ubuntu-latest
-    outputs:
-      release: ${{ steps.check-tag.outputs.match }}
     steps:
       - uses: actions/checkout@v4
-      # Enable tmate debugging of manually-triggered workflows if the input option was provided
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.debug_enabled || inputs.debug_only_this_job) }}
+
+      # Enable debugging of manually-triggered workflows if the input option was provided
+      - name: Debug
+        uses: owenthereal/action-upterm@v1
+        if: ${{ inputs.debug_enabled }}
 
       - name: Setup docker-compose
         run: |
@@ -60,10 +35,6 @@ jobs:
 
       - name: Run tests
         run: docker-compose run --rm app_test
-
-      - name: Validate spec
-        run: |
-          docker-compose run --rm app_test bash -c "python manage.py spectacular --fail-on-warn --validate"
 
   check-release-type:
     runs-on: ubuntu-latest

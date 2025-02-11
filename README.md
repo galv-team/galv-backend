@@ -131,6 +131,9 @@ If you update the documentation, you should also update the `release` version in
 
 These versions should all use clean SemVer versioning, i.e. `v*.*.*`.
 
+Published versions should be released incrementally.
+**The Actions workflows will assume there exists a clean version tag for each release, e.g. v1.2.3-rc4 will assume v1.2.2 exists.**
+
 ### Tagged releases
 
 When you want to release a new version, using the GitHub Actions workflow, create a new tag.

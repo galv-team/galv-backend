@@ -9,12 +9,7 @@
 name: Stage Release
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["CI Tests"]
-    tags:
-      - 'v*-rc[0-9]+' # Any version tag ending in -rc\d+
-    types:
-      - completed
+  workflow_call:
 
 permissions:
   packages: read

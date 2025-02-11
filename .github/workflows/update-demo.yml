@@ -6,14 +6,7 @@ on:
     # every week
     - cron: '42 0 * * 1'
   workflow_dispatch:
-  workflow_run:
-    workflows:
-      - "CI Tests"
-    branches:
-      - demo
-      - demo-*
-    types:
-      - completed
+  workflow_call:
 
 permissions:
   packages: read
