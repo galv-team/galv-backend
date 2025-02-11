@@ -1,6 +1,7 @@
 name: API Clients
 on:
   workflow_call:
+    inputs:
       dry-run:
         type: boolean
         description: 'Publish to test registries only. Do not actually release the package.'
