@@ -146,7 +146,7 @@ jobs:
         id: previous_versions
         run: |
           # Get the previous tag
-          python ./.github/workflows/scripts/find_prev_tag.py
+          python ./.github/workflows/scripts/find_prev_tag.py clean_tags.txt $VERSION_CLEAN
           # Should have set
           # PREVIOUS_VERSION
           # PREVIOUS_MAJOR_VERSION

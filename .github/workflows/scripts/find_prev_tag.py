@@ -1,9 +1,15 @@
 import os
+import sys
 
-# Get current version and clean version from env
-my_clean_version = os.environ["VERSION_CLEAN"]
+if len(sys.argv) < 2:
+    print("Usage: find_prev_tag.py <tags.txt file> <clean_version string>")
+    sys.exit(1)
 
-with open("clean_tags.txt", "r") as f:
+# Parse args
+tags_file = sys.argv[0]
+my_clean_version = sys.argv[1]
+
+with open(tags_file, "r") as f:
     tags = f.read().splitlines()
 
 if my_clean_version not in tags:
@@ -31,25 +37,25 @@ i = tags.index(my_clean_version)
 # Determine if we're the latest tag
 if i == len(tags) - 1:
     print(f"{my_clean_version} is the latest version.")
-    os.system("echo IS_LATEST=true >> $GITHUB_ENV")
+    os.system("echo IS_LATEST=true >> $GITHUB_OUTPUT")
 else:
-    os.system("echo IS_LATEST=false >> $GITHUB_ENV")
+    os.system("echo IS_LATEST=false >> $GITHUB_OUTPUT")
 
 if i == 0:
     print(
         f"{my_clean_version} is the first tag, no previous version or previous major version."
     )
-    os.system("echo PREVIOUS_VERSION= >> $GITHUB_ENV")
-    os.system("echo PREVIOUS_MAJOR_VERSION= >> $GITHUB_ENV")
+    os.system("echo PREVIOUS_VERSION= >> $GITHUB_OUTPUT")
+    os.system("echo PREVIOUS_MAJOR_VERSION= >> $GITHUB_OUTPUT")
 else:
-    os.system(f"echo PREVIOUS_VERSION={tags[i - 1]} >> $GITHUB_ENV")
+    os.system(f"echo PREVIOUS_VERSION={tags[i - 1]} >> $GITHUB_OUTPUT")
     print(f"Previous version: {tags[i - 1]}")
     # Get the previous major version tag
     major_version = tags[i].split(".")[0]
     prev_ver_tags = [tag for tag in tags if tag.split(".")[0] < major_version]
     if len(prev_ver_tags) == 0:
         print(f"{major_version} is the first major version, no previous major version.")
-        os.system("echo PREVIOUS_MAJOR_VERSION= >> $GITHUB_ENV")
+        os.system("echo PREVIOUS_MAJOR_VERSION= >> $GITHUB_OUTPUT")
     else:
-        os.system(f"echo PREVIOUS_MAJOR_VERSION={prev_ver_tags[-1]} >> $GITHUB_ENV")
+        os.system(f"echo PREVIOUS_MAJOR_VERSION={prev_ver_tags[-1]} >> $GITHUB_OUTPUT")
         print(f"Previous major version: {prev_ver_tags[-1]}")
