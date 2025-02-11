@@ -11,7 +11,7 @@ on:
         default: false
       allow_breaking_changes:
         type: boolean
-        description: 'Ignore breaking change failure in OpenAPI spec check'
+        description: 'Ignore breaking change failure in OpenAPI spec check.'
         required: false
         default: false
 
@@ -52,38 +52,40 @@ jobs:
 
           # Determine the tag/branch name
           if [[ $IS_TAG -gt 0 ]]; then
-              TAG_NAME=${GITHUB_REF#refs/tags/}
+              REF_NAME=${GITHUB_REF#refs/tags/}
           else
-              TAG_NAME=${GITHUB_REF#refs/heads/}
+              REF_NAME=${GITHUB_REF#refs/heads/}
           fi
 
+          echo "REF_NAME=$REF_NAME"
+
           # Determine the version from the tag/branch name
-          if ! [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-              echo "Tag $TAG_NAME is not valid semver. Using API_VERSION v$API_VERSION"
+          if ! [[ "$REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+              echo "Ref $REF_NAME is not valid semver. Using API_VERSION v$API_VERSION"
               echo "VERSION=v$API_VERSION" >> $GITHUB_ENV
               echo "VERSION_CLEAN=v$API_VERSION" >> $GITHUB_ENV
               echo "VERSION_SUFFIX=" >> $GITHUB_ENV
           else
-              VERSION_CLEAN=$(echo $TAG_NAME | grep -oP '^v[0-9]+\.[0-9]+\.[0-9]+' || true)
-              VERSION_SUFFIX=$(echo $TAG_NAME | grep -oP '(?<=-).*$' || true)
+              VERSION_CLEAN=$(echo $REF_NAME | grep -oP '^v[0-9]+\.[0-9]+\.[0-9]+' || true)
+              VERSION_SUFFIX=$(echo $REF_NAME | grep -oP '(?<=-).*$' || true)
               # if we're not on a tag and we have a clean version, halt the workflow
-              if [[ $IS_TAG -eq 0 && "$TAG_NAME" == "$VERSION_CLEAN" ]]; then
+              if [[ $IS_TAG -eq 0 && "$REF_NAME" == "$VERSION_CLEAN" ]]; then
                   echo "This branch has a clean version tag. Do not use clean version tags on branches."
                   echo "Use a different branch name, e.g. $VERSION_CLEAN-dev."
                   echo "When you are ready to release a new version, create a tag."
                   exit 1
               fi
 
-              echo "VERSION=$TAG_NAME" >> $GITHUB_ENV
+              echo "VERSION=$REF_NAME" >> $GITHUB_ENV
               echo "VERSION_CLEAN=$VERSION_CLEAN" >> $GITHUB_ENV
               echo "VERSION_SUFFIX=$VERSION_SUFFIX" >> $GITHUB_ENV
           fi
 
           # Release versions are clean semver
-          echo "IS_RELEASE=$(($IS_TAG && "$TAG_NAME" == "$VERSION_CLEAN"))" >> $GITHUB_ENV
+          echo "IS_RELEASE=$(($IS_TAG && "$REF_NAME" == "$VERSION_CLEAN"))" >> $GITHUB_ENV
 
           # Ending in -rc# means it is a release candidate and should be staged
-          if [[ "$TAG_NAME" =~ \-rc[0-9]+$ ]]; then
+          if [[ "$REF_NAME" =~ \-rc[0-9]+$ ]]; then
             echo "IS_STAGE=false" >> $GITHUB_ENV
           else
             echo "IS_STAGE=true" >> $GITHUB_ENV
@@ -92,12 +94,16 @@ jobs:
           echo "Set env vars:"
           cat $GITHUB_ENV
 
-          if ! [[ "$VERSION_CLEAN" == "v$API_VERSION" ]]; then
+      - name: Check version
+        run: |
+          echo "Check version $VERSION vs API_VERSION $API_VERSION"
+          if ! [[ "$VERSION_CLEAN" == "$API_VERSION" ]]; then
               echo "API_VERSION and VERSION do not match. This is probably a mistake."
-              echo "API_VERSION: v$API_VERSION"
-              echo "VERSION: $VERSION"
+              echo "API_VERSION=v$API_VERSION"
+              echo "VERSION=$VERSION_CLEAN => CLEAN_VERSION=$VERSION_CLEAN"
               exit 1
           fi
+          echo "OK"
 
       # Enable debugging of manually-triggered workflows if the input option was provided
       - name: Debug
