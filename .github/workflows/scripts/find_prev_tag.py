@@ -48,9 +48,7 @@ else:
     major_version = tags[i].split(".")[0]
     prev_ver_tags = [tag for tag in tags if tag.split(".")[0] < major_version]
     if len(prev_ver_tags) == 0:
-        print(
-            f"{my_clean_version} is the first major version, no previous major version."
-        )
+        print(f"{major_version} is the first major version, no previous major version.")
         os.system("echo PREVIOUS_MAJOR_VERSION= >> $GITHUB_ENV")
     else:
         os.system(f"echo PREVIOUS_MAJOR_VERSION={prev_ver_tags[-1]} >> $GITHUB_ENV")
