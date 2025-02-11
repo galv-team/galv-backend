@@ -148,7 +148,7 @@ jobs:
         id: check_content_changes
         run: |
           # Check if `docs` directory has changed using git diff vs the previous version
-          git diff --name-only $VERSION $PREVIOUS_VERSION > diff.txt
+          git diff --name-only $PREVIOUS_VERSION > diff.txt
           if [[ -z cat diff.txt | grep ^docs ]]; then
               echo "No changes to docs directory"
               echo "DOCS_CHANGED=false" >> $GITHUB_ENV
@@ -174,7 +174,7 @@ jobs:
           fi
 
           # Check if the demo instance workflow has been changed
-          if [[ -z git diff $VERSION $PREVIOUS_VERSION -- .github/workflows/demo.yml | grep DEMO_BACKEND_VERSION ]]; then
+          if [[ -z git diff $PREVIOUS_VERSION -- .github/workflows/demo.yml | grep DEMO_BACKEND_VERSION ]]; then
               echo "No changes to DEMO_BACKEND_VERSION detected"
               echo "DEMO_UPDATE=false" >> $GITHUB_ENV
           else
