@@ -2,6 +2,11 @@ name: API Clients
 on:
   workflow_call:
     inputs:
+      skip:
+        type: boolean
+        description: "Skip this workflow entirely. Used to allow dependencies even if this is not run."
+        required: false
+        default: false
       dry_run:
         type: boolean
         description: 'Publish to test registries only. Do not actually release the package.'
@@ -17,6 +22,11 @@ on:
         required: true
   workflow_dispatch:
     inputs:
+      skip:
+        type: boolean
+        description: "Skip this workflow entirely. Used to allow dependencies even if this is not run."
+        required: false
+        default: false
       debug_enabled:
         type: boolean
         description: 'Run the build with debugging enabled'
@@ -38,6 +48,7 @@ on:
 
 jobs:
   make-clients:
+    if: ${{ !inputs.skip }}
     runs-on: ubuntu-latest
     permissions:
       packages: write

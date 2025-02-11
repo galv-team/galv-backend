@@ -285,7 +285,7 @@ jobs:
           path: .dev/spec/diff.md
           retention-days: 1
 
-  run_tests:
+  tests:
     needs:
       - version
     if: needs.version.outputs.BACKEND_CHANGED == 'true' || needs.version.outputs.DOCS_CHANGED == 'true'
@@ -303,9 +303,10 @@ jobs:
     needs:
       - version
       - openapi-spec
-    if: needs.openapi-spec.outputs.API_CHANGES == 'true'
+      - tests
     uses: ./.github/workflows/api-clients.yml
     with:
+      skip: ${{ needs.openapi-spec.outputs.API_CHANGES != 'true' }}
       dry_run: ${{ needs.version.outputs.IS_RELEASE != 'true' }}
       version: ${{ needs.version.outputs.VERSION }}
       version_clean: ${{ needs.version.outputs.VERSION_CLEAN }}
@@ -313,6 +314,7 @@ jobs:
   docker:
     needs:
       - version
+      - tests
     if: needs.version.outputs.BACKEND_CHANGED == 'true'
     uses: ./.github/workflows/docker-image.yml
     with:
@@ -321,17 +323,22 @@ jobs:
   release:
     needs:
       - version
+      - tests
+      - clients
+      - docker
     if: needs.version.outputs.IS_RELEASE == 'true'
     uses: ./.github/workflows/issue-release.yml
 
   stage:
     needs:
       - version
+      - tests
     if: needs.version.outputs.IS_STAGE == 'true'
     uses: ./.github/workflows/update-staging.yml
 
   demo:
     needs:
       - version
+      - docker  # in case the backend is targeting the latest version
     if: needs.version.outputs.DEMO_UPDATE == 'true'
     uses: ./.github/workflows/update-demo.yml
