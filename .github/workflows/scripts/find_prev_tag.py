@@ -3,6 +3,7 @@ import sys
 
 if len(sys.argv) < 3:
     print("Usage: find_prev_tag.py <tags.txt file> <clean_version string>")
+    print("You supplied:", sys.argv)
     sys.exit(1)
 
 # Parse args
