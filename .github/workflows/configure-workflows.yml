@@ -213,6 +213,15 @@ jobs:
               echo "DEMO_UPDATE=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Print summary
+        run: cat $GITHUB_OUTPUT
+
+      - name: Upload version outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: version
+          path: ${{ env.GITHUB_OUTPUT }}
+          retention-days: 1
 
   openapi-spec:
     runs-on: ubuntu-latest
