@@ -1,0 +1,398 @@
+name: Run workflows
+
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with debugging enabled'
+        required: false
+        default: false
+      allow_breaking_changes:
+        type: boolean
+        description: 'Ignore breaking change failure in OpenAPI spec check.'
+        required: false
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  version:
+    # Determine the version from the tag or branch name.
+    # Determine the previous version from the tags.
+    # Determine the previous major version from the tags.
+    runs-on: ubuntu-latest
+    outputs:
+      API_VERSION: ${{ steps.current_version.outputs.API_VERSION }}
+      IS_TAG: ${{ steps.current_version.outputs.IS_TAG }}
+      REF_NAME: ${{ steps.current_version.outputs.REF_NAME }}
+      VERSION: ${{ steps.current_version.outputs.VERSION }}
+      VERSION_CLEAN: ${{ steps.current_version.outputs.VERSION_CLEAN }}
+      VERSION_SUFFIX: ${{ steps.current_version.outputs.VERSION_SUFFIX }}
+      IS_RELEASE: ${{ steps.current_version.outputs.IS_RELEASE }}
+      IS_STAGE: ${{ steps.current_version.outputs.IS_STAGE }}
+      PREVIOUS_VERSION: ${{ steps.previous_versions.outputs.PREVIOUS_VERSION }}
+      PREVIOUS_MAJOR_VERSION: ${{ steps.previous_versions.outputs.PREVIOUS_MAJOR_VERSION }}
+      IS_LATEST: ${{ steps.previous_versions.outputs.IS_LATEST }}
+      IS_MAJOR_VERSION: ${{ steps.previous_versions.outputs.IS_MAJOR_VERSION }}
+      DOCS_CHANGED: ${{ steps.check_content_changes.outputs.DOCS_CHANGED }}
+      BACKEND_CHANGED: ${{ steps.check_content_changes.outputs.BACKEND_CHANGED }}
+      DEMO_UPDATE: ${{ steps.check_content_changes.outputs.DEMO_UPDATE }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version
+        id: current_version
+        run: |
+          # Extract release version from settings
+          API_VERSION=$(cat backend_django/config/settings_base.py | grep "API_VERSION =" | cut -d'"' -f2)
+          # Assert version is valid semver
+          if ! [[ "$API_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "API version v$API_VERSION is not valid clean semver"
+              echo "Please check the API_VERSION in settings_base.py matches semver e.g. 1.2.3"
+              exit 1
+          fi
+
+          echo "API_VERSION=v$API_VERSION" >> $GITHUB_OUTPUT
+
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+                IS_TAG=true
+          else
+                IS_TAG=false
+          fi
+          echo "IS_TAG=$IS_TAG" >> $GITHUB_OUTPUT
+
+          # Determine the tag/branch name
+          if [[ $IS_TAG -gt 0 ]]; then
+              REF_NAME=${GITHUB_REF#refs/tags/}
+          else
+              REF_NAME=${GITHUB_REF#refs/heads/}
+          fi
+
+          echo "REF_NAME=$REF_NAME"
+
+          # Determine the version from the tag/branch name
+          if ! [[ "$REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+              echo "Ref $REF_NAME is not valid semver. Using API_VERSION v$API_VERSION"
+              echo "VERSION=v$API_VERSION" >> $GITHUB_OUTPUT
+              echo "VERSION_CLEAN=v$API_VERSION" >> $GITHUB_OUTPUT
+              echo "VERSION_SUFFIX=" >> $GITHUB_OUTPUT
+          else
+              VERSION_CLEAN=$(echo $REF_NAME | grep -oP '^v[0-9]+\.[0-9]+\.[0-9]+' || true)
+              VERSION_SUFFIX=$(echo $REF_NAME | grep -oP '(?<=-).*$' || true)
+              # if we're not on a tag and we have a clean version, halt the workflow
+              if [[ $IS_TAG -eq 0 && "$REF_NAME" == "$VERSION_CLEAN" ]]; then
+                  echo "This branch has a clean version tag. Do not use clean version tags on branches."
+                  echo "Use a different branch name, e.g. $VERSION_CLEAN-dev."
+                  echo "When you are ready to release a new version, create a tag."
+                  exit 1
+              fi
+
+              echo "VERSION=$REF_NAME" >> $GITHUB_OUTPUT
+              echo "VERSION_CLEAN=$VERSION_CLEAN" >> $GITHUB_OUTPUT
+              echo "VERSION_SUFFIX=$VERSION_SUFFIX" >> $GITHUB_OUTPUT
+          fi
+
+          # Release versions are clean semver
+          if [[ $IS_TAG -gt 0 && "$REF_NAME" == "$VERSION_CLEAN" ]]; then
+              IS_RELEASE=true
+          else
+              IS_RELEASE=false
+          fi
+          echo "IS_RELEASE=$IS_RELEASE" >> $GITHUB_OUTPUT
+
+          # Ending in -rc# means it is a release candidate and should be staged
+          if [[ "$REF_NAME" =~ \-rc[0-9]+$ ]]; then
+            echo "IS_STAGE=true" >> $GITHUB_OUTPUT
+          else
+            echo "IS_STAGE=false" >> $GITHUB_OUTPUT
+          fi
+
+          echo "Set output:"
+          cat $GITHUB_OUTPUT
+
+      - name: Check version
+        run: |
+          echo "Check version ${{ steps.current_version.outputs.VERSION }} vs API_VERSION ${{ steps.current_version.outputs.API_VERSION }}"
+          if ! [[ "${{ steps.current_version.outputs.VERSION_CLEAN }}" == "${{ steps.current_version.outputs.API_VERSION }}" ]]; then
+              echo "API_VERSION and VERSION do not match. This is probably a mistake."
+              echo "API_VERSION=${{ steps.current_version.outputs.API_VERSION }}"
+              echo "VERSION=${{ steps.current_version.outputs.VERSION }} => CLEAN_VERSION=${{ steps.current_version.outputs.VERSION_CLEAN }}"
+              exit 1
+          else
+              echo "API_VERSION and VERSION match"
+          fi
+
+          # Check version has not already been released
+          gh release list --json tagName > releases.json
+          if jq -e --arg version "${{ steps.current_version.outputs.VERSION_CLEAN }}" '.[] | select(.tagName == $version)' releases.json > /dev/null; then
+              echo "Version ${{ steps.current_version.outputs.VERSION_CLEAN }} has already been released."
+              echo "Working on this version again is probably a mistake."
+              echo "Increment at least the patch part of API_VERSION in settings_base.py and try again."
+              cat releases.json
+              exit 1
+          else
+              echo "Version ${{ steps.current_version.outputs.VERSION_CLEAN }} has not already been released"
+          fi
+
+          echo "OK"
+
+      # Enable debugging of manually-triggered workflows if the input option was provided
+      - name: Debug
+        uses: owenthereal/action-upterm@v1
+        if: github.event_name == 'workflow_dispatch' && inputs.debug_enabled == 'true'
+
+      - name: List previous versions
+        id: create_tag_list
+        run: |
+          # Get a list of all repository tags and branches
+          git fetch --tags --force --quiet
+
+          # Save tag list to a temporary file
+          git tag --list > tags.txt
+          # Save clean tags
+          (cat tags.txt | grep -oE '^v[0-9]+\.[0-9]+\.[0-9]+$' > clean_tags.txt) || true
+          cat clean_tags.txt
+
+      - name: Search for previous version tag
+        # The previous version meets the following criteria:
+        # 1. It is a clean version (no suffix)
+        # 2. Its numerical part is less than the current version
+        # 3. Its numerical part is the highest among all tags that meet the previous criteria
+        # The previous major version is as above, but the major version is less than the current major version
+        id: previous_versions
+        run: |
+          # Get the previous tag
+          python ./.github/workflows/scripts/find_prev_tag.py clean_tags.txt ${{ steps.current_version.outputs.VERSION_CLEAN }}
+          # Should have set
+          # PREVIOUS_VERSION
+          # PREVIOUS_MAJOR_VERSION
+          # IS_LATEST
+          # IS_MAJOR_VERSION
+
+          echo "Set output:"
+          cat $GITHUB_OUTPUT
+
+      - name: Check content changes
+        id: check_content_changes
+        run: |
+          PREVIOUS_VERSION=${{ steps.previous_versions.outputs.PREVIOUS_VERSION }}
+          # Check if `docs` directory has changed using git diff vs the previous version
+          git diff --name-only $PREVIOUS_VERSION > diff.txt
+          if [[ -z $(cat diff.txt | grep ^docs) ]]; then
+              echo "No changes to docs directory"
+              echo "DOCS_CHANGED=false" >> $GITHUB_OUTPUT
+          else
+              echo "Changes to docs directory detected"
+              echo "DOCS_CHANGED=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Check if `backend_django` directory has changed using git diff vs the previous version
+          if [[ -z $(cat diff.txt | grep ^backend_django) ]]; then
+              if [[ -z $(cat diff.txt | grep -v -E '^(\.gitignore|\.pre-commit-config.yaml|LICENCE|README\.md)$' | grep -E ^[^/]+$) ]]; then
+                  echo "No changes to settings_base.py or root directory files"
+                  echo "(.gitignore, .pre-commit-config.yaml, LICENCE, README.md are ignored)"
+                  echo "BACKEND_CHANGED=false" >> $GITHUB_OUTPUT
+              else
+                  echo "Changes to root directory files detected"
+                  echo "(.gitignore, .pre-commit-config.yaml, LICENCE, README.md are ignored)"
+                  echo "BACKEND_CHANGED=true" >> $GITHUB_OUTPUT
+              fi
+          else
+              echo "Changes to backend_django directory detected"
+              echo "BACKEND_CHANGED=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Check if the demo instance workflow has been changed
+          if [[ -z $(git diff $PREVIOUS_VERSION -- .github/workflows/demo.yml | grep DEMO_BACKEND_VERSION) ]]; then
+              echo "No changes to DEMO_BACKEND_VERSION detected"
+              echo "DEMO_UPDATE=false" >> $GITHUB_OUTPUT
+          else
+              echo "Changes to DEMO_BACKEND_VERSION detected"
+              echo "DEMO_UPDATE=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Print summary
+        run: |
+          echo "API_VERSION=${{ steps.current_version.outputs.API_VERSION }}" > summary.txt
+          echo "IS_TAG=${{ steps.current_version.outputs.IS_TAG }}" >> summary.txt
+          echo "VERSION=${{ steps.current_version.outputs.VERSION }}" >> summary.txt
+          echo "VERSION_CLEAN=${{ steps.current_version.outputs.VERSION_CLEAN }}" >> summary.txt
+          echo "VERSION_SUFFIX=${{ steps.current_version.outputs.VERSION_SUFFIX }}" >> summary.txt
+          echo "IS_RELEASE=${{ steps.current_version.outputs.IS_RELEASE }}" >> summary.txt
+          echo "IS_STAGE=${{ steps.current_version.outputs.IS_STAGE }}" >> summary.txt
+          echo "PREVIOUS_VERSION=${{ steps.previous_versions.outputs.PREVIOUS_VERSION }}" >> summary.txt
+          echo "PREVIOUS_MAJOR_VERSION=${{ steps.previous_versions.outputs.PREVIOUS_MAJOR_VERSION }}" >> summary.txt
+          echo "IS_LATEST=${{ steps.previous_versions.outputs.IS_LATEST }}" >> summary.txt
+          echo "IS_MAJOR_VERSION=${{ steps.previous_versions.outputs.IS_MAJOR_VERSION }}" >> summary.txt
+          echo "DOCS_CHANGED=${{ steps.check_content_changes.outputs.DOCS_CHANGED }}" >> summary.txt
+          echo "BACKEND_CHANGED=${{ steps.check_content_changes.outputs.BACKEND_CHANGED }}" >> summary.txt
+          echo "DEMO_UPDATE=${{ steps.check_content_changes.outputs.DEMO_UPDATE }}" >> summary.txt
+          cat summary.txt
+
+      - name: Upload version outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: version
+          path: summary.txt
+          retention-days: 1
+
+  openapi-spec:
+    runs-on: ubuntu-latest
+    outputs:
+        API_CHANGES: ${{ steps.check_openapi_changes.outputs.API_CHANGES }}
+        BREAKING_API_CHANGES: ${{ steps.check_openapi_changes.outputs.BREAKING_API_CHANGES }}
+    needs:
+      - version
+    if: needs.version.outputs.BACKEND_CHANGED == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup docker-compose for OpenAPI spec check
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+          mkdir -p .dev/spec
+          sudo chmod 777 .dev/spec
+          touch .env.secret
+
+      - name: Check OpenAPI Spec changes
+        if: needs.version.outputs.BACKEND_CHANGED == 'true'
+        id: check_openapi_changes
+        run: |
+          # Generate the spec for this version
+          # using x rather than a number means it appears later and gets picked up by `tail -n 1` in docker-compose check_spec
+          docker-compose run \
+            --rm \
+            -e AWS_SECRET_ACCESS_KEY="not_set" \
+            --entrypoint "/bin/bash -c" \
+            app \
+            "python manage.py spectacular --fail-on-warn --validate --format openapi-json >> /spec/openapi-x.json"
+          # Copy spec for upload
+          cp .dev/spec/openapi-x.json .dev/spec/openapi-${{ needs.version.outputs.VERSION_CLEAN }}.json
+
+          sudo chmod 777 .dev/spec/*
+          # If previous version tag is empty, skip this step
+          if [ -z "${{ needs.version.outputs.PREVIOUS_VERSION }}" ]; then
+              echo "No previous version tag found. This is probably the first version. Skipping spec check."
+              exit 0
+          fi
+          wget -O .dev/spec/openapi-${{ needs.version.outputs.PREVIOUS_VERSION }}.json https://github.com/galv-team/galv-backend/releases/download/${{ needs.version.outputs.prev-clean-version }}/openapi-${{ needs.version.outputs.prev-clean-version }}.json || true
+          # Check whether we downloaded a file (i.e. whether that file has a size greater than 0)
+          if [ ! -s .dev/spec/openapi-${{ needs.version.outputs.PREVIOUS_VERSION }}.json ]; then
+              echo "Failed to download spec for previous version: ${{ needs.version.outputs.PREVIOUS_VERSION }}."
+              echo "This can happen if something went wrong in publishing the previous version."
+              echo "Generating spec from scratch..."
+              echo "Checking out previous version tag: ${{ needs.version.outputs.PREVIOUS_VERSION }}"
+              git fetch --tags
+              git checkout ${{ needs.version.outputs.PREVIOUS_VERSION }}
+              echo "Generating spec for previous version: ${{ needs.version.outputs.PREVIOUS_VERSION }}"
+              docker-compose run --rm -e AWS_SECRET_ACCESS_KEY="not_set" --entrypoint "/bin/bash -c" app "python manage.py spectacular --format openapi-json >> /spec/openapi-x.json"
+              cp .dev/spec/openapi-x.json .dev/spec/openapi-${{ needs.version.outputs.PREVIOUS_VERSION }}.json
+              echo "Success. Switching to workflow branch."
+              git checkout -
+              echo "Spec generated. First 10 lines:"
+          else
+            echo "Downloaded spec for previous version: ${{ needs.version.outputs.PREVIOUS_VERSION }}. First 10 lines:"
+          fi
+          head -n 10 .dev/spec/openapi-${{ needs.version.outputs.PREVIOUS_VERSION }}.json
+          echo "---------"
+          echo "Check spec against previous version: ${{ needs.version.outputs.PREVIOUS_VERSION }}"
+          if [[ "${{ needs.version.outputs.IS_MAJOR_VERSION }}" == "true" || "${{ inputs.allow_breaking_changes }}" == "true" ]]; then
+            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/openapi-${{ needs.version.outputs.PREVIOUS_VERSION }}.json check_spec || true
+          else
+            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/openapi-${{ needs.version.outputs.PREVIOUS_VERSION }}.json check_spec
+          fi
+          ls -l .dev/spec
+          echo ".dev/spec/diff.md:"
+          cat .dev/spec/diff.md
+          API_CHANGES=$(jq '.different' .dev/spec/diff.json)
+          BREAKING_API_CHANGES=$(jq '.incompatible' .dev/spec/diff.json)
+          echo "API_CHANGES=$API_CHANGES" >> $GITHUB_OUTPUT
+          echo "BREAKING_API_CHANGES=$BREAKING_API_CHANGES" >> $GITHUB_OUTPUT
+          echo "Set output:"
+          cat $GITHUB_OUTPUT
+
+      - name: Upload OpenAPI spec
+        if: steps.check_openapi_changes.outputs.API_CHANGES == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: spec
+          path: .dev/spec/openapi-${{ needs.version.outputs.VERSION_CLEAN }}.json
+          retention-days: 1
+
+      - name: Upload OpenAPI diff.md
+        if: steps.check_openapi_changes.outputs.API_CHANGES == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: diff
+          path: .dev/spec/diff.md
+          retention-days: 1
+
+  tests:
+    needs:
+      - version
+    if: needs.version.outputs.BACKEND_CHANGED == 'true' || needs.version.outputs.DOCS_CHANGED == 'true'
+    uses: ./.github/workflows/ci-tests.yml
+
+  docs:
+    needs:
+      - version
+    if: needs.version.outputs.DOCS_CHANGED == 'true'
+    uses: ./.github/workflows/docs.yml
+    with:
+      dry_run: ${{ needs.version.outputs.IS_RELEASE != 'true' }}
+
+  clients:
+    needs:
+      - version
+      - openapi-spec
+      - tests
+    uses: ./.github/workflows/api-clients.yml
+    with:
+      skip: ${{ needs.openapi-spec.outputs.API_CHANGES != 'true' }}
+      dry_run: ${{ needs.version.outputs.IS_RELEASE != 'true' }}
+      version: ${{ needs.version.outputs.VERSION }}
+      version_clean: ${{ needs.version.outputs.VERSION_CLEAN }}
+
+  docker:
+    needs:
+      - version
+      - tests
+    if: needs.version.outputs.BACKEND_CHANGED == 'true'
+    uses: ./.github/workflows/docker-image.yml
+    with:
+      dry_run: ${{ needs.version.outputs.IS_RELEASE != 'true' }}
+      is_latest: ${{ needs.version.outputs.IS_LATEST == 'true' }}
+
+  release:
+    needs:
+      - version
+      - tests
+      - clients
+      - docker
+    if: needs.version.outputs.IS_RELEASE == 'true'
+    uses: ./.github/workflows/issue-release.yml
+
+  stage:
+    needs:
+      - version
+      - tests
+    if: needs.version.outputs.IS_STAGE == 'true'
+    uses: ./.github/workflows/update-staging.yml
+    secrets: inherit
+
+  demo:
+    needs:
+      - version
+      - docker  # in case the backend is targeting the latest version
+    if: needs.version.outputs.DEMO_UPDATE == 'true'
+    uses: ./.github/workflows/update-demo.yml
+    secrets: inherit

@@ -1,13 +1,12 @@
 # Galv backend (REST API)
 > A metadata secretary for battery science
 
-[![Demo](https://github.com/galv-team/galv-backend/actions/workflows/demo.yml/badge.svg)](https://galv-demo.fly.dev)
+[Check out the demo](https://galv-demo.fly.dev)
 
 [![GitHub Releases](https://img.shields.io/github/v/release/galv-team/galv-backend)](https://github.com/galv-team/galv-backend/releases/latest)
 [![Docker image](https://ghcr-badge.egpl.dev/galv-team/galv-backend/latest_tag?color=%2344cc11&ignore=latest&label=image&trim=0)](https://github.com/galv-team/galv-backend/pkgs/container/galv-backend)
 
-[![CI tests](https://github.com/galv-team/galv-backend/actions/workflows/test.yml/badge.svg)](https://github.com/galv-team/galv-backend/actions/workflows/test.yml)
-[![Build docs](https://github.com/galv-team/galv-backend/actions/workflows/docs.yml/badge.svg)](https://github.com/galv-team/galv-backend/actions/workflows/docs.yml)
+[![CI workflows](https://github.com/galv-team/galv-backend/actions/workflows/configure-workflows.yml/badge.svg)](https://github.com/galv-team/galv-backend/actions/workflows/configure-workflows.yml)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/galv-team/galv-backend/develop.svg)](https://results.pre-commit.ci/latest/github/galv-team/galv-backend/develop)
 
 > API client libraries:
@@ -131,6 +130,9 @@ If you update the documentation, you should also update the `release` version in
 
 These versions should all use clean SemVer versioning, i.e. `v*.*.*`.
 
+Published versions should be released incrementally.
+**The Actions workflows will assume there exists a clean version tag for each release, e.g. v1.2.3-rc4 will assume v1.2.2 exists.**
+
 ### Tagged releases
 
 When you want to release a new version, using the GitHub Actions workflow, create a new tag.
@@ -153,21 +155,42 @@ This deployment will run the migrations, etc. so we can detect if something is l
 The `demo` instance is published every week.
 It will use the `DEMO_BACKEND_VERSION` listed in `.github/workflows/demo.yml` as the version to deploy.
 
-You can also trigger the workflow manually, or by pushing to a `demo` or `demo-*` branch.
+You can also trigger the workflow manually, or by pushing a commit that updates the demo version in the demo workflow file.
 
 ### GitHub Actions
 
 We use a fairly complicated GitHub Actions flow to ensure we don't publish breaking changes.
-When you push to a branch, we do the following:
-- Run the tests
-  - If tests succeed, and branch or tag is `v*.*.*`, we check compatibility with the previous version
-    - If the API_VERSION in `backend_django/config/settings_base.py` is different to the branch/tag name, fail.
-    - If incompatible, and we're not publishing a new major version, fail.
-    - Create clients for TypeScript (axios) and Python
-    - Create a docker image hosted on GitHub Packages
-    - Create a GitHub release
+The `configure-workflows.yml` action is run on every push to the repository, and it determines which workflows to run based on the branch/tag and the contents of the repository.
 
-To run the compatibility checks locally, run the following command:
+When you push to a branch, the following actions are considered:
+- Configure workflows
+- Run tests (A)
+- Build and publish documentation (B)
+- Build and publish OpenAPI spec (C)
+- Build and publish API client libraries (C)
+- Build and publish Docker images (A)
+- Issue a GitHub release (A)
+- Deploy staging instance (D)
+- Deploy demo instance (E)
+
+The triggers are:
+A. changes in `backend_django`, or other code files like `requirements.txt` or `Dockerfile`
+B. changes in `docs`
+C. B & changes to the OpenAPI spec (i.e. the specifications are not equivalent)
+D. tags that match `v*.*.*-rc#`
+E. changes to the `DEMO_BACKEND_VERSION` in `.github/workflows/demo.yml`
+
+N.B. Changes are calculated vs the previous release, not the previous commit.
+
+#### Requirements:
+
+The `configure-workflows.yml` action also checks a couple of requirements:
+
+- The version in the tag must match the `API_VERSION` in `galv_backend/config/settings_base.py`.
+- If the tag is a release (v*.*.*), there must not be an existing release for the same version.
+- If there are breaking changes in the OpenAPI spec, the tag must be a major version.
+
+To run the OpenAPI compatibility checks locally, run the following command:
 
 ```bash
 docker-compose run --rm check_spec

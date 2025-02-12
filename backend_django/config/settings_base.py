@@ -208,6 +208,11 @@ SPECTACULAR_SETTINGS = {
 
 # Logging
 log_dir = os.environ.get("DJANGO_LOG_DIR", "/var/log/galv")
+# touch log files
+os.makedirs(log_dir, exist_ok=True)
+Path(os.path.join(log_dir, "django.log")).touch(exist_ok=True)
+Path(os.path.join(log_dir, "galv.log")).touch(exist_ok=True)
+
 level = os.environ.get(
     "DJANGO_LOG_LEVEL", "DEBUG" if os.environ.get("DJANGO_DEBUG") else "INFO"
 )

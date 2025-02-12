@@ -1,0 +1,33 @@
+name: CI Tests
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with debugging enabled'
+        required: false
+        default: false
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Enable debugging of manually-triggered workflows if the input option was provided
+      - name: Debug
+        uses: owenthereal/action-upterm@v1
+        if: ${{ inputs.debug_enabled }}
+
+      - name: Setup docker-compose
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y docker-compose
+            touch .env.secret
+
+      - name: Build container
+        run: docker-compose build app_test
+
+      - name: Run tests
+        run: docker-compose run --rm app_test
