@@ -3,6 +3,11 @@ name: Docker image
 on:
   workflow_call:
     inputs:
+      is_latest:
+        type: boolean
+        description: "Whether this image should take over the `latest` tag"
+        required: false
+        default: false
       dry_run:
         type: boolean
         description: 'Do not actually release the package, just check that it is valid.'
@@ -13,6 +18,11 @@ on:
       debug_enabled:
         type: boolean
         description: 'Run the build with debugging enabled'
+        required: false
+        default: false
+      is_latest:
+        type: boolean
+        description: "Whether this image should take over the `latest` tag"
         required: false
         default: false
       dry_run:
@@ -45,7 +55,7 @@ jobs:
           images: "ghcr.io/${{ github.repository }}"
           # if the tag is clean, this is a latest version
           flavor: |
-            latest=${{ env.IS_LATEST }}
+            latest=${{ inputs.is_latest }}
 
       # Enable debugging of manually-triggered workflows if the input option was provided
       - name: Debug

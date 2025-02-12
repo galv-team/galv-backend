@@ -36,6 +36,7 @@ jobs:
       IS_STAGE: ${{ steps.current_version.outputs.IS_STAGE }}
       PREVIOUS_VERSION: ${{ steps.previous_versions.outputs.PREVIOUS_VERSION }}
       PREVIOUS_MAJOR_VERSION: ${{ steps.previous_versions.outputs.PREVIOUS_MAJOR_VERSION }}
+      IS_LATEST: ${{ steps.previous_versions.outputs.IS_LATEST }}
       IS_MAJOR_VERSION: ${{ steps.previous_versions.outputs.IS_MAJOR_VERSION }}
       DOCS_CHANGED: ${{ steps.check_content_changes.outputs.DOCS_CHANGED }}
       BACKEND_CHANGED: ${{ steps.check_content_changes.outputs.BACKEND_CHANGED }}
@@ -101,9 +102,9 @@ jobs:
 
           # Ending in -rc# means it is a release candidate and should be staged
           if [[ "$REF_NAME" =~ \-rc[0-9]+$ ]]; then
-            echo "IS_STAGE=false" >> $GITHUB_OUTPUT
-          else
             echo "IS_STAGE=true" >> $GITHUB_OUTPUT
+          else
+            echo "IS_STAGE=false" >> $GITHUB_OUTPUT
           fi
 
           echo "Set output:"
@@ -205,6 +206,9 @@ jobs:
       - version
     if: needs.version.outputs.BACKEND_CHANGED == 'true'
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup docker-compose for OpenAPI spec check
         run: |
           sudo apt-get update
@@ -320,6 +324,7 @@ jobs:
     uses: ./.github/workflows/docker-image.yml
     with:
       dry_run: ${{ needs.version.outputs.IS_RELEASE != 'true' }}
+      is_latest: ${{ needs.version.outputs.IS_LATEST == 'true' }}
 
   release:
     needs:
@@ -336,6 +341,7 @@ jobs:
       - tests
     if: needs.version.outputs.IS_STAGE == 'true'
     uses: ./.github/workflows/update-staging.yml
+    secrets: inherit
 
   demo:
     needs:
@@ -343,3 +349,4 @@ jobs:
       - docker  # in case the backend is targeting the latest version
     if: needs.version.outputs.DEMO_UPDATE == 'true'
     uses: ./.github/workflows/update-demo.yml
+    secrets: inherit
