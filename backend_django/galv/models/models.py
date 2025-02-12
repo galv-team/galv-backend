@@ -988,7 +988,7 @@ class BibliographicInfo(TimestampedModel):
     user = models.OneToOneField(
         to=UserProxy, on_delete=models.CASCADE, null=False, blank=False
     )
-    bib_json = models.JSONField(null=False, blank=False)
+    bib_json = models.JSONField(null=False, blank=False, default=dict)
 
     def has_object_read_permission(self, request):
         return self.user == request.user
