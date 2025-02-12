@@ -41,6 +41,8 @@ jobs:
       DOCS_CHANGED: ${{ steps.check_content_changes.outputs.DOCS_CHANGED }}
       BACKEND_CHANGED: ${{ steps.check_content_changes.outputs.BACKEND_CHANGED }}
       DEMO_UPDATE: ${{ steps.check_content_changes.outputs.DEMO_UPDATE }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -118,7 +120,18 @@ jobs:
               echo "API_VERSION=${{ steps.current_version.outputs.API_VERSION }}"
               echo "VERSION=${{ steps.current_version.outputs.VERSION }} => CLEAN_VERSION=${{ steps.current_version.outputs.VERSION_CLEAN }}"
               exit 1
+          else
+              echo "API_VERSION and VERSION match"
           fi
+
+          # Check version has not already been released
+          if gh release list --json tagName | grep -q "${{ steps.current_version.outputs.VERSION_CLEAN }}"; then
+              echo "Version ${{ steps.current_version.outputs.VERSION_CLEAN }} has already been released"
+              exit 1
+          else
+              echo "Version ${{ steps.current_version.outputs.VERSION_CLEAN }} has not already been released"
+          fi
+
           echo "OK"
 
       # Enable debugging of manually-triggered workflows if the input option was provided

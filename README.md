@@ -160,25 +160,33 @@ You can also trigger the workflow manually, or by pushing a commit that updates 
 ### GitHub Actions
 
 We use a fairly complicated GitHub Actions flow to ensure we don't publish breaking changes.
-When you push to a branch, we do the following:
-- Configure workflows
-- Run tests
-- Build and publish documentation
-- Build and publish OpenAPI spec
-- Build and publish API client libraries
-- Build and publish Docker images
-- Issue a GitHub release
-- Deploy staging instance
-- Deploy demo instance
-
 The `configure-workflows.yml` action is run on every push to the repository, and it determines which workflows to run based on the branch/tag and the contents of the repository.
-For example, tests will only run if core files have changed, and documentation will only build if the `docs` directory has changed.
 
-We always check to ensure that the version (if any) that the push is on matches the `API_VERSION` in `galv_backend/config/settings_base.py`.
-If it doesn't, the action will fail.
+When you push to a branch, the following actions are considered:
+- Configure workflows
+- Run tests (A)
+- Build and publish documentation (B)
+- Build and publish OpenAPI spec (C)
+- Build and publish API client libraries (C)
+- Build and publish Docker images (A)
+- Issue a GitHub release (A)
+- Deploy staging instance (D)
+- Deploy demo instance (E)
 
-We also check for breaking changes in the OpenAPI spec.
-If there are breaking changes, the action will fail unless the version is a major version.
+The triggers are:
+A. changes in `backend_django`, or other code files like `requirements.txt` or `Dockerfile`
+B. changes in `docs`
+C. B & changes to the OpenAPI spec (i.e. the specifications are not equivalent)
+D. tags that match `v*.*.*-rc#`
+E. changes to the `DEMO_BACKEND_VERSION` in `.github/workflows/demo.yml`
+
+#### Requirements:
+
+The `configure-workflows.yml` action also checks a couple of requirements:
+
+- The version in the tag must match the `API_VERSION` in `galv_backend/config/settings_base.py`.
+- If the tag is a release (v*.*.*), there must not be an existing release for the same version.
+- If there are breaking changes in the OpenAPI spec, the tag must be a major version.
 
 To run the OpenAPI compatibility checks locally, run the following command:
 
