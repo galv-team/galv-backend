@@ -1,13 +1,12 @@
 # Galv backend (REST API)
 > A metadata secretary for battery science
 
-[![Demo](https://github.com/galv-team/galv-backend/actions/workflows/demo.yml/badge.svg)](https://galv-demo.fly.dev)
+[Check out the demo](https://galv-demo.fly.dev)
 
 [![GitHub Releases](https://img.shields.io/github/v/release/galv-team/galv-backend)](https://github.com/galv-team/galv-backend/releases/latest)
 [![Docker image](https://ghcr-badge.egpl.dev/galv-team/galv-backend/latest_tag?color=%2344cc11&ignore=latest&label=image&trim=0)](https://github.com/galv-team/galv-backend/pkgs/container/galv-backend)
 
-[![CI tests](https://github.com/galv-team/galv-backend/actions/workflows/test.yml/badge.svg)](https://github.com/galv-team/galv-backend/actions/workflows/test.yml)
-[![Build docs](https://github.com/galv-team/galv-backend/actions/workflows/docs.yml/badge.svg)](https://github.com/galv-team/galv-backend/actions/workflows/docs.yml)
+[![CI workflows](https://github.com/galv-team/galv-backend/actions/workflows/configure-workflows.yml/badge.svg)](https://github.com/galv-team/galv-backend/actions/workflows/configure-workflows.yml)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/galv-team/galv-backend/develop.svg)](https://results.pre-commit.ci/latest/github/galv-team/galv-backend/develop)
 
 > API client libraries:
@@ -156,21 +155,32 @@ This deployment will run the migrations, etc. so we can detect if something is l
 The `demo` instance is published every week.
 It will use the `DEMO_BACKEND_VERSION` listed in `.github/workflows/demo.yml` as the version to deploy.
 
-You can also trigger the workflow manually, or by pushing to a `demo` or `demo-*` branch.
+You can also trigger the workflow manually, or by pushing a commit that updates the demo version in the demo workflow file.
 
 ### GitHub Actions
 
 We use a fairly complicated GitHub Actions flow to ensure we don't publish breaking changes.
 When you push to a branch, we do the following:
-- Run the tests
-  - If tests succeed, and branch or tag is `v*.*.*`, we check compatibility with the previous version
-    - If the API_VERSION in `backend_django/config/settings_base.py` is different to the branch/tag name, fail.
-    - If incompatible, and we're not publishing a new major version, fail.
-    - Create clients for TypeScript (axios) and Python
-    - Create a docker image hosted on GitHub Packages
-    - Create a GitHub release
+- Configure workflows
+- Run tests
+- Build and publish documentation
+- Build and publish OpenAPI spec
+- Build and publish API client libraries
+- Build and publish Docker images
+- Issue a GitHub release
+- Deploy staging instance
+- Deploy demo instance
 
-To run the compatibility checks locally, run the following command:
+The `configure-workflows.yml` action is run on every push to the repository, and it determines which workflows to run based on the branch/tag and the contents of the repository.
+For example, tests will only run if core files have changed, and documentation will only build if the `docs` directory has changed.
+
+We always check to ensure that the version (if any) that the push is on matches the `API_VERSION` in `galv_backend/config/settings_base.py`.
+If it doesn't, the action will fail.
+
+We also check for breaking changes in the OpenAPI spec.
+If there are breaking changes, the action will fail unless the version is a major version.
+
+To run the OpenAPI compatibility checks locally, run the following command:
 
 ```bash
 docker-compose run --rm check_spec
