@@ -230,3 +230,10 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: ${{ inputs.dry_run == 'true' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+
+  rubber-stamp:
+    if: ${{ inputs.skip }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report success to downstream jobs
+        run: echo "Success"
