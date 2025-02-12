@@ -214,13 +214,28 @@ jobs:
           fi
 
       - name: Print summary
-        run: cat $GITHUB_OUTPUT
+        run: |
+          echo "API_VERSION=${{ steps.current_version.outputs.API_VERSION }}" > summary.txt
+          echo "IS_TAG=${{ steps.current_version.outputs.IS_TAG }}" >> summary.txt
+          echo "REF_NAME=${{ steps.current_version.outputs.REF_NAME }}" >> summary.txt
+          echo "VERSION=${{ steps.current_version.outputs.VERSION }}" >> summary.txt
+          echo "VERSION_CLEAN=${{ steps.current_version.outputs.VERSION_CLEAN }}" >> summary.txt
+          echo "VERSION_SUFFIX=${{ steps.current_version.outputs.VERSION_SUFFIX }}" >> summary.txt
+          echo "IS_RELEASE=${{ steps.current_version.outputs.IS_RELEASE }}" >> summary.txt
+          echo "IS_STAGE=${{ steps.current_version.outputs.IS_STAGE }}" >> summary.txt
+          echo "PREVIOUS_VERSION=${{ steps.previous_versions.outputs.PREVIOUS_VERSION }}" >> summary.txt
+          echo "PREVIOUS_MAJOR_VERSION=${{ steps.previous_versions.outputs.PREVIOUS_MAJOR_VERSION }}" >> summary.txt
+          echo "IS_LATEST=${{ steps.previous_versions.outputs.IS_LATEST }}" >> summary.txt
+          echo "IS_MAJOR_VERSION=${{ steps.previous_versions.outputs.IS_MAJOR_VERSION }}" >> summary.txt
+          echo "DOCS_CHANGED=${{ steps.check_content_changes.outputs.DOCS_CHANGED }}" >> summary.txt
+          echo "BACKEND_CHANGED=${{ steps.check_content_changes.outputs.BACKEND_CHANGED }}" >> summary.txt
+          echo "DEMO_UPDATE=${{ steps.check_content_changes.outputs.DEMO_UPDATE }}" >> summary.txt
 
       - name: Upload version outputs
         uses: actions/upload-artifact@v4
         with:
           name: version
-          path: ${{ env.GITHUB_OUTPUT }}
+          path: summary.txt
           retention-days: 1
 
   openapi-spec:
