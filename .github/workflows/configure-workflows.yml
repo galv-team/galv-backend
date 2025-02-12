@@ -125,8 +125,12 @@ jobs:
           fi
 
           # Check version has not already been released
-          if gh release list --json tagName | grep -q "${{ steps.current_version.outputs.VERSION_CLEAN }}"; then
-              echo "Version ${{ steps.current_version.outputs.VERSION_CLEAN }} has already been released"
+          gh release list --json tagName > releases.json
+          if jq -e --arg version "${{ steps.current_version.outputs.VERSION_CLEAN }}" '.[] | select(.tagName == $version)' releases.json > /dev/null; then
+              echo "Version ${{ steps.current_version.outputs.VERSION_CLEAN }} has already been released."
+              echo "Working on this version again is probably a mistake."
+              echo "Increment at least the patch part of API_VERSION in settings_base.py and try again."
+              cat releases.json
               exit 1
           else
               echo "Version ${{ steps.current_version.outputs.VERSION_CLEAN }} has not already been released"
