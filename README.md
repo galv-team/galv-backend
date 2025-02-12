@@ -180,6 +180,8 @@ C. B & changes to the OpenAPI spec (i.e. the specifications are not equivalent)
 D. tags that match `v*.*.*-rc#`
 E. changes to the `DEMO_BACKEND_VERSION` in `.github/workflows/demo.yml`
 
+N.B. Changes are calculated vs the previous release, not the previous commit.
+
 #### Requirements:
 
 The `configure-workflows.yml` action also checks a couple of requirements:

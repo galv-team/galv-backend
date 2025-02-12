@@ -100,7 +100,12 @@ jobs:
           fi
 
           # Release versions are clean semver
-          echo "IS_RELEASE=$(($IS_TAG && "$REF_NAME" == "$VERSION_CLEAN"))" >> $GITHUB_OUTPUT
+          if [[ $IS_TAG -gt 0 && "$REF_NAME" == "$VERSION_CLEAN" ]]; then
+              IS_RELEASE=true
+          else
+              IS_RELEASE=false
+          fi
+          echo "IS_RELEASE=$IS_RELEASE" >> $GITHUB_OUTPUT
 
           # Ending in -rc# means it is a release candidate and should be staged
           if [[ "$REF_NAME" =~ \-rc[0-9]+$ ]]; then
@@ -217,7 +222,6 @@ jobs:
         run: |
           echo "API_VERSION=${{ steps.current_version.outputs.API_VERSION }}" > summary.txt
           echo "IS_TAG=${{ steps.current_version.outputs.IS_TAG }}" >> summary.txt
-          echo "REF_NAME=${{ steps.current_version.outputs.REF_NAME }}" >> summary.txt
           echo "VERSION=${{ steps.current_version.outputs.VERSION }}" >> summary.txt
           echo "VERSION_CLEAN=${{ steps.current_version.outputs.VERSION_CLEAN }}" >> summary.txt
           echo "VERSION_SUFFIX=${{ steps.current_version.outputs.VERSION_SUFFIX }}" >> summary.txt
