@@ -230,6 +230,7 @@ jobs:
           echo "DOCS_CHANGED=${{ steps.check_content_changes.outputs.DOCS_CHANGED }}" >> summary.txt
           echo "BACKEND_CHANGED=${{ steps.check_content_changes.outputs.BACKEND_CHANGED }}" >> summary.txt
           echo "DEMO_UPDATE=${{ steps.check_content_changes.outputs.DEMO_UPDATE }}" >> summary.txt
+          cat summary.txt
 
       - name: Upload version outputs
         uses: actions/upload-artifact@v4
