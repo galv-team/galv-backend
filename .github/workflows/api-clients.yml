@@ -74,6 +74,12 @@ jobs:
         uses: owenthereal/action-upterm@v1
         if: ${{ inputs.debug_enabled }}
 
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Specify openapi-generator version
         run: docker pull openapitools/openapi-generator-cli:v6.6.0
 
