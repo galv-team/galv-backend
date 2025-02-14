@@ -3,6 +3,10 @@ name: Docker image
 on:
   workflow_call:
     inputs:
+      tag_name:
+        type: string
+        description: "The tag to apply to the release"
+        required: true
       dry_run:
         type: boolean
         description: 'Do not actually issue the release, just check that it is valid.'
@@ -10,6 +14,10 @@ on:
         default: false
   workflow_dispatch:
     inputs:
+      tag_name:
+        type: string
+        description: "The tag to apply to the release"
+        required: true
       dry_run:
         type: boolean
         description: 'Do not actually issue the release, just check that it is valid.'
@@ -32,7 +40,7 @@ jobs:
         if: ${{ !inputs.dry_run }}
         uses: softprops/action-gh-release@v2
         with:
-          tag-name: ${{ env.VERSION_CLEAN }}
+          tag_name: ${{ inputs.tag_name }}
           files: |
             clients/**
             spec/**

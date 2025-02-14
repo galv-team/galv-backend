@@ -389,6 +389,8 @@ jobs:
       - docker
     if: needs.version.outputs.IS_RELEASE == 'true'
     uses: ./.github/workflows/issue-release.yml
+    with:
+      tag_name: ${{ needs.version.outputs.VERSION_CLEAN }}
 
   stage:
     needs:
