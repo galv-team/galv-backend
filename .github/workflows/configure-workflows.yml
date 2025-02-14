@@ -87,7 +87,7 @@ jobs:
               VERSION_CLEAN=$(echo $REF_NAME | grep -oP '^v[0-9]+\.[0-9]+\.[0-9]+' || true)
               VERSION_SUFFIX=$(echo $REF_NAME | grep -oP '(?<=-).*$' || true)
               # if we're not on a tag and we have a clean version, halt the workflow
-              if [[ $IS_TAG -eq 0 && "$REF_NAME" == "$VERSION_CLEAN" ]]; then
+              if [[ "$IS_TAG" == "false" && "$REF_NAME" == "$VERSION_CLEAN" ]]; then
                   echo "This branch has a clean version tag. Do not use clean version tags on branches."
                   echo "Use a different branch name, e.g. $VERSION_CLEAN-dev."
                   echo "When you are ready to release a new version, create a tag."
@@ -100,7 +100,7 @@ jobs:
           fi
 
           # Release versions are clean semver
-          if [[ $IS_TAG -gt 0 && "$REF_NAME" == "$VERSION_CLEAN" ]]; then
+          if [[ "$IS_TAG" == "true" && "$REF_NAME" == "$VERSION_CLEAN" ]]; then
               IS_RELEASE=true
           else
               IS_RELEASE=false
