@@ -69,7 +69,7 @@ jobs:
           echo "IS_TAG=$IS_TAG" >> $GITHUB_OUTPUT
 
           # Determine the tag/branch name
-          if [[ $IS_TAG -gt 0 ]]; then
+          if [[ "$IS_TAG" == "true" ]]; then
               REF_NAME=${GITHUB_REF#refs/tags/}
           else
               REF_NAME=${GITHUB_REF#refs/heads/}
