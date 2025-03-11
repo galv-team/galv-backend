@@ -4,7 +4,7 @@
 #
 # This file defines the Fly deployment for the Battery Intelligence Lab in Oxford, UK.
 
-app = "galv-dev-backend"
+app = "galv-backend"
 primary_region = "lhr"
 console_command = "/code/backend_django/manage.py shell"
 

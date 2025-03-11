@@ -20,7 +20,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.6.2"
+API_VERSION = "2.6.3"
 
 USER_ACTIVATION_OVERRIDE_ADDRESSES = os.environ.get(
     "DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES"

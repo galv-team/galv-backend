@@ -27,9 +27,24 @@ class Command(BaseCommand):
         if not len(password):
             self.stdout.write(
                 self.style.WARNING(
-                    "No DJANGO_SUPERUSER_PASSWORD specified, skipping superuser creation."
+                    "No DJANGO_SUPERUSER_PASSWORD specified, creating dummy user instead of superuser."
                 )
             )
+            username = "placeholder"
+            try:
+                User.objects.get(username=username)
+                self.stdout.write(
+                    self.style.SUCCESS(f"User {username} already exists.")
+                )
+            except User.DoesNotExist:
+                User.objects.create_user(
+                    username=username,
+                    password="placeholder",
+                    is_superuser=False,
+                    is_staff=False,
+                    is_active=False,
+                )
+                self.stdout.write(self.style.SUCCESS(f"Created dummy user {username}."))
             return
         username = os.getenv("DJANGO_SUPERUSER_USERNAME", "admin")
         if User.objects.filter(username=username).exists():
