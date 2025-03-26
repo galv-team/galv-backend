@@ -16,11 +16,13 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 import corsheaders.defaults
 from pathlib import Path
+import boto3
+import botocore.exceptions
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.6.3"
+API_VERSION = "2.6.4"
 
 USER_ACTIVATION_OVERRIDE_ADDRESSES = os.environ.get(
     "DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES"
@@ -352,13 +354,13 @@ DATAFILES_LOCATION = "data"
 S3_ENABLED = (
     bool(AWS_S3_REGION_NAME) and bool(AWS_STORAGE_BUCKET_NAME) and bool(AWS_DEFAULT_ACL)
 )
-if S3_ENABLED and not (
-    os.environ.get("AWS_SECRET_ACCESS_KEY") and os.environ.get("AWS_ACCESS_KEY_ID")
-):
-    print(os.system("env"))
-    raise ValueError(
-        "AWS settings are incomplete - missing AWS_SECRET_ACCESS_KEY and/or AWS_ACCESS_KEY_ID."
-    )
+
+if S3_ENABLED:
+    try:
+        # Try to access temporary credentials to confirm IAM auth
+        boto3.client("sts").get_caller_identity()
+    except botocore.exceptions.BotoCoreError as e:
+        raise ValueError("S3 is enabled but no valid AWS credentials are available. You may need to set envvars AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID.") from e
 
 STORAGES = {}
 
