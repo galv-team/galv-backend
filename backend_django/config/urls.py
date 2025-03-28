@@ -72,6 +72,7 @@ router.register(r"schedule_identifiers", views.ScheduleIdentifiersViewSet)
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
     path("", include(router.urls)),
+    path("health/", views.health_check, name="health_check"),
     path("dump/<str:pk>/", views.dump, name="dump"),
     # path('data/{pk}/', views.TimeseriesDataViewSet.as_view({'get': 'detail'}), name='timeseriesdata-detail'),
     path("admin/", admin.site.urls),

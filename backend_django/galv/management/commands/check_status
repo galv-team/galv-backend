@@ -1,0 +1,89 @@
+import json
+import sys
+import smtplib
+
+from django.core.management.base import BaseCommand
+from django.core import checks
+from django.db import connections, OperationalError
+from django.conf import settings
+import boto3
+import botocore.exceptions
+
+
+class Command(BaseCommand):
+    help = "Check that backend services are reachable and functional."
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--json",
+            action="store_true",
+            help="Output results in JSON format",
+        )
+
+    def handle(self, *args, **options):
+        results = []
+
+        # Django system checks
+        checks_status = {"check": "Django config", "status": "OK"}
+        try:
+            errors = checks.run_checks()
+            if errors:
+                checks_status["status"] = "ERROR"
+                checks_status["error"] = "; ".join(str(e) for e in errors)
+        except Exception as e:
+            checks_status["status"] = "ERROR"
+            checks_status["error"] = str(e)
+        results.append(checks_status)
+
+        # Database check
+        db_status = {"check": "Database", "status": "OK"}
+        try:
+            with connections["default"].cursor() as cursor:
+                cursor.execute("SELECT 1")
+        except OperationalError as e:
+            db_status["status"] = "ERROR"
+            db_status["error"] = str(e)
+        results.append(db_status)
+
+        # S3 check
+        if getattr(settings, "DJANGO_STORE_MEDIA_FILES_ON_S3", "") == "True":
+            s3_status = {"check": "S3", "status": "OK"}
+            try:
+                s3 = boto3.client("s3")
+                s3.list_buckets()
+            except botocore.exceptions.BotoCoreError as e:
+                s3_status["status"] = "ERROR"
+                s3_status["error"] = str(e)
+            results.append(s3_status)
+
+        # SMTP check
+        smtp_status = {"check": "SMTP", "status": "SKIPPED"}
+        if hasattr(settings, "EMAIL_HOST"):
+            try:
+                server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT, timeout=5)
+                if getattr(settings, "EMAIL_USE_TLS", False):
+                    server.starttls()
+                if getattr(settings, "EMAIL_HOST_USER", None):
+                    server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+                server.quit()
+                smtp_status["status"] = "OK"
+            except Exception as e:
+                smtp_status["status"] = "ERROR"
+                smtp_status["error"] = str(e)
+        results.append(smtp_status)
+
+        # Output results
+        if options["json"]:
+            self.stdout.write(json.dumps(results, indent=2))
+        else:
+            for result in results:
+                status = result['status']
+                symbol = "✅" if status == "OK" else ("➖" if status == "SKIPPED" else "❌")
+                line = f"{symbol} {result['check']}: {status}"
+                if status == "ERROR":
+                    line += f" - {result['error']}"
+                self.stdout.write(line)
+
+        # Exit with 1 if any check failed
+        if any(r["status"] == "ERROR" for r in results):
+            sys.exit(1)
