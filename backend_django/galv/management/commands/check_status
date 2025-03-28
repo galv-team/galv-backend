@@ -46,7 +46,7 @@ class Command(BaseCommand):
         results.append(db_status)
 
         # S3 check
-        if getattr(settings, "DJANGO_STORE_MEDIA_FILES_ON_S3", "") == "True":
+        if getattr(settings, "S3_ENABLED", "") == True:
             s3_status = {"check": "S3", "status": "OK"}
             try:
                 s3 = boto3.client("s3")
