@@ -40,6 +40,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set ECR variables
+        run: |
+          echo "ECR_REGISTRY=$(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.eu-west-2.amazonaws.com" >> $GITHUB_ENV
+          echo "ECR_REPOSITORY=galv-backend" >> $GITHUB_ENV  # match CDK stack
+
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
@@ -47,12 +52,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+
       # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: "ghcr.io/${{ github.repository }}"
+          images: |
+            ghcr.io/${{ github.repository }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}
           # if the tag is clean, this is a latest version
           flavor: |
             latest=${{ inputs.is_latest }}
