@@ -360,7 +360,9 @@ if S3_ENABLED:
         # Try to access temporary credentials to confirm IAM auth
         boto3.client("sts").get_caller_identity()
     except botocore.exceptions.BotoCoreError as e:
-        raise ValueError("S3 is enabled but no valid AWS credentials are available. You may need to set envvars AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID.") from e
+        raise ValueError(
+            "S3 is enabled but no valid AWS credentials are available. You may need to set envvars AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID."
+        ) from e
 
 STORAGES = {}
 
