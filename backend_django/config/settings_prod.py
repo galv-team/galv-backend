@@ -55,6 +55,8 @@ else:
     db_port = os.environ.get("POSTGRES_PORT")
     db_user = os.environ.get("POSTGRES_USER")
     db_password = os.environ.get("POSTGRES_PASSWORD")
+    db_name = (os.environ.get("POSTGRES_DB", "galv"),)
+    ssl_mode = os.environ.get("POSTGRES_SSLMODE", "prefer")
 
     if not db_host or not db_port or not db_user or not db_password:
         db_vars = {
@@ -70,10 +72,11 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql_psycopg2",
-            "NAME": "postgres",
+            "NAME": db_name,
             "HOST": db_host,
             "PORT": db_port,
             "USER": db_user,
             "PASSWORD": db_password,
+            "sslmode": ssl_mode,
         }
     }

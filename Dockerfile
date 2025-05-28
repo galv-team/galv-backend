@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     build-essential libssl-dev libffi-dev python3-dev python-dev \
     libpq-dev \
+    libssl-dev \
     gcc \
     nginx \
     && rm -rf /var/lib/apt/lists/*
