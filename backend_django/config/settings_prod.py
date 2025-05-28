@@ -55,7 +55,7 @@ else:
     db_port = os.environ.get("POSTGRES_PORT")
     db_user = os.environ.get("POSTGRES_USER")
     db_password = os.environ.get("POSTGRES_PASSWORD")
-    db_name = (os.environ.get("POSTGRES_DB", "galv"),)
+    db_name = os.environ.get("POSTGRES_DB", "galv")
     ssl_mode = os.environ.get("POSTGRES_SSLMODE", "prefer")
 
     if not db_host or not db_port or not db_user or not db_password:
