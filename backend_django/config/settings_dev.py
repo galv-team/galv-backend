@@ -54,6 +54,9 @@ else:
             "USER": os.environ.get("POSTGRES_USER", "postgres"),
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
             "TEST": {"NAME": "galv_test"},
+            "OPTIONS": {
+                "sslmode": os.environ.get("POSTGRES_SSLMODE", "prefer"),
+            },
         }
     }
 

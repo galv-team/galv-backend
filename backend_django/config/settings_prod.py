@@ -77,6 +77,8 @@ else:
             "PORT": db_port,
             "USER": db_user,
             "PASSWORD": db_password,
-            "sslmode": ssl_mode,
+            "OPTIONS": {
+                "sslmode": ssl_mode,
+            },
         }
     }
