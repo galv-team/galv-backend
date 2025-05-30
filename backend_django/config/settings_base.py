@@ -22,7 +22,7 @@ import botocore.exceptions
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.7.3"
+API_VERSION = "2.7.4"
 
 USER_ACTIVATION_OVERRIDE_ADDRESSES = os.environ.get(
     "DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES"
@@ -56,6 +56,10 @@ ALLOWED_HOSTS = [
     *os.environ.get("VIRTUAL_HOST", "").split(","),
     os.environ.get("DJANGO_ELB_HOST", ""),  # for AWS ELB health checks
 ]
+
+if os.environ.get("DJANGO_SECURE_PROXY_SSL_HEADER", None) is not None:
+    ssl_header = os.environ.get("DJANGO_SECURE_PROXY_SSL_HEADER").split(":")
+    SECURE_PROXY_SSL_HEADER = (ssl_header[0], ssl_header[1])
 
 CORS_ALLOW_HEADERS = list(corsheaders.defaults.default_headers) + [
     "X-CSRF-TOKEN",
