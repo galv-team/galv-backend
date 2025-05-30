@@ -52,7 +52,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
-ALLOWED_HOSTS = [*os.environ.get("VIRTUAL_HOST", "").split(",")]
+ALLOWED_HOSTS = [
+    *os.environ.get("VIRTUAL_HOST", "").split(","),
+    os.environ.get("DJANGO_ELB_HOST", ""),  # for AWS ELB health checks
+]
 
 CORS_ALLOW_HEADERS = list(corsheaders.defaults.default_headers) + [
     "X-CSRF-TOKEN",
