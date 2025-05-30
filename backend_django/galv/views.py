@@ -287,6 +287,19 @@ class _GetOrCreateTextStringViewSet(
     #     return Response(GetOrCreateTextStringSerializer(text_string).data)
 
 
+@extend_schema(
+    responses={
+        200: inline_serializer(
+            "HealthCheckResponse", {"status": serializers.CharField()}
+        )
+    }
+)
+@api_view(("GET",))
+@renderer_classes((JSONRenderer,))
+def health_check(request):
+    return Response({"status": "ok"})
+
+
 @extend_schema(responses={200: DumpSerializer})
 @api_view(("GET",))
 @renderer_classes((JSONRenderer,))
