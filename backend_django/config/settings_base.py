@@ -22,7 +22,7 @@ import botocore.exceptions
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.8.2"
+API_VERSION = "2.8.3"
 
 USER_ACTIVATION_OVERRIDE_ADDRESSES = os.environ.get(
     "DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES"
@@ -56,6 +56,10 @@ ALLOWED_HOSTS = [
     *os.environ.get("VIRTUAL_HOST", "").split(","),
     os.environ.get("DJANGO_ELB_HOST", ""),  # for AWS ELB health checks
 ]
+
+ALLOWED_CIDR_NETS = os.environ.get("DJANGO_ALLOWED_CIDR_NETS", "").split(",")
+if ALLOWED_CIDR_NETS == [""]:
+    ALLOWED_CIDR_NETS = []
 
 if os.environ.get("DJANGO_SECURE_PROXY_SSL_HEADER", None) is not None:
     ssl_header = os.environ.get("DJANGO_SECURE_PROXY_SSL_HEADER").split(":")
@@ -99,6 +103,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     # "django_snakeviz_profiling.SnakevizProfilingMiddleware",
+    "allow_cidr.middleware.AllowCIDRMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
