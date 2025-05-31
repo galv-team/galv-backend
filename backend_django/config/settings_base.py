@@ -22,7 +22,7 @@ import botocore.exceptions
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.8.1"
+API_VERSION = "2.8.2"
 
 USER_ACTIVATION_OVERRIDE_ADDRESSES = os.environ.get(
     "DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES"
@@ -291,6 +291,7 @@ LOGGING = {
         },
         "galv": {
             "handlers": [
+                "console",
                 "galv_file",
             ],
             "level": level,
