@@ -297,6 +297,11 @@ class _GetOrCreateTextStringViewSet(
 @api_view(("GET",))
 @renderer_classes((JSONRenderer,))
 def health_check(request):
+    logger.info(
+        "Health check request: method=%s, headers=%s",
+        request.method,
+        dict(request.headers),
+    )
     return Response({"status": "ok"})
 
 
