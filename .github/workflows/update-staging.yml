@@ -60,12 +60,14 @@ jobs:
       - name: Create DB
         run: |
           echo "Creating app $FLY_DB_NAME"
-          flyctl managed-postgres create \
+          flyctl postgres create \
             --name $FLY_DB_NAME \
+            --fork-from $FLY_PROD_DB_NAME \
             --org $FLY_ORG \
-            --region fra \
+            --region lhr \
             --volume-size 10 \
-            --enable-backups false
+            --vm-size shared-cpu-2x \
+            --initial-cluster-size 1
 
       - name: Rewrite AWS bucket links
         run: |
