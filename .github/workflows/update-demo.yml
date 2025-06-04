@@ -53,7 +53,7 @@ jobs:
       - name: Create DB
         run: |
           echo "Creating app $FLY_DEMO_DB_NAME"
-          flyctl postgres create \
+          flyctl mpg create \
             --name $FLY_DEMO_DB_NAME \
             --org $FLY_ORG \
             --region lhr \
