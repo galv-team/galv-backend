@@ -56,7 +56,7 @@ jobs:
           flyctl managed-postgres create \
             --name $FLY_DEMO_DB_NAME \
             --org $FLY_ORG \
-            --region lhr \
+            --region fra \
             --volume-size 2
 
       - name: Create Demo Backend
