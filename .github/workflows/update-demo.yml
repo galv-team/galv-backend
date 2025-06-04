@@ -53,13 +53,11 @@ jobs:
       - name: Create DB
         run: |
           echo "Creating app $FLY_DEMO_DB_NAME"
-          flyctl mpg create \
+          flyctl managed-postgres create \
             --name $FLY_DEMO_DB_NAME \
             --org $FLY_ORG \
             --region lhr \
-            --volume-size 2 \
-            --vm-size shared-cpu-1x \
-            --initial-cluster-size 1
+            --volume-size 2
 
       - name: Create Demo Backend
         run: |
