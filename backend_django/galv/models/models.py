@@ -222,8 +222,19 @@ class UserActivation(TimestampedModel):
                     f"The token will be valid for {int(settings.USER_ACTIVATION_TOKEN_EXPIRY_S / 60)} minutes.\n\n"
                 ),
                 settings.DEFAULT_FROM_EMAIL,
-                settings.USER_ACTIVATION_EMAIL_ADDRESS,
+                settings.USER_ACTIVATION_OVERRIDE_ADDRESSES,
                 fail_silently=False,
+            )
+            send_mail(
+                "Galv account request",
+                (
+                    "Your account request has been received.\n\n"
+                    "An administrator will review your request and send you an activation token if approved.\n\n"
+                    "Galv administrative team."
+                ),
+                settings.DEFAULT_FROM_EMAIL,
+                [self.user.email],
+                fail_silently=True,
             )
 
         else:
