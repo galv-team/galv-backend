@@ -23,7 +23,7 @@ from csp.constants import SELF
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.10.1"
+API_VERSION = "2.10.2"
 
 USER_ACTIVATION_OVERRIDE_ADDRESSES = os.environ.get(
     "DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES", ""
@@ -415,7 +415,7 @@ if S3_ENABLED and os.environ.get("DJANGO_STORE_STATIC_FILES_ON_S3", False) == "T
         )
     else:
         STATIC_URL = f"{AWS_URL}/{STATICFILES_LOCATION}/"
-    STATICFILES_DIRS = None  # disable staticfiles finders because we use S3
+    STATICFILES_DIRS = []  # disable staticfiles finders because we use S3
 else:
     STORAGES["staticfiles"] = {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
