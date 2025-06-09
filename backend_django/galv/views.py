@@ -302,7 +302,7 @@ def health_check(request):
         request.method,
         dict(request.headers),
     )
-    return Response({"status": "ok"})
+    return Response({"status": "ok", "galv_version": settings.API_VERSION})
 
 
 @extend_schema(responses={200: DumpSerializer})

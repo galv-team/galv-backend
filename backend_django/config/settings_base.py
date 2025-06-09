@@ -23,7 +23,7 @@ from csp.constants import SELF
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.10.0"
+API_VERSION = "2.10.1"
 
 USER_ACTIVATION_OVERRIDE_ADDRESSES = os.environ.get(
     "DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES", ""
@@ -399,15 +399,6 @@ if S3_ENABLED and os.environ.get("DJANGO_STORE_STATIC_FILES_ON_S3", False) == "T
     cdn_domain = os.environ.get("DJANGO_STATIC_FILES_CDN_DOMAIN")
     if cdn_domain is not None:
         STATIC_URL = f"https://{cdn_domain}/{STATICFILES_LOCATION}/"
-    elif static_bucket_name is not None:
-        STATIC_URL = (
-            f"https://{static_bucket_name}.s3.amazonaws.com/{STATICFILES_LOCATION}/"
-        )
-    else:
-        STATIC_URL = f"{AWS_URL}/{STATICFILES_LOCATION}/"
-    # STATICFILES_DIRS = [f"/{STATICFILES_LOCATION}"]
-
-    if cdn_domain is not None:
         # Use a CDN for static files
         CONTENT_SECURITY_POLICY = {
             "DIRECTIVES": {
@@ -418,6 +409,13 @@ if S3_ENABLED and os.environ.get("DJANGO_STORE_STATIC_FILES_ON_S3", False) == "T
                 "img-src": [SELF, f"https://{cdn_domain}"],
             },
         }
+    elif static_bucket_name is not None:
+        STATIC_URL = (
+            f"https://{static_bucket_name}.s3.amazonaws.com/{STATICFILES_LOCATION}/"
+        )
+    else:
+        STATIC_URL = f"{AWS_URL}/{STATICFILES_LOCATION}/"
+    STATICFILES_DIRS = None  # disable staticfiles finders because we use S3
 else:
     STORAGES["staticfiles"] = {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
