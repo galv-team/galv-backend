@@ -18,6 +18,7 @@ import corsheaders.defaults
 from pathlib import Path
 import boto3
 import botocore.exceptions
+from csp import SELF
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
@@ -90,6 +91,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.postgres",
     "corsheaders",
+    "csp",
     "debug_toolbar",
     # "cachalot",
     "rest_framework",
@@ -392,8 +394,29 @@ else:
 
 if S3_ENABLED and os.environ.get("DJANGO_STORE_STATIC_FILES_ON_S3", False) == "True":
     STORAGES["staticfiles"] = {"BACKEND": "galv.storages.StaticStorage"}  # for static
-    STATIC_URL = f"{AWS_URL}/{STATICFILES_LOCATION}/"
-    STATICFILES_DIRS = [f"/{STATICFILES_LOCATION}"]
+    static_bucket_name = os.environ.get("DJANGO_STATIC_FILES_BUCKET_NAME")
+    cdn_domain = os.environ.get("DJANGO_STATIC_FILES_CDN_DOMAIN")
+    if cdn_domain is not None:
+        STATIC_URL = f"https://{cdn_domain}/{STATICFILES_LOCATION}/"
+    elif static_bucket_name is not None:
+        STATIC_URL = (
+            f"https://{static_bucket_name}.s3.amazonaws.com/{STATICFILES_LOCATION}/"
+        )
+    else:
+        STATIC_URL = f"{AWS_URL}/{STATICFILES_LOCATION}/"
+    # STATICFILES_DIRS = [f"/{STATICFILES_LOCATION}"]
+
+    if cdn_domain is not None:
+        # Use a CDN for static files
+        CONTENT_SECURITY_POLICY = {
+            "DIRECTIVES": {
+                "default-src": [SELF],
+                "script-src": [SELF, f"https://{cdn_domain}", "'unsafe-inline'"],
+                "style-src": [SELF, f"https://{cdn_domain}"],
+                "font-src": [SELF, f"https://{cdn_domain}"],
+                "img-src": [SELF, f"https://{cdn_domain}"],
+            },
+        }
 else:
     STORAGES["staticfiles"] = {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"

@@ -7,12 +7,21 @@ from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from storages.backends.s3boto3 import S3Boto3Storage
 from storages.utils import clean_name
+import os
 
 
 class StaticStorage(S3Boto3Storage):
     location = settings.STATICFILES_LOCATION
-    default_acl = "public-read"
+    default_acl = None
     querystring_auth = False
+
+    def __init__(self, **kwargs):
+        bucket_name = os.environ.get("DJANGO_STATIC_FILES_BUCKET_NAME")
+        if bucket_name is not None:
+            self.bucket_name = bucket_name
+        custom_domain = os.environ.get("DJANGO_STATIC_FILES_CDN_DOMAIN")
+        if custom_domain is not None:
+            self.custom_domain = custom_domain
 
 
 class MediaStorage(S3Boto3Storage):
