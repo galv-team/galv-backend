@@ -18,7 +18,7 @@ import corsheaders.defaults
 from pathlib import Path
 import boto3
 import botocore.exceptions
-from csp import SELF
+from csp.constants import SELF
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
