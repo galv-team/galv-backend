@@ -23,13 +23,16 @@ from csp.constants import SELF
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.10.3"
+API_VERSION = "2.10.4"
 
 USER_ACTIVATION_OVERRIDE_ADDRESSES = os.environ.get(
     "DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES", ""
 ).split(",")
 
-if len(USER_ACTIVATION_OVERRIDE_ADDRESSES) == 0:
+if (
+    len(USER_ACTIVATION_OVERRIDE_ADDRESSES) == 1
+    and USER_ACTIVATION_OVERRIDE_ADDRESSES[0] == ""
+):
     USER_ACTIVATION_OVERRIDE_ADDRESSES = None
 
 try:
@@ -40,7 +43,7 @@ except (ValueError, TypeError):
     if USER_ACTIVATION_OVERRIDE_ADDRESSES is None:
         USER_ACTIVATION_TOKEN_EXPIRY_S = 60 * 15  # 15 minutes
     else:
-        USER_ACTIVATION_TOKEN_EXPIRY_S = 60 * 60  # 1 hour
+        USER_ACTIVATION_TOKEN_EXPIRY_S = 60 * 60 * 24  # 24 hours
 
 try:
     USER_PW_RESET_TOKEN_EXPIRY_S = int(
