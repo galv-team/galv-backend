@@ -58,12 +58,6 @@ jobs:
           role-session-name: ${{ github.run_id }}
           aws-region: eu-west-2
 
-      - name: Set up node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
       - name: Install AWS CDK
         run: |
           npm install -g aws-cdk@2.107.0
