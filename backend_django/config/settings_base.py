@@ -18,17 +18,19 @@ import corsheaders.defaults
 from pathlib import Path
 import boto3
 import botocore.exceptions
+from csp.constants import SELF
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.9.0"
+API_VERSION = "2.10.2"
 
 USER_ACTIVATION_OVERRIDE_ADDRESSES = os.environ.get(
-    "DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES"
-)
-if USER_ACTIVATION_OVERRIDE_ADDRESSES:
-    USER_ACTIVATION_OVERRIDE_ADDRESSES = USER_ACTIVATION_OVERRIDE_ADDRESSES.split(",")
+    "DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES", ""
+).split(",")
+
+if len(USER_ACTIVATION_OVERRIDE_ADDRESSES) == 0:
+    USER_ACTIVATION_OVERRIDE_ADDRESSES = None
 
 try:
     USER_ACTIVATION_TOKEN_EXPIRY_S = int(
@@ -90,6 +92,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.postgres",
     "corsheaders",
+    "csp",
     "debug_toolbar",
     # "cachalot",
     "rest_framework",
@@ -392,8 +395,27 @@ else:
 
 if S3_ENABLED and os.environ.get("DJANGO_STORE_STATIC_FILES_ON_S3", False) == "True":
     STORAGES["staticfiles"] = {"BACKEND": "galv.storages.StaticStorage"}  # for static
-    STATIC_URL = f"{AWS_URL}/{STATICFILES_LOCATION}/"
-    STATICFILES_DIRS = [f"/{STATICFILES_LOCATION}"]
+    static_bucket_name = os.environ.get("DJANGO_STATIC_FILES_BUCKET_NAME")
+    cdn_domain = os.environ.get("DJANGO_STATIC_FILES_CDN_DOMAIN")
+    if cdn_domain is not None:
+        STATIC_URL = f"https://{cdn_domain}/{STATICFILES_LOCATION}/"
+        # Use a CDN for static files
+        CONTENT_SECURITY_POLICY = {
+            "DIRECTIVES": {
+                "default-src": [SELF],
+                "script-src": [SELF, f"https://{cdn_domain}", "'unsafe-inline'"],
+                "style-src": [SELF, f"https://{cdn_domain}"],
+                "font-src": [SELF, f"https://{cdn_domain}"],
+                "img-src": [SELF, f"https://{cdn_domain}"],
+            },
+        }
+    elif static_bucket_name is not None:
+        STATIC_URL = (
+            f"https://{static_bucket_name}.s3.amazonaws.com/{STATICFILES_LOCATION}/"
+        )
+    else:
+        STATIC_URL = f"{AWS_URL}/{STATICFILES_LOCATION}/"
+    STATICFILES_DIRS = []  # disable staticfiles finders because we use S3
 else:
     STORAGES["staticfiles"] = {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
