@@ -47,11 +47,25 @@ if i == 0:
         f"{my_clean_version} is the first tag, no previous version or previous major version."
     )
     os.system("echo PREVIOUS_VERSION= >> $GITHUB_OUTPUT")
+    os.system("echo FIRST_VERSION_OF_MAJOR= >> $GITHUB_OUTPUT")
     os.system("echo PREVIOUS_MAJOR_VERSION= >> $GITHUB_OUTPUT")
     os.system("echo IS_MAJOR_VERSION=true >> $GITHUB_OUTPUT")
 else:
     os.system(f"echo PREVIOUS_VERSION={tags[i - 1]} >> $GITHUB_OUTPUT")
     print(f"Previous version: {tags[i - 1]}")
+
+    # Find the first version of the current major version
+    current_major = my_clean_version.split(".")[0]
+    first_ver_tags = [tag for tag in tags if tag.split(".")[0] == current_major]
+    if first_ver_tags[0] == my_clean_version:
+        print(
+            f"{my_clean_version} is the first version in major version {current_major}."
+        )
+        os.system("echo FIRST_VERSION_OF_MAJOR= >> $GITHUB_OUTPUT")
+    else:
+        os.system(f"echo FIRST_VERSION_OF_MAJOR={first_ver_tags[0]} >> $GITHUB_OUTPUT")
+        print(f"First version of major version {current_major}: {first_ver_tags[0]}")
+
     # Get the previous major version tag
     major_version = tags[i].split(".")[0]
     prev_ver_tags = [tag for tag in tags if tag.split(".")[0] < major_version]

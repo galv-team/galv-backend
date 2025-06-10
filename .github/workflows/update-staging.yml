@@ -9,10 +9,32 @@
 name: Stage Release
 on:
   workflow_dispatch:
+    inputs:
+      cdk_repo_version:
+        type: string
+        description: "The ref/tag of the CDK repository to use for the deployment"
+        required: false
+        default: "main"
+      min_compatible_version:
+        type: string
+        description: "The minimum version of the backend to use for checking compatibility."
+        required: false
+        default: ""
   workflow_call:
+    inputs:
+      min_compatible_version:
+        type: string
+        description: "The minimum version of the backend to use for checking compatibility."
+        required: false
+        default: ""
+  push:
+    branches:
+      - "fix/deployments"
 
 permissions:
   packages: read
+  contents: read
+  id-token: write  # Needed for AWS authentication
 
 jobs:
   recreate-fly-stage:
@@ -20,110 +42,115 @@ jobs:
     runs-on: ubuntu-latest
     concurrency: staging-group
     env:
-      FRONTEND_URL: "https://galv-stage.fly.dev"
-      FLY_APP_NAME: "galv-stage-backend"
-      FLY_DB_NAME: "galv-stage-db"
-      FLY_PROD_DB_NAME: "galv-db"
-      FLY_ORG: "oxrse"
-      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      PROJECT_NAME: galv-stage
       DJANGO_SECRET_KEY: ${{ secrets.DJANGO_DEMO_SECRET_KEY }}
       DJANGO_SUPERUSER_PASSWORD: ${{ secrets.DJANGO_DEMO_SUPERUSER_PASSWORD }}
       DJANGO_EMAIL_HOST_PASSWORD: ${{ secrets.DJANGO_DEMO_EMAIL_HOST_PASSWORD }}
       DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES: ${{ secrets.STAGE_DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.STAGE_AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.STAGE_AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-#      - uses: superfly/flyctl-actions/setup-flyctl@master
-#      - name: Destroy Existing apps
-#        run: |
-#          # Search apps list for existing services
-#          flyctl apps list --org $FLY_ORG > apps.txt
-#          cat apps.txt
-#          # Check if the app exists with grep
-#          if grep -q $FLY_APP_NAME apps.txt; then
-#              echo "Destroying app $FLY_APP_NAME"
-#              flyctl apps destroy $FLY_APP_NAME --yes
-#          else
-#              echo "App $FLY_APP_NAME does not exist - skipping destroy step"
-#          fi
-#          # Check if the database exists
-#          if grep -q $FLY_DB_NAME apps.txt; then
-#              echo "Destroying app $FLY_DB_NAME"
-#              flyctl apps destroy $FLY_DB_NAME --yes
-#          else
-#              echo "App $FLY_DB_NAME does not exist - skipping destroy step"
-#          fi
-#
-#      # Until we can reliably link the backend to the DB, we'll create them separately
-#      - name: Create DB
-#        run: |
-#          echo "Creating app $FLY_DB_NAME"
-#          flyctl postgres create \
-#            --name $FLY_DB_NAME \
-#            --fork-from $FLY_PROD_DB_NAME \
-#            --org $FLY_ORG \
-#            --region lhr \
-#            --volume-size 10 \
-#            --vm-size shared-cpu-2x \
-#            --initial-cluster-size 1
-#
-#      - name: Rewrite AWS bucket links
-#        run: |
-#          echo "Rewriting AWS bucket links"
-#          echo "This MAY NOT BE NECESSARY because we automatically use envvars for determining the AWS bucket."
-#
-#      - name: Create Backend
-#        run: |
-#          echo "Creating app $FLY_APP_NAME"
-#          flyctl apps create \
-#            --name $FLY_APP_NAME \
-#            --org $FLY_ORG
-#
-#      - name: Connect DB to Backend
-#        run: |
-#          echo "Connecting $FLY_DB_NAME to $FLY_APP_NAME"
-#          flyctl postgres attach $FLY_DB_NAME \
-#            --config ./fly.stage.toml \
-#            --app $FLY_APP_NAME \
-#            --yes
-#
-#      - name: Set Backend secrets
-#        run: |
-#          echo "Setting secrets"
-#          flyctl secrets set \
-#            --app $FLY_APP_NAME \
-#            --config ./fly.stage.toml \
-#            --stage \
-#            DJANGO_SECRET_KEY="$DJANGO_SECRET_KEY" \
-#            DJANGO_SUPERUSER_PASSWORD="$DJANGO_SUPERUSER_PASSWORD" \
-#            DJANGO_EMAIL_HOST_PASSWORD="$DJANGO_EMAIL_HOST_PASSWORD" \
-#            DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES="$DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES" \
-#            AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
-#            AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
-#
-#      - name: Deploy Backend with `latest` image
-#        run: |
-#          echo "Deploying app $FLY_APP_NAME with latest image"
-#          flyctl deploy \
-#            --app $FLY_APP_NAME \
-#            --config ./fly.stage.toml \
-#            --image ghcr.io/galv-team/galv-backend:latest \
-#            --env VIRTUAL_HOST=$FLY_APP_NAME.fly.dev \
-#            --env FRONTEND_VIRTUAL_HOST=$FRONTEND_URL \
-#            --remote-only \
-#            --yes
-#
-#      - name: Deploy Backend building from source
-#        run: |
-#          echo "Deploying app $FLY_APP_NAME with build"
-#          echo "This will run migrations etc."
-#
-#          flyctl deploy \
-#            --app $FLY_APP_NAME \
-#            --config ./fly.stage.toml \
-#            --env VIRTUAL_HOST=$FLY_APP_NAME.fly.dev \
-#            --env FRONTEND_VIRTUAL_HOST=$FRONTEND_URL \
-#            --remote-only \
-#            --yes
+
+      - name: Configure AWS credentials from env
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.CDK_IAM_ROLE_ARN }}
+          role-session-name: ${{ github.run_id }}
+          aws-region: eu-west-2
+
+      - name: Checkout CDK repository
+        uses: actions/checkout@v4
+        with:
+          repository: galv-team/galv-aws-cdk
+          ref: ${{ inputs.cdk_repo_version || 'main' }}
+          path: cdk
+
+      - name: Install CDK dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r cdk/requirements.txt
+
+      - name: Rewrite cdk.json
+        run: |
+          cat > cdk/cdk.json <<EOF
+          {
+            "app": "python app.py",
+            "context": {
+              "name": "${{ env.PROJECT_NAME }}",
+              "mailFromDomain": "${{ env.CDK_CTX_DOMAIN_NAME }}",
+              "mailFromUser": "${{ env.PROJECT_NAME }}-no-reply",
+              "projectNameTag": "${{ env.PROJECT_NAME }}",
+              "backendVersion": "${{ github.ref_name }}",
+              "frontendVersion": "latest",
+              "isProduction": true,
+              "frontendEnvironment": {},
+              "backendEnvironment": {
+                "DJANGO_SUPERUSER_USERNAME": "admin",
+                "DJANGO_LOG_LEVEL": "DEBUG",
+                "DJANGO_LOG_LEVEL_CORE": "DEBUG",
+                "DJANGO_DEBUG": "True",
+                "DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES": "",
+                "DJANGO_USER_ACTIVATION_TOKEN_EXPIRY_S": ""
+              },
+              "frontendSecretsName": "galv-frontend-secrets",
+              "frontendSecretsKeys": [],
+              "backendSecretsName": "galv-backend-secrets",
+              "backendSecretsKeys": [],
+              "smtpSecretName": "",
+              "monitorIntervalMinutes": 5,
+              "frontendSubdomain": "${{ env.PROJECT_NAME }}-app",
+              "backendSubdomain": "${{ env.PROJECT_NAME }}-api",
+              "domainName": "${{ env.CDK_CTX_DOMAIN_NAME }}",
+              "isRoute53Domain": true,
+              "enableContainerInsights": null
+            }
+          }
+          EOF
+
+      - name: Destroy stage backend
+        run: |
+          cd cdk
+          cdk destroy \
+            --force \
+            galv-stage-BackendStack
+
+      - name: Deploy the minimum compatible version
+        if: inputs.min_compatible_version != ''
+        run: |
+          cd cdk
+          cdk deploy \
+            --require-approval never \
+            --context backendVersion=${{ inputs.min_compatible_version }} \
+            galv-stage-BackendStack
+
+      - name: Deploy stage backend
+        run: |
+          cd cdk
+          cdk deploy \
+            --require-approval never \
+            --context backendVersion=${{ github.ref_name }} \
+            galv-stage-BackendStack
+
+      - name: Get backend healthcheck content
+        run: |
+          curl -sS -o healthcheck.json \
+            "https://${{ env.PROJECT_NAME }}-api.${{ env.DOMAIN_NAME }}/health/"
+          cat healthcheck.json
+
+      - name: Check healthcheck status ok
+        run: |
+          if ! jq -e '.status == "ok"' healthcheck.json; then
+              echo "Backend healthcheck failed: $(jq -r '.status' healthcheck.json)"
+              exit 1
+          fi
+
+      - name: "TODO: API checks"
+        run: |
+          echo "Any API checks should be added here."
+
+      - name: Destroy stage backend
+        run: |
+          cd cdk
+          cdk destroy \
+            --force \
+            galv-stage-BackendStack
