@@ -148,7 +148,7 @@ jobs:
       - name: Get backend healthcheck content
         run: |
           curl -sS -o healthcheck.json \
-            "https://${{ env.PROJECT_NAME }}-api.${{ env.DOMAIN_NAME }}/health/"
+            "https://${{ env.PROJECT_NAME }}-api.${{ vars.CDK_CTX_DOMAIN_NAME }}/health/"
           cat healthcheck.json
 
       - name: Check healthcheck status ok
@@ -163,6 +163,7 @@ jobs:
           echo "Any API checks should be added here."
 
       - name: Destroy stage backend
+        if: always() # Ensure we clean up even if the previous steps fail
         run: |
           cd cdk
           cdk destroy \
