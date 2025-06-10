@@ -77,6 +77,10 @@ jobs:
 
       - name: Rewrite cdk.json
         run: |
+          BACKEND_REF="${{ github.ref_name }}"
+          if [[ "$BACKEND_REF" == "noci/fix/deployments" ]]; then
+              BACKEND_REF="latest"
+          fi
           cat > cdk/cdk.json <<EOF
           {
             "app": "python app.py",
@@ -85,9 +89,10 @@ jobs:
               "mailFromDomain": "${{ vars.CDK_CTX_DOMAIN_NAME }}",
               "mailFromUser": "${{ env.PROJECT_NAME }}-no-reply",
               "projectNameTag": "${{ env.PROJECT_NAME }}",
-              "backendVersion": "${{ github.ref_name }}",
+              "backendVersion": "$BACKEND_REF",
               "frontendVersion": "latest",
               "isProduction": true,
+              "removalProtection": false,
               "frontendEnvironment": {},
               "backendEnvironment": {
                 "DJANGO_SUPERUSER_USERNAME": "admin",
@@ -131,9 +136,13 @@ jobs:
       - name: Deploy stage backend
         run: |
           cd cdk
+          BACKEND_REF="${{ github.ref_name }}"
+          if [[ "$BACKEND_REF" == "noci/fix/deployments" ]]; then
+              BACKEND_REF="latest"
+          fi
           cdk deploy \
             --require-approval never \
-            --context backendVersion=${{ github.ref_name }} \
+            --context backendVersion=$BACKEND_REF \
             galv-stage-BackendStack
 
       - name: Get backend healthcheck content
