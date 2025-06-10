@@ -72,8 +72,8 @@ jobs:
 
       - name: Install CDK dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r cdk/requirements.txt
+          cd cdk
+          pip install .
 
       - name: Rewrite cdk.json
         run: |
