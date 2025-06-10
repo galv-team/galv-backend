@@ -10,6 +10,10 @@ name: Stage Release
 on:
   workflow_dispatch:
     inputs:
+      backend_version:
+        type: string
+        description: "The version of the backend to deploy."
+        required: true
       cdk_repo_version:
         type: string
         description: "The ref/tag of the CDK repository to use for the deployment"
@@ -22,6 +26,10 @@ on:
         default: ""
   workflow_call:
     inputs:
+      backend_version:
+        type: string
+        description: "The version of the backend to deploy."
+        required: true
       min_compatible_version:
         type: string
         description: "The minimum version of the backend to use for checking compatibility."
@@ -77,7 +85,7 @@ jobs:
 
       - name: Rewrite cdk.json
         run: |
-          BACKEND_REF="${{ github.ref_name }}"
+          BACKEND_REF="${{ inputs.backend_version }}"
           if [[ "$BACKEND_REF" == "noci/fix/deployments" ]]; then
               BACKEND_REF="latest"
           fi
@@ -136,7 +144,7 @@ jobs:
       - name: Deploy stage backend
         run: |
           cd cdk
-          BACKEND_REF="${{ github.ref_name }}"
+          BACKEND_REF="${{ inputs.backend_version }}"
           if [[ "$BACKEND_REF" == "noci/fix/deployments" ]]; then
               BACKEND_REF="latest"
           fi

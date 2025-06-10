@@ -400,10 +400,12 @@ jobs:
   stage:
     needs:
       - version
+      - docker
       - tests
-    if: needs.version.outputs.IS_STAGE == 'true'
+    if: needs.version.outputs.IS_STAGE == 'true' && needs.version.outputs.BACKEND_CHANGED == 'true'
     uses: ./.github/workflows/update-staging.yml
     with:
+      backend_version: ${{ needs.version.outputs.VERSION }}
       min_compatible_version: ${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}
     secrets: inherit
 
