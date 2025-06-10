@@ -29,7 +29,7 @@ on:
         default: ""
   push:
     branches:
-      - "fix/deployments"
+      - "noci/fix/deployments"
 
 permissions:
   packages: read
