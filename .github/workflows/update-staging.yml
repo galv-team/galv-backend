@@ -60,7 +60,7 @@ jobs:
 
       - name: Install AWS CDK
         run: |
-          npm install -g aws-cdk@2.107.0
+          npm install -g aws-cdk@^=2.1018.0
           cdk --version
 
       - name: Checkout CDK repository
