@@ -228,10 +228,7 @@ jobs:
 
       - name: Build distribution 📦
         run: |
-          pwd
-          ls -la
-          ls -la clients
-          ls -la clients/python
+          chmod 777 clients/python
           cd clients/python
           python setup.py sdist bdist_wheel
 
