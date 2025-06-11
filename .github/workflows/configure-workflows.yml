@@ -2,6 +2,8 @@ name: Run workflows
 
 on:
   push:
+    branches-ignore:
+      - "noci/*"
   workflow_dispatch:
     inputs:
       debug_enabled:
@@ -12,6 +14,11 @@ on:
       allow_breaking_changes:
         type: boolean
         description: 'Ignore breaking change failure in OpenAPI spec check.'
+        required: false
+        default: false
+      dry_run:
+        type: boolean
+        description: 'Do not actually release the package, just check that it is valid.'
         required: false
         default: false
 
@@ -35,6 +42,7 @@ jobs:
       IS_RELEASE: ${{ steps.current_version.outputs.IS_RELEASE }}
       IS_STAGE: ${{ steps.current_version.outputs.IS_STAGE }}
       PREVIOUS_VERSION: ${{ steps.previous_versions.outputs.PREVIOUS_VERSION }}
+      FIRST_VERSION_OF_MAJOR: ${{ steps.previous_versions.outputs.FIRST_VERSION_OF_MAJOR }}
       PREVIOUS_MAJOR_VERSION: ${{ steps.previous_versions.outputs.PREVIOUS_MAJOR_VERSION }}
       IS_LATEST: ${{ steps.previous_versions.outputs.IS_LATEST }}
       IS_MAJOR_VERSION: ${{ steps.previous_versions.outputs.IS_MAJOR_VERSION }}
@@ -172,6 +180,7 @@ jobs:
           python ./.github/workflows/scripts/find_prev_tag.py clean_tags.txt ${{ steps.current_version.outputs.VERSION_CLEAN }}
           # Should have set
           # PREVIOUS_VERSION
+          # FIRST_VERSION_OF_MAJOR
           # PREVIOUS_MAJOR_VERSION
           # IS_LATEST
           # IS_MAJOR_VERSION
@@ -228,6 +237,7 @@ jobs:
           echo "IS_RELEASE=${{ steps.current_version.outputs.IS_RELEASE }}" >> summary.txt
           echo "IS_STAGE=${{ steps.current_version.outputs.IS_STAGE }}" >> summary.txt
           echo "PREVIOUS_VERSION=${{ steps.previous_versions.outputs.PREVIOUS_VERSION }}" >> summary.txt
+          echo "FIRST_VERSION_OF_MAJOR=${{ steps.previous_versions.outputs.FIRST_VERSION_OF_MAJOR }}" >> summary.txt
           echo "PREVIOUS_MAJOR_VERSION=${{ steps.previous_versions.outputs.PREVIOUS_MAJOR_VERSION }}" >> summary.txt
           echo "IS_LATEST=${{ steps.previous_versions.outputs.IS_LATEST }}" >> summary.txt
           echo "IS_MAJOR_VERSION=${{ steps.previous_versions.outputs.IS_MAJOR_VERSION }}" >> summary.txt
@@ -269,7 +279,7 @@ jobs:
           sudo chmod 777 .dev/spec
           touch .env.secret
 
-      - name: Check OpenAPI Spec changes
+      - name: Check OpenAPI Spec changes for compatibility within the same major version
         if: needs.version.outputs.BACKEND_CHANGED == 'true'
         id: check_openapi_changes
         run: |
@@ -286,35 +296,35 @@ jobs:
 
           sudo chmod 777 .dev/spec/*
           # If previous version tag is empty, skip this step
-          if [ -z "${{ needs.version.outputs.PREVIOUS_VERSION }}" ]; then
+          if [ -z "${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}" ]; then
               echo "No previous version tag found. This is probably the first version. Skipping spec check."
               exit 0
           fi
-          wget -O .dev/spec/openapi-${{ needs.version.outputs.PREVIOUS_VERSION }}.json https://github.com/galv-team/galv-backend/releases/download/${{ needs.version.outputs.prev-clean-version }}/openapi-${{ needs.version.outputs.prev-clean-version }}.json || true
+          wget -O .dev/spec/openapi-${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}.json https://github.com/galv-team/galv-backend/releases/download/${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}/openapi-${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}.json || true
           # Check whether we downloaded a file (i.e. whether that file has a size greater than 0)
-          if [ ! -s .dev/spec/openapi-${{ needs.version.outputs.PREVIOUS_VERSION }}.json ]; then
-              echo "Failed to download spec for previous version: ${{ needs.version.outputs.PREVIOUS_VERSION }}."
+          if [ ! -s .dev/spec/openapi-${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}.json ]; then
+              echo "Failed to download spec for previous version: ${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}."
               echo "This can happen if something went wrong in publishing the previous version."
               echo "Generating spec from scratch..."
-              echo "Checking out previous version tag: ${{ needs.version.outputs.PREVIOUS_VERSION }}"
+              echo "Checking out previous version tag: ${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}"
               git fetch --tags
-              git checkout ${{ needs.version.outputs.PREVIOUS_VERSION }}
-              echo "Generating spec for previous version: ${{ needs.version.outputs.PREVIOUS_VERSION }}"
+              git checkout ${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}
+              echo "Generating spec for previous version: ${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}"
               docker-compose run --rm -e AWS_SECRET_ACCESS_KEY="not_set" --entrypoint "/bin/bash -c" app "python manage.py spectacular --format openapi-json >> /spec/openapi-x.json"
-              cp .dev/spec/openapi-x.json .dev/spec/openapi-${{ needs.version.outputs.PREVIOUS_VERSION }}.json
+              cp .dev/spec/openapi-x.json .dev/spec/openapi-${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}.json
               echo "Success. Switching to workflow branch."
               git checkout -
               echo "Spec generated. First 10 lines:"
           else
-            echo "Downloaded spec for previous version: ${{ needs.version.outputs.PREVIOUS_VERSION }}. First 10 lines:"
+            echo "Downloaded spec for previous version: ${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}. First 10 lines:"
           fi
-          head -n 10 .dev/spec/openapi-${{ needs.version.outputs.PREVIOUS_VERSION }}.json
+          head -n 10 .dev/spec/openapi-${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}.json
           echo "---------"
-          echo "Check spec against previous version: ${{ needs.version.outputs.PREVIOUS_VERSION }}"
+          echo "Check spec against previous version: ${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}"
           if [[ "${{ needs.version.outputs.IS_MAJOR_VERSION }}" == "true" || "${{ inputs.allow_breaking_changes }}" == "true" ]]; then
-            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/openapi-${{ needs.version.outputs.PREVIOUS_VERSION }}.json check_spec || true
+            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/openapi-${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}.json check_spec || true
           else
-            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/openapi-${{ needs.version.outputs.PREVIOUS_VERSION }}.json check_spec
+            sudo docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/openapi-${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}.json check_spec
           fi
           ls -l .dev/spec
           echo ".dev/spec/diff.md:"
@@ -362,13 +372,225 @@ jobs:
       - version
       - openapi-spec
       - tests
-    uses: ./.github/workflows/api-clients.yml
-    with:
-      skip: ${{ needs.openapi-spec.outputs.API_CHANGES != 'true' }}
-      dry_run: ${{ needs.version.outputs.IS_RELEASE != 'true' }}
-      version: ${{ needs.version.outputs.VERSION }}
-      version_clean: ${{ needs.version.outputs.VERSION_CLEAN }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    environment:
+      name: ${{ needs.version.outputs.IS_RELEASE != 'true' && 'testpypi' || 'pypi' }}
+      url: ${{ needs.version.outputs.IS_RELEASE != 'true' && 'https://test.pypi.org/p/galv-client' || 'https://pypi.org/p/galv-client' }}
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+
+      - name: Make clients directory
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        run: |
+          mkdir clients
+
+      - name: Retrieve OpenAPI spec artifacts
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: spec
+          path: .dev/spec
+
+      # Enable debugging of manually-triggered workflows if the input option was provided
+      - name: Debug
+        uses: owenthereal/action-upterm@v1
+        if: ${{ inputs.debug_enabled && needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+
+      - name: Login to Docker Hub
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Specify openapi-generator version
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        run: docker pull openapitools/openapi-generator-cli:v6.6.0
+
+      - name: Determine Python package version
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        run: |
+          VERSION_CLEAN=${{ needs.version.outputs.VERSION_CLEAN }}
+          V=${VERSION_CLEAN#v}
+
+          # Real releases always use the clean tag version
+          if [[ "${{ needs.version.outputs.IS_RELEASE != 'true' }}" == "false" ]]; then
+            echo "PYPI_VERSION=$V" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          # Get the list of currently published versions from the test repository
+          PYTHON_VERSIONS=$(pip index versions --pre --index-url https://test.pypi.org/simple/ galv)
+          while true; do
+            if ! echo "$PYTHON_VERSIONS" | grep -qE "$V(,|\s|$)"; then
+              break
+            fi
+
+            if [[ $V =~ dev[0-9]+$ ]]; then
+              V=$(echo "$V" | awk -F'dev' '{$NF = $NF + 1;} 1' | sed 's/ /dev/g')
+            else
+              V="${V}.dev0"
+            fi
+          done
+          echo "PYPI_VERSION=$V" >> $GITHUB_ENV
+
+      - name: Determine NPM package version
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        run: |
+          VERSION=${{ needs.version.outputs.VERSION }}
+          V=${VERSION#v}
+
+          # Real releases always use the clean tag version
+          if [[ "${{ needs.version.outputs.IS_RELEASE != 'true' }}" == "false" ]]; then
+              echo "NPM_VERSION=$V" >> $GITHUB_ENV
+              exit 0
+          fi
+
+          # Get the list of currently published versions
+          NPM_VERSIONS=$(npm show @galv/galv versions --json)
+
+          while true; do
+            if ! echo "$NPM_VERSIONS" | jq -e --arg v "$V" 'index($v)' > /dev/null; then
+              break
+            fi
+
+            if [[ $V =~ -?dev[0-9]+$ ]]; then
+              V=$(echo "$V" | awk -F'dev' '{$NF = $NF + 1;} 1' | sed 's/ /dev/')
+            else
+              V="${V}-dev0"
+            fi
+          done
+          echo "NPM_VERSION=$V" >> $GITHUB_ENV
+
+      - name: Create python config using calculated version
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        run: |
+          echo "{\"packageName\": \"galv\", \"packageVersion\": \"$PYPI_VERSION\"}" >> python-config.json
+          cat python-config.json
+
+      - name: Create API client - python
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        run: |
+          JSON_FILE=$(ls .dev/spec/*.json)
+          docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v6.6.0 generate \
+          -i "/local/$JSON_FILE" \
+          -g python \
+          -c /local/python-config.json \
+          -o /local/clients/python
+
+          # Copy LICENCE file to client directory
+          sudo cp LICENCE clients/python/LICENCE
+
+          tree clients/python
+
+          # zip the client
+          zip -r clients/galv-client-python.zip clients/python
+
+      - name: Create API client - typescript-axios
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        run: |
+          # Create a config json file using EOF notation
+          echo '{"useSingleRequestParameter": true}' >> typescript-axios-config.json
+          JSON_FILE=$(ls .dev/spec/*.json)
+          docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v6.6.0 generate \
+          -i "/local/$JSON_FILE" \
+          -g typescript-axios \
+          -c /local/typescript-axios-config.json \
+          -o /local/clients/typescript-axios
+
+          # Copy LICENCE file to client directory
+          sudo cp LICENCE clients/typescript-axios/LICENCE
+
+          # Create a package.json file using EOF notation
+          cat << EOF | sudo tee -a clients/typescript-axios/package.json
+          {
+              "name": "@galv/galv",
+              "version": "$NPM_VERSION",
+              "description": "Galv API client using Typescript-Axios",
+              "main": "index.ts",
+              "scripts": {
+                "test": "echo \"Error: no test specified\" && exit 1"
+              },
+              "keywords": [
+                "galv",
+                "galv-api",
+                "galv-client",
+                "typescript-axios"
+              ],
+              "author": "Battery Intelligence Lab",
+              "license": "See LICENCE File",
+              "dependencies": {
+                "axios": "^0.21.1"
+              }
+          }
+          EOF
+
+          # zip the client
+          zip -r clients/galv-client-typescript-axios.zip clients/typescript-axios
+
+      - name: Setup publishing typescript client to packages
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Publish typescript client to packages ${{ needs.version.outputs.IS_RELEASE != 'true' && '[dry_run]' || '' }}
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_PUBLISH_TOKEN }}
+          package: "clients/typescript-axios"
+          access: "public"
+          dry-run: ${{ needs.version.outputs.IS_RELEASE != 'true' }}
+
+      - name: Upload clients
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: clients
+          path: clients/*.zip
+          retention-days: 1
+
+      - name: Upload python client code
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: python
+          path: clients/python
+          retention-days: 1
+
+      - name: Build distribution 📦
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        run: |
+          ls -la clients/python
+          sudo chmod 777 clients/python
+          ls -la clients/python
+          cd clients/python
+          python setup.py sdist bdist_wheel
+          tree .
+
+      - name: Publish distribution 📦 to PyPI [dry_run]
+        if: ${{ needs.version.outputs.IS_RELEASE != 'true' && needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: clients/python/dist
+
+      - name: Publish distribution 📦 to PyPI
+        if: ${{ needs.version.outputs.IS_RELEASE == 'true' && needs.openapi-spec.outputs.API_CHANGES == 'true' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://upload.pypi.org/legacy/
+          packages-dir: clients/python/dist
+
+      - name: Rubber stamp
+        if: ${{ needs.openapi-spec.outputs.API_CHANGES != 'true' }}
+        run: |
+          echo "API clients not required because API hasn't changed."
 
   docker:
     needs:
@@ -395,9 +617,13 @@ jobs:
   stage:
     needs:
       - version
+      - docker
       - tests
-    if: needs.version.outputs.IS_STAGE == 'true'
+    if: needs.version.outputs.IS_STAGE == 'true' && needs.version.outputs.BACKEND_CHANGED == 'true'
     uses: ./.github/workflows/update-staging.yml
+    with:
+      backend_version: ${{ needs.version.outputs.VERSION }}
+      min_compatible_version: ${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}
     secrets: inherit
 
   demo:

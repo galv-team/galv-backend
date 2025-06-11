@@ -90,18 +90,19 @@ jobs:
 
           # Real releases always use the clean tag version
           if [[ "${{ inputs.dry_run }}" == "false" ]]; then
-            echo PYPI_VERSION=$V" >> $GITHUB_ENV
+            echo "PYPI_VERSION=$V" >> $GITHUB_ENV
             exit 0
           fi
 
           # Get the list of currently published versions from the test repository
-          PYTHON_VERSIONS=$(pip index version --pre --index-url https://test.pypi.org/simple/ galv)
+          PYTHON_VERSIONS=$(pip index versions --pre --index-url https://test.pypi.org/simple/ galv)
           while true; do
-            if [[ -z $PYTHON_VERSIONS | grep '$V[, \n] ]]; then
+            if ! echo "$PYTHON_VERSIONS" | grep -qE "$V(,|\s|$)"; then
               break
             fi
+
             if [[ $V =~ dev[0-9]+$ ]]; then
-              V=$(echo $V | awk -F'dev' '{$NF = $NF + 1;} 1' | sed 's/ /dev/g')
+              V=$(echo "$V" | awk -F'dev' '{$NF = $NF + 1;} 1' | sed 's/ /dev/g')
             else
               V="${V}.dev0"
             fi
@@ -115,18 +116,20 @@ jobs:
 
           # Real releases always use the clean tag version
           if [[ "${{ inputs.dry_run }}" == "false" ]]; then
-              echo NPM_VERSION=$V" >> $GITHUB_ENV
+              echo "NPM_VERSION=$V" >> $GITHUB_ENV
               exit 0
           fi
 
           # Get the list of currently published versions
           NPM_VERSIONS=$(npm show @galv/galv versions --json)
+
           while true; do
-            if [[ -z $NPM_VERSIONS | grep '$V[, \n] ]]; then
+            if ! echo "$NPM_VERSIONS" | jq -e --arg v "$V" 'index($v)' > /dev/null; then
               break
             fi
-            if [[ $V =~ dev[0-9]+$ ]]; then
-              V=$(echo $V | awk -F'dev' '{$NF = $NF + 1;} 1' | sed 's/ /dev/g')
+
+            if [[ $V =~ -?dev[0-9]+$ ]]; then
+              V=$(echo "$V" | awk -F'dev' '{$NF = $NF + 1;} 1' | sed 's/ /dev/')
             else
               V="${V}-dev0"
             fi
@@ -135,7 +138,7 @@ jobs:
 
       - name: Create python config using calculated version
         run: |
-          echo '{"packageName": "galv", "packageVersion": "$PYPI_VERSION"}' >> python-config.json
+          echo "{\"packageName\": \"galv\", \"packageVersion\": \"$PYPI_VERSION\"}" >> python-config.json
           cat python-config.json
 
       - name: Create API client - python
@@ -207,7 +210,7 @@ jobs:
           token: ${{ secrets.NPM_PUBLISH_TOKEN }}
           package: "clients/typescript-axios"
           access: "public"
-          dry_run: ${{ inputs.dry_run }}
+          dry-run: inputs.dry_run
 
       - name: Upload clients
         uses: actions/upload-artifact@v4
@@ -224,12 +227,27 @@ jobs:
           retention-days: 1
 
       - name: Build distribution 📦
-        run: python setup.py sdist bdist_wheel
+        run: |
+          ls -la clients/python
+          sudo chmod 777 clients/python
+          ls -la clients/python
+          cd clients/python
+          python setup.py sdist bdist_wheel
+          tree .
 
-      - name: Publish distribution 📦 to PyPI ${{ inputs.dry_run == 'true' && '[dry_run]' || '' }}
+      - name: Publish distribution 📦 to PyPI [dry_run]
+        if: ${{ inputs.dry_run }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: ${{ inputs.dry_run == 'true' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: clients/python/dist
+
+      - name: Publish distribution 📦 to PyPI
+        if: ${{ !inputs.dry_run }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://upload.pypi.org/legacy/
+          packages-dir: clients/python/dist
 
   rubber-stamp:
     if: ${{ inputs.skip }}

@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import Optional
 
 if len(sys.argv) < 3:
     print("Usage: find_prev_tag.py <tags.txt file> <clean_version string>")
@@ -31,6 +32,10 @@ def patch(s):
     return int(s.split(".")[2].split("-")[0])
 
 
+def note(s) -> Optional[str]:
+    return s.split(".")[2].split("-")[1] if "-" in s.split(".")[2] else None
+
+
 tags.sort(key=lambda s: (major(s), minor(s), patch(s)))
 
 i = tags.index(my_clean_version)
@@ -47,11 +52,31 @@ if i == 0:
         f"{my_clean_version} is the first tag, no previous version or previous major version."
     )
     os.system("echo PREVIOUS_VERSION= >> $GITHUB_OUTPUT")
+    os.system("echo FIRST_VERSION_OF_MAJOR= >> $GITHUB_OUTPUT")
     os.system("echo PREVIOUS_MAJOR_VERSION= >> $GITHUB_OUTPUT")
     os.system("echo IS_MAJOR_VERSION=true >> $GITHUB_OUTPUT")
 else:
     os.system(f"echo PREVIOUS_VERSION={tags[i - 1]} >> $GITHUB_OUTPUT")
     print(f"Previous version: {tags[i - 1]}")
+
+    # Find the first version of the current major version.
+    # We limit to release versions, so pre-release versions _might_ not be compatible. That's on developers to ensure.
+    current_major = my_clean_version.split(".")[0]
+    first_ver_tags = [
+        tag for tag in tags if tag.split(".")[0] == current_major and note(tag) is None
+    ]
+    if len(first_ver_tags) == 0:
+        print(f"No release versions found for major version {current_major}.")
+        os.system("echo FIRST_VERSION_OF_MAJOR= >> $GITHUB_OUTPUT")
+    if first_ver_tags[0] == my_clean_version:
+        print(
+            f"{my_clean_version} is the first version in major version {current_major}."
+        )
+        os.system("echo FIRST_VERSION_OF_MAJOR= >> $GITHUB_OUTPUT")
+    else:
+        os.system(f"echo FIRST_VERSION_OF_MAJOR={first_ver_tags[0]} >> $GITHUB_OUTPUT")
+        print(f"First version of major version {current_major}: {first_ver_tags[0]}")
+
     # Get the previous major version tag
     major_version = tags[i].split(".")[0]
     prev_ver_tags = [tag for tag in tags if tag.split(".")[0] < major_version]
