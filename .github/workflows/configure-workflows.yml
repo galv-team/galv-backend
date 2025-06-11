@@ -3,7 +3,7 @@ name: Run workflows
 on:
   push:
     branches-ignore:
-      - "noci/*"
+      - "noci/**"
   workflow_dispatch:
     inputs:
       debug_enabled:
@@ -632,4 +632,6 @@ jobs:
       - docker  # in case the backend is targeting the latest version
     if: needs.version.outputs.DEMO_UPDATE == 'true'
     uses: ./.github/workflows/update-demo.yml
+    with:
+      backend_version: ${{ needs.version.outputs.VERSION }}
     secrets: inherit

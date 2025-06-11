@@ -1,0 +1,18 @@
+name: Redeploy demo instance
+
+on:
+  schedule:
+    # every week
+    - cron: '42 0 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: demo-group
+  cancel-in-progress: true
+
+jobs:
+  demo:
+    uses: ./.github/workflows/update-demo.yml
+    with:
+      backend_version: "latest"
+    secrets: inherit
