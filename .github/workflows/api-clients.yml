@@ -233,12 +233,13 @@ jobs:
           ls -la clients/python
           cd clients/python
           python setup.py sdist bdist_wheel
+          ls -la clients/python
 
       - name: Publish distribution 📦 to PyPI ${{ inputs.dry_run == 'true' && '[dry_run]' || '' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: ${{ inputs.dry_run == 'true' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
-          packages-dir: clients/python
+          packages-dir: clients/python/dist
 
   rubber-stamp:
     if: ${{ inputs.skip }}
