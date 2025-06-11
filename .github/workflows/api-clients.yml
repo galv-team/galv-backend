@@ -235,10 +235,18 @@ jobs:
           python setup.py sdist bdist_wheel
           tree .
 
-      - name: Publish distribution 📦 to PyPI ${{ inputs.dry_run == 'true' && '[dry_run]' || '' }}
+      - name: Publish distribution 📦 to PyPI [dry_run]
+        if: ${{ inputs.dry_run }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: ${{ inputs.dry_run == 'true' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: clients/python/dist
+
+      - name: Publish distribution 📦 to PyPI
+        if: ${{ !inputs.dry_run }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://upload.pypi.org/legacy/
           packages-dir: clients/python/dist
 
   rubber-stamp:
