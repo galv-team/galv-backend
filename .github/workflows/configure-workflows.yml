@@ -295,7 +295,7 @@ jobs:
               echo "No previous version tag found. This is probably the first version. Skipping spec check."
               exit 0
           fi
-          wget -O .dev/spec/openapi-${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}.json https://github.com/galv-team/galv-backend/releases/download/${{ needs.version.outputs.prev-clean-version }}/openapi-${{ needs.version.outputs.prev-clean-version }}.json || true
+          wget -O .dev/spec/openapi-${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}.json https://github.com/galv-team/galv-backend/releases/download/${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}/openapi-${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}.json || true
           # Check whether we downloaded a file (i.e. whether that file has a size greater than 0)
           if [ ! -s .dev/spec/openapi-${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}.json ]; then
               echo "Failed to download spec for previous version: ${{ needs.version.outputs.FIRST_VERSION_OF_MAJOR }}."
