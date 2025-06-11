@@ -90,12 +90,12 @@ jobs:
 
           # Real releases always use the clean tag version
           if [[ "${{ inputs.dry_run }}" == "false" ]]; then
-            echo PYPI_VERSION=$V" >> $GITHUB_ENV
+            echo "PYPI_VERSION=$V" >> $GITHUB_ENV
             exit 0
           fi
 
           # Get the list of currently published versions from the test repository
-          PYTHON_VERSIONS=$(pip index version --pre --index-url https://test.pypi.org/simple/ galv)
+          PYTHON_VERSIONS=$(pip index versions --pre --index-url https://test.pypi.org/simple/ galv)
           while true; do
             if [[ -z $PYTHON_VERSIONS | grep '$V[, \n] ]]; then
               break
