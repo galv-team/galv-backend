@@ -2,10 +2,10 @@
 # At the very least, it runs on any tag that ends -rc\d+
 # It will do the following:
 # 1. Destroy any existing stage backend and database.
-# 2. Create a fork of the BIL production database
-# (3. Rewrite all s3 bucket pointers in the stage database to point to the stage bucket)
-# 4. Deploy the stage backend using the :latest image
-# 5. Deploy the stage backend using the target image, which will run migrations etc.
+# 2. Deploy the minimum compatible version of the backend, if specified.
+# 3. Deploy the stage backend using the current image (i.e. upgrade)
+# 4. Run health checks against the backend.
+# 5. Destroy the stage backend to clean up resources.
 name: Stage Release
 on:
   workflow_dispatch:
@@ -45,7 +45,7 @@ permissions:
   id-token: write  # Needed for AWS authentication
 
 jobs:
-  recreate-fly-stage:
+  recreate-stage:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     concurrency: staging-group
