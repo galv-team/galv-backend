@@ -97,11 +97,12 @@ jobs:
           # Get the list of currently published versions from the test repository
           PYTHON_VERSIONS=$(pip index versions --pre --index-url https://test.pypi.org/simple/ galv)
           while true; do
-            if [[ -z $PYTHON_VERSIONS | grep '$V[, \n] ]]; then
+            if ! echo "$PYTHON_VERSIONS" | grep -qE "$V(,|\s|$)"; then
               break
             fi
+
             if [[ $V =~ dev[0-9]+$ ]]; then
-              V=$(echo $V | awk -F'dev' '{$NF = $NF + 1;} 1' | sed 's/ /dev/g')
+              V=$(echo "$V" | awk -F'dev' '{$NF = $NF + 1;} 1' | sed 's/ /dev/g')
             else
               V="${V}.dev0"
             fi
@@ -121,12 +122,14 @@ jobs:
 
           # Get the list of currently published versions
           NPM_VERSIONS=$(npm show @galv/galv versions --json)
+
           while true; do
-            if [[ -z $NPM_VERSIONS | grep '$V[, \n] ]]; then
+            if ! echo "$NPM_VERSIONS" | jq -e --arg v "$V" 'index($v)' > /dev/null; then
               break
             fi
-            if [[ $V =~ dev[0-9]+$ ]]; then
-              V=$(echo $V | awk -F'dev' '{$NF = $NF + 1;} 1' | sed 's/ /dev/g')
+
+            if [[ $V =~ -?dev[0-9]+$ ]]; then
+              V=$(echo "$V" | awk -F'dev' '{$NF = $NF + 1;} 1' | sed 's/ /dev/')
             else
               V="${V}-dev0"
             fi
