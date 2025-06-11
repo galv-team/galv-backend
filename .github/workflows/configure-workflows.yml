@@ -4,6 +4,8 @@ on:
   push:
     branches-ignore:
       - "noci/**"
+    tags:
+      - "**"
   workflow_dispatch:
     inputs:
       debug_enabled:
