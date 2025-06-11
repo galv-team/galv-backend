@@ -116,7 +116,7 @@ jobs:
 
           # Real releases always use the clean tag version
           if [[ "${{ inputs.dry_run }}" == "false" ]]; then
-              echo NPM_VERSION=$V" >> $GITHUB_ENV
+              echo "NPM_VERSION=$V" >> $GITHUB_ENV
               exit 0
           fi
 
