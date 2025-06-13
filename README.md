@@ -152,10 +152,7 @@ This deployment will run the migrations, etc. so we can detect if something is l
 
 #### Demo version
 
-The `demo` instance is published every week.
-It will use the `DEMO_BACKEND_VERSION` listed in `.github/workflows/demo.yml` as the version to deploy.
-
-You can also trigger the workflow manually, or by pushing a commit that updates the demo version in the demo workflow file.
+The `demo` instance is published every week, and with every release.
 
 ### GitHub Actions
 

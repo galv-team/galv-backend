@@ -50,7 +50,6 @@ jobs:
       IS_MAJOR_VERSION: ${{ steps.previous_versions.outputs.IS_MAJOR_VERSION }}
       DOCS_CHANGED: ${{ steps.check_content_changes.outputs.DOCS_CHANGED }}
       BACKEND_CHANGED: ${{ steps.check_content_changes.outputs.BACKEND_CHANGED }}
-      DEMO_UPDATE: ${{ steps.check_content_changes.outputs.DEMO_UPDATE }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -220,15 +219,6 @@ jobs:
               echo "BACKEND_CHANGED=true" >> $GITHUB_OUTPUT
           fi
 
-          # Check if the demo instance workflow has been changed
-          if [[ -z $(git diff $PREVIOUS_VERSION -- .github/workflows/demo.yml | grep DEMO_BACKEND_VERSION) ]]; then
-              echo "No changes to DEMO_BACKEND_VERSION detected"
-              echo "DEMO_UPDATE=false" >> $GITHUB_OUTPUT
-          else
-              echo "Changes to DEMO_BACKEND_VERSION detected"
-              echo "DEMO_UPDATE=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Print summary
         run: |
           echo "API_VERSION=${{ steps.current_version.outputs.API_VERSION }}" > summary.txt
@@ -245,7 +235,6 @@ jobs:
           echo "IS_MAJOR_VERSION=${{ steps.previous_versions.outputs.IS_MAJOR_VERSION }}" >> summary.txt
           echo "DOCS_CHANGED=${{ steps.check_content_changes.outputs.DOCS_CHANGED }}" >> summary.txt
           echo "BACKEND_CHANGED=${{ steps.check_content_changes.outputs.BACKEND_CHANGED }}" >> summary.txt
-          echo "DEMO_UPDATE=${{ steps.check_content_changes.outputs.DEMO_UPDATE }}" >> summary.txt
           cat summary.txt
 
       - name: Upload version outputs
@@ -632,7 +621,7 @@ jobs:
     needs:
       - version
       - docker  # in case the backend is targeting the latest version
-    if: needs.version.outputs.DEMO_UPDATE == 'true'
+    if: needs.version.outputs.IS_RELEASE == 'true' && needs.version.outputs.IS_LATEST == 'true'
     uses: ./.github/workflows/update-demo.yml
     with:
       backend_version: ${{ needs.version.outputs.VERSION }}
