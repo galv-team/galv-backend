@@ -128,10 +128,21 @@ When you make a change, you should update the `API_VERSION` in `galv_backend/con
 
 If you update the documentation, you should also update the `release` version in `docs/source/conf.py` and add the new version tag to `docs/tags.json`.
 
-These versions should all use clean SemVer versioning, i.e. `v*.*.*`.
+These versions should all use clean SemVer versioning, i.e. `v*.*.*`, where the *s represent the major, minor, and patch versions respectively.
 
 Published versions should be released incrementally.
-**The Actions workflows will assume there exists a clean version tag for each release, e.g. v1.2.3-rc4 will assume v1.2.2 exists.**
+
+#### Compatibility checks
+
+New versions of the API should be compatible with the previous version.
+If this is not the case, you should increment the major version number.
+
+The CI workflow will check for compatibility issues in the OpenAPI spec by comparing the current version of the spec
+with the first version of the current major version.
+
+Compatibility checking is done for both the OpenAPI specification and the database schema.
+The OpenAPI spec is checked using the `check_spec` container, which runs the `openapi-diff` tool.
+The database schema is checked using Django's built-in migration system during staging deployments (versions ending with `-rc#`).
 
 ### Tagged releases
 
@@ -175,7 +186,7 @@ A. changes in `backend_django`, or other code files like `requirements.txt` or `
 B. changes in `docs`
 C. B & changes to the OpenAPI spec (i.e. the specifications are not equivalent)
 D. tags that match `v*.*.*-rc#`
-E. changes to the `DEMO_BACKEND_VERSION` in `.github/workflows/demo.yml`
+E. if the tag is the `latest` release version
 
 N.B. Changes are calculated vs _the previous release_, not the previous commit.
 
@@ -201,26 +212,10 @@ cp my_spec.json .dev/spec
 docker-compose run --rm -e REMOTE_SPEC_SOURCE=/spec/my_spec.json check_spec
 ```
 
-## Releasing with Fly.io
+## Releasing with AWS
 
-We use Fly.io to host a few instances.
-The configuration files are `fly.*.toml` in the root of the repository.
-To deploy to Fly.io, you will need to install the Fly CLI and authenticate.
-Once done, use `fly deploy --app <app-name> --config <config-file>` to deploy.
-E.g. for the Battery Intelligence Lab staging instance, we would use:
-```bash
-fly deploy --app galv-stage-backend --config fly.stage.toml
-```
+We use AWS (Amazon Web Services) to host a few instances.
+There is a [repository](https://github.com/galv-team/galv-aws-cdk) that contains the AWS Cloud Development Kit (CDK) code to deploy the Galv backend to AWS.
+The workflows for the staging and demo instances use this CDK code to deploy the Galv backend to AWS.
 
-You'll have to create and attach the Postgres DB to the app manually.
-
-```bash
-fly postgres create --name <app-name>-db --org <org-name-if-applicable> --vm-size shared-cpu-2x
-fly postgres attach <app-name>-db --app <app-name>
-```
-
-Attaching will set the `DATABASE_URL` environment variable in the app to the connection string for the database.
-It gets set as a secret so it's not visible in the logs.
-
-You may need to set other secrets using `fly secrets set --app <app-name> --config <config-file> <SECRET_NAME>=<SECRET_VALUE>`
-if you're using AWS S3 for storage, etc.
+To perform a manual deployment to AWS, please follow the instructions in the CDK repository.
