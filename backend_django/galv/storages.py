@@ -16,6 +16,7 @@ class StaticStorage(S3Boto3Storage):
     querystring_auth = False
 
     def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         bucket_name = os.environ.get("DJANGO_STATIC_FILES_BUCKET_NAME")
         if bucket_name is not None:
             self.bucket_name = bucket_name
