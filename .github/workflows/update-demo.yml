@@ -125,7 +125,7 @@ jobs:
           cdk deploy \
             --require-approval never \
             --context backendVersion=$BACKEND_REF \
-            --all #galv-demo-BackendStack
+            galv-demo-BackendStack
 
       - name: Get backend healthcheck content
         run: |
