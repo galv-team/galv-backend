@@ -146,7 +146,7 @@ import logging
 from .storages import LocalDataStorage
 
 logger = logging.getLogger(__name__)
-# logger.addHandler(logging.StreamHandler())
+logger.addHandler(logging.StreamHandler())
 
 
 GENERATE_HARVESTER_API_SCHEMA = (
@@ -297,11 +297,6 @@ class _GetOrCreateTextStringViewSet(
 @api_view(("GET",))
 @renderer_classes((JSONRenderer,))
 def health_check(request):
-    logger.info(
-        "Health check request: method=%s, headers=%s",
-        request.method,
-        dict(request.headers),
-    )
     return Response({"status": "ok", "galv_version": settings.API_VERSION})
 
 
