@@ -667,8 +667,9 @@ class AdditionalS3StorageType(_StorageType):
         null=True, blank=True, help_text="Name of the S3 bucket to store files in"
     )
     location = models.TextField(
-        null=True,
-        blank=True,
+        null=False,
+        blank=False,
+        default="/",
         help_text="Directory within the S3 bucket to store files in",
     )
     access_key = models.TextField(
