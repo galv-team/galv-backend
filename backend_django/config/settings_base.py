@@ -29,7 +29,10 @@ USER_ACTIVATION_OVERRIDE_ADDRESSES = os.environ.get(
     "DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES", ""
 ).split(",")
 
-if len(USER_ACTIVATION_OVERRIDE_ADDRESSES) == 0:
+if (
+    len(USER_ACTIVATION_OVERRIDE_ADDRESSES) == 0
+    or USER_ACTIVATION_OVERRIDE_ADDRESSES[0] == ""
+):
     USER_ACTIVATION_OVERRIDE_ADDRESSES = None
 
 try:
@@ -260,7 +263,6 @@ LOGGING = {
     "handlers": {
         "console": {
             "level": "INFO",
-            "filters": ["require_debug_true"],
             "class": "logging.StreamHandler",
             "formatter": "simple",
         },
