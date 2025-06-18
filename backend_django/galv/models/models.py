@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
+import logging
 import os
 import re
 
@@ -43,6 +44,8 @@ from .autocomplete_entries import (
 )
 from ..fields import LabDependentStorageFileField
 from ..storages import LocalDataStorage, S3DataStorage
+
+logger = logging.getLogger(__file__)
 
 ALLOWED_USER_LEVELS_DELETE = [
     UserLevel(v) for v in [UserLevel.TEAM_ADMIN, UserLevel.TEAM_MEMBER]
@@ -1645,8 +1648,12 @@ class ObservedFile(
                 )
         super(ObservedFile, self).save(force_insert, force_update, using, update_fields)
 
-    def delete(self, using=None, keep_parents=False):
-        self.png.delete()
+    def delete(self, using=None, keep_parents=False, delete_png=True):
+        if delete_png and self.png:
+            try:
+                self.png.delete()
+            except Exception as e:
+                logger.warning(f"Failed to delete PNG for {self.path}: {e}")
         super(ObservedFile, self).delete(using, keep_parents)
 
     def __str__(self):
