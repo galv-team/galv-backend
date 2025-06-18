@@ -23,7 +23,7 @@ from csp.constants import SELF
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
 
-API_VERSION = "2.12.0"
+API_VERSION = "3.0.0"
 
 USER_ACTIVATION_OVERRIDE_ADDRESSES = os.environ.get(
     "DJANGO_USER_ACTIVATION_OVERRIDE_ADDRESSES", ""
