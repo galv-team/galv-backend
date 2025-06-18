@@ -590,7 +590,7 @@ jobs:
     if: needs.version.outputs.BACKEND_CHANGED == 'true'
     uses: ./.github/workflows/docker-image.yml
     with:
-      dry_run: ${{ needs.version.outputs.IS_RELEASE != 'true' }}
+      dry_run: ${{ needs.version.outputs.IS_RELEASE != 'true' && needs.version.outputs.IS_STAGE != 'true' }}
       is_latest: ${{ needs.version.outputs.IS_LATEST == 'true' }}
     secrets: inherit
 
