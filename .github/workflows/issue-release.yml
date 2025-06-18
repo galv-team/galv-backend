@@ -1,4 +1,4 @@
-name: Docker image
+name: Issue release
 
 on:
   workflow_call:
