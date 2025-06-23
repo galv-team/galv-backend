@@ -16,7 +16,6 @@ from .utils import assert_response_property, GalvTestCase
 from .factories import (
     HarvesterFactory,
     MonitoredPathFactory,
-    ParquetPartitionFactory,
     fake,
     ObservedFileFactory,
 )
@@ -320,8 +319,6 @@ class HarvesterTests(GalvTestCase):
     def test_report(self, *args):
         mp = MonitoredPathFactory.create(harvester=self.harvester)
         f = ObservedFileFactory.create(path="/a/b/c/d.ext", harvester=self.harvester)
-        for i in range(3):
-            ParquetPartitionFactory.create(observed_file=f, partition_number=i)
         self.client._credentials = {
             "HTTP_AUTHORIZATION": f"Harvester {self.harvester.api_key}"
         }
@@ -634,10 +631,8 @@ class HarvesterTests(GalvTestCase):
                 "task": settings.HARVESTER_TASK_IMPORT,
                 "stage": settings.HARVEST_STAGE_UPLOAD_PARQUET,
                 "total_row_count": 500,
-                "partition_number": 0,
-                "partition_count": 1,
-                "filename": "filename.part0.parquet",
-                "parquet_file": tempfile.TemporaryFile(),
+                "filename": "data.zip",
+                "zip_file": tempfile.TemporaryFile(),
             },
             format="multipart",
         )
@@ -663,10 +658,8 @@ class HarvesterTests(GalvTestCase):
                     "task": settings.HARVESTER_TASK_IMPORT,
                     "stage": settings.HARVEST_STAGE_UPLOAD_PARQUET,
                     "total_row_count": 500,
-                    "partition_number": 0,
-                    "partition_count": 1,
-                    "filename": "filename.part0.parquet",
-                    "parquet_file": TemporaryUploadedFile(
+                    "filename": "data.zip",
+                    "zip_file": TemporaryUploadedFile(
                         name=fake.file_name(),
                         content_type="application/octet-stream",
                         size=100_000,

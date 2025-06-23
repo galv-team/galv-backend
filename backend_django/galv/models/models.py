@@ -17,6 +17,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User, Group, AnonymousUser
+from rest_framework.reverse import reverse
 import random
 from jsonschema.exceptions import _WrappedReferencingError
 from rest_framework import serializers
@@ -521,11 +522,6 @@ class _StorageType(UUIDModel):
         content_type_field="_storage_content_type",
         object_id_field="_storage_object_id",
     )
-    parquet_partitions = GenericRelation(
-        to="ParquetPartition",
-        content_type_field="_storage_content_type",
-        object_id_field="_storage_object_id",
-    )
     arbitrary_files = GenericRelation(
         to="ArbitraryFile",
         content_type_field="_storage_content_type",
@@ -541,7 +537,6 @@ class _StorageType(UUIDModel):
         """
         total = (
             self.files.aggregate(x=Sum("bytes_required", default=0))["x"]
-            + self.parquet_partitions.aggregate(x=Sum("bytes_required", default=0))["x"]
             + self.arbitrary_files.aggregate(x=Sum("bytes_required", default=0))["x"]
         )
         if instance:
@@ -1517,11 +1512,21 @@ class ObservedFile(
     png = LabDependentStorageFileField(
         null=True, blank=True, help_text="Preview image of the file"
     )
+    zip_file = LabDependentStorageFileField(
+        null=True, blank=True, help_text="Zipped CSV data"
+    )
 
     view_name = "observedfile-png"
     special_dump_fields = {
         **_StorageTypeConsumerModel.special_dump_fields,
         "png": lambda f, _m, _r, _s: f.url or "Not uploaded",
+        "zip_file": lambda f, m, r, s: reverse(
+            "observedfile-zip",
+            args=[m.pk],
+            request=r,
+        )
+        if f
+        else "Not uploaded",
         "summary": None,
     }
 
@@ -1654,6 +1659,11 @@ class ObservedFile(
                 self.png.delete()
             except Exception as e:
                 logger.warning(f"Failed to delete PNG for {self.path}: {e}")
+        if self.zip_file:
+            try:
+                self.zip_file.delete()
+            except Exception as e:
+                logger.warning(f"Failed to delete zip for {self.path}: {e}")
         super(ObservedFile, self).delete(using, keep_parents)
 
     def __str__(self):
@@ -2235,61 +2245,3 @@ class ArbitraryFile(_StorageTypeConsumerModel, ResourceModelPermissionsMixin):
         unique_together = [["name", "team"], ["file", "team"]]
 
 
-class ParquetPartition(_StorageTypeConsumerModel):
-    """
-    A datafile partition in .parquet format.
-    Part of an ObservedFile's source datafile.
-    Either saved locally as a LocalParquetPartition, or saved in S3 as an S3ParquetPartition.
-    """
-
-    observed_file = models.ForeignKey(
-        to=ObservedFile,
-        on_delete=models.CASCADE,
-        null=False,
-        help_text="ObservedFile containing this partition",
-        related_name="parquet_partitions",
-    )
-    parquet_file = LabDependentStorageFileField(
-        null=True, blank=True, help_text="Parquet file"
-    )
-    partition_number = models.PositiveIntegerField(
-        null=False, help_text="Partition number"
-    )
-    upload_errors = models.JSONField(
-        null=False, default=list, help_text="Upload errors"
-    )
-
-    view_name = "parquetpartition-file"
-    special_dump_fields = {
-        **_StorageTypeConsumerModel.special_dump_fields,
-        "parquet_file": lambda f, _m, _r, _s: f.url if f else "Not uploaded",
-    }
-
-    def _get_lab(self):
-        return self.observed_file.get_lab()
-
-    @staticmethod
-    def has_read_permission(request):
-        return True
-
-    @staticmethod
-    def has_write_permission(request):
-        return True
-
-    @staticmethod
-    def has_create_permission(request):
-        return False
-
-    def has_object_read_permission(self, request):
-        return self.observed_file.has_object_read_permission(request)
-
-    def has_object_write_permission(self, request):
-        return self.observed_file.has_object_write_permission(request)
-
-    @property
-    def uploaded(self) -> bool:
-        return self.parquet_file is not None
-
-    def delete(self, using=None, keep_parents=False):
-        self.parquet_file.delete()
-        super(ParquetPartition, self).delete(using, keep_parents)

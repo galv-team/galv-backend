@@ -49,7 +49,6 @@ from .serializers import (
     SchemaValidationSerializer,
     ArbitraryFileSerializer,
     ArbitraryFileCreateSerializer,
-    ParquetPartitionSerializer,
     ColumnMappingSerializer,
     GalvStorageTypeSerializer,
     AdditionalS3StorageTypeSerializer,
@@ -93,7 +92,6 @@ from .models import (
     ALLOWED_USER_LEVELS_DELETE,
     ALLOWED_USER_LEVELS_EDIT_PATH,
     ArbitraryFile,
-    ParquetPartition,
     StorageError,
     ColumnMapping,
     GalvStorageType,
@@ -109,7 +107,6 @@ from .permissions import (
     ObservedFileFilterBackend,
     UserFilterBackend,
     SchemaValidationFilterBackend,
-    ParquetPartitionFilterBackend,
     LabResourceFilterBackend,
 )
 from .serializers.utils import (
@@ -963,11 +960,9 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
 
         A representation of the file will be returned.
 
-        If the stage is 'upload parquet partitions', the data must include 'row_count', 'partition_count',
-        and 'partition_number' fields describing the total rows in the dataset (derived by inspecting the parquet
-         object), the number of parquet partitions into which it is split, and the number of the current partition.
-        A file must also be uploaded as a form data field named 'file'.
-        The response will be the serialized ParquetPartition object created in response.
+        If the stage is 'upload parquet partitions', a single ``zip_file`` containing CSV data must be uploaded
+        alongside ``row_count`` describing the number of rows in the dataset.  The server will store the uploaded
+        zip file against the ``ObservedFile`` instance and return a representation of that file.
 
         If the stage is 'upload complete', the data must include 'successes',
         the number of successful partition uploads, and errors, a list of errors encountered while uploading.
@@ -1121,63 +1116,26 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
             def handle_upload_parquets(file, data, request):
                 try:
                     file.num_rows = data["total_row_count"]
-                    file.num_partitions = data["partition_count"]
                     file.state = FileState.IMPORTING
                     file.save()
-                    upload = request.FILES.get("parquet_file")
-                    try:
-                        # Before we delete the old partition, check we have storage for the new one
-                        partition = ParquetPartition.objects.get(
-                            observed_file=file,
-                            partition_number=data["partition_number"],
-                        )
-                        old_size = partition.bytes_required
-                        try:
-                            partition.bytes_required = upload.size
-                            partition.save()
-                            partition.get_storage(True)
-                        except StorageError as e:
-                            partition.bytes_required = old_size
-                            partition.save()
-                            file.state = FileState.AWAITING_STORAGE
-                            file.save()
-                            return error_response(
-                                f"Error updating parquet file: {e}", status=507
-                            )
-                        partition.delete()
-                    except ParquetPartition.DoesNotExist:
-                        pass
-
-                    partition = ParquetPartition.objects.create(
-                        observed_file=file,
-                        partition_number=data["partition_number"],
-                        bytes_required=upload.size,
-                    )
-                    partition.parquet_file = upload
-                    partition.save()
+                    upload = request.FILES.get("zip_file")
+                    file.bytes_required = upload.size
+                    file.zip_file = upload
+                    file.save()
                 except StorageError as e:
                     file.state = FileState.AWAITING_STORAGE
                     file.save()
                     return error_response(
-                        f"Error uploading parquet file to storage: {e}", status=507
+                        f"Error uploading zip file to storage: {e}", status=507
                     )
                 except Exception as e:
-                    return error_response(f"Error creating Parquet Partition: {e}")
+                    return error_response(f"Error uploading zip file: {e}")
                 return Response(
-                    ParquetPartitionSerializer(
-                        partition, context={"request": request}
-                    ).data
+                    ObservedFileSerializer(file, context={"request": request}).data
                 )
 
             def handle_upload_complete(file, data):
-                file.successful_uploads = data["successes"]
-                errors = data.get("errors", {})
-                for i, e in errors.items():
-                    pq = ParquetPartition.objects.get(
-                        observed_file=file, partition_number=i
-                    )
-                    pq.upload_errors.append(e)
-                    pq.save()
+                file.successful_uploads = data.get("successes", 1)
 
             def handle_upload_png(file, _, request):
                 upload = request.FILES.get("png_file")
@@ -1226,9 +1184,7 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                     elif stage == settings.HARVEST_STAGE_DATA_SUMMARY:
                         handle_data_summary(file, data, request)
                     elif stage == settings.HARVEST_STAGE_UPLOAD_PARQUET:
-                        return handle_upload_parquets(
-                            file, data, request
-                        )  # return because we return the ParquetPartition
+                        return handle_upload_parquets(file, data, request)
                     elif stage == settings.HARVEST_STAGE_UPLOAD_COMPLETE:
                         handle_upload_complete(file, data)
                     elif stage == settings.HARVEST_STAGE_UPLOAD_PNG:
@@ -1493,8 +1449,8 @@ class ObservedFileViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
         if file.png is not None:
             file.png.delete()
         file.save()
-        for dataset in file.parquet_partitions.all():
-            dataset.delete()
+        if file.zip_file is not None:
+            file.zip_file.delete()
         return Response(self.get_serializer(file, context={"request": request}).data)
 
     @action(detail=True, methods=["GET"])
@@ -1546,6 +1502,23 @@ class ObservedFileViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
             },
         )
 
+    @action(detail=True, methods=["GET"])
+    def zip(self, request, pk=None):
+        try:
+            file = self.queryset.get(id=pk)
+        except ObservedFile.DoesNotExist:
+            return error_response("Requested file not found")
+        self.check_object_permissions(self.request, file)
+        return lab_dependent_file_fetcher(
+            file,
+            "zip_file",
+            request,
+            lambda f: {
+                "Content-Disposition": f'inline; filename="{file.path.split("/")[-1]}.zip"',
+                "Content-Type": "application/zip",
+            },
+        )
+
 
 class ColumnMappingViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     permission_classes = [DRYPermissions]
@@ -1588,40 +1561,6 @@ Download a file from the API.
         responses={200: OpenApiTypes.BINARY},
     )
 )
-class ParquetPartitionViewSet(DescribeSelfMixin, viewsets.ReadOnlyModelViewSet):
-    permission_classes = [DRYPermissions]
-    filter_backends = [
-        ParquetPartitionFilterBackend,
-        DjangoFilterBackend,
-        SearchFilter,
-        OrderingFilter,
-    ]
-    filter_fields = ["observed_file__id", "observed_file__path"]
-    search_fields = ["@observed_file__path"]
-    serializer_class = ParquetPartitionSerializer
-    queryset = ParquetPartition.objects.all().order_by(
-        "-observed_file__id", "partition_number"
-    )
-
-    @action(detail=True, methods=["GET"])
-    def file(self, request, pk=None):
-        try:
-            partition = self.queryset.get(id=pk)
-        except ParquetPartition.DoesNotExist:
-            return error_response("Requested partition not found")
-        self.check_object_permissions(self.request, partition)
-        return lab_dependent_file_fetcher(
-            partition,
-            "parquet_file",
-            request,
-            lambda f: {
-                "Content-Disposition": (
-                    f"inline; "
-                    f'filename="{partition.observed_file.path.split("/")[-1]}.{partition.partition_number}.parquet"'
-                ),
-                "Content-Type": "application/octet-stream",
-            },
-        )
 
 
 @extend_schema_view(
@@ -2592,7 +2531,7 @@ class ArbitraryFileViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     def file(self, request, pk=None):
         try:
             arbitrary_file = self.queryset.get(id=pk)
-        except ParquetPartition.DoesNotExist:
+        except ArbitraryFile.DoesNotExist:
             return error_response("Requested file not found")
         self.check_object_permissions(self.request, arbitrary_file)
         return lab_dependent_file_fetcher(arbitrary_file, "file", request)

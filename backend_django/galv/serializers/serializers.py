@@ -1467,7 +1467,7 @@ class CyclerTestSerializer(
     )
     files = TruncatedHyperlinkedRelatedIdField(
         "ObservedFileSerializer",
-        ["name", "path", "parquet_partitions", "png"],
+        ["name", "path", "zip_file", "png"],
         "observedfile-detail",
         queryset=ObservedFile.objects.all(),
         many=True,
@@ -1973,16 +1973,7 @@ class ParquetPartitionSerializer(
                     "Missing required column: Current_A",
                 ],
                 "upload_errors": [],
-                "parquet_partitions": [
-                    {
-                        "upload_errors": [],
-                        "url": "http://localhost:8001/parquet_partitions/359e1a24-6d7f-4aaa-adc2-2a9d8a8c7c48/",
-                        "partition_number": 0,
-                        "id": "359e1a24-6d7f-4aaa-adc2-2a9d8a8c7c48",
-                        "parquet_file": "http://localhost:8001/parquet_partitions/359e1a24-6d7f-4aaa-adc2-2a9d8a8c7c48/file/",
-                        "uploaded": True,
-                    }
-                ],
+                "zip_file": "http://localhost:8001/observed_files/1234/zip/",
                 "columns": [
                     {
                         "name": "column_0",
@@ -2029,14 +2020,6 @@ class ParquetPartitionSerializer(
 class ObservedFileSerializer(
     serializers.HyperlinkedModelSerializer, WithTeamMixin, PermissionsMixin
 ):
-    parquet_partitions = TruncatedHyperlinkedRelatedIdField(
-        "ParquetPartitionSerializer",
-        ["parquet_file", "partition_number", "uploaded", "upload_errors"],
-        "parquetpartition-detail",
-        read_only=True,
-        many=True,
-        help_text="Parquet partitions of this File",
-    )
     mapping = TruncatedHyperlinkedRelatedIdField(
         "ColumnMappingSerializer",
         ["name", "is_valid"],
@@ -2060,6 +2043,9 @@ class ObservedFileSerializer(
     summary = serializers.SerializerMethodField(
         help_text="First few rows of this file's data"
     )
+    zip_file = serializers.SerializerMethodField(
+        help_text="URL to zipped CSV data"
+    )
 
     def get_applicable_mappings(self, instance) -> str:
         return reverse(
@@ -2078,6 +2064,15 @@ class ObservedFileSerializer(
     def get_summary(self, instance) -> str:
         return reverse(
             "observedfile-summary",
+            args=[instance.pk],
+            request=self.context.get("request"),
+        )
+
+    def get_zip_file(self, instance) -> str | None:
+        if not instance.zip_file:
+            return None
+        return reverse(
+            "observedfile-zip",
             args=[instance.pk],
             request=self.context.get("request"),
         )
@@ -2102,7 +2097,7 @@ class ObservedFileSerializer(
             "last_observed_size_bytes",
             "mapping",
             "has_required_columns",
-            "parquet_partitions",
+            "zip_file",
             "extra_metadata",
             "summary",
             "png",
@@ -2137,7 +2132,7 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
     file = serializers.FileField(write_only=True, help_text="File to upload")
     target_file_id = TruncatedHyperlinkedRelatedIdField(
         "ObservedFileSerializer",
-        ["name", "path", "parquet_partitions", "png"],
+        ["name", "path", "zip_file", "png"],
         "observedfile-detail",
         queryset=ObservedFile.objects.all(),
         help_text="ID of the ObservedFile to complete creation of",
@@ -2301,20 +2296,14 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
                     mapping, context=self.context
                 ).data.get("rendered_map")
                 harvester.process_data()
-                # Delete any existing partitions
-                observed_file.parquet_partitions.all().delete()
-                # Save parquet partitions to storage
-                d, _, partitions = list(os.walk(harvester.data_file_name))[0]
-                for i, name in enumerate([os.path.join(d, p) for p in partitions]):
-                    if name.endswith(".parquet"):
-                        ParquetPartition.objects.create(
-                            observed_file=observed_file,
-                            partition_number=i,
-                            bytes_required=Path(name).stat().st_size,
-                            parquet_file=File(
-                                file=open(name, "rb"), name=os.path.basename(name)
-                            ),
-                        )
+                try:
+                    observed_file.zip_file = File(
+                        file=open(harvester.data_file_name, "rb"),
+                        name=os.path.basename(harvester.data_file_name),
+                    )
+                except FileNotFoundError:
+                    logger.exception("Error saving zipped data")
+                    raise
                 try:
                     observed_file.png = File(
                         file=open(harvester.png_file_name, "rb"),

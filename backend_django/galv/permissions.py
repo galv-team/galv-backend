@@ -91,23 +91,6 @@ class UserFilterBackend(DRYPermissionFiltersBase):
         return queryset.filter(pk__in=[u.pk for u in users_to_return])
 
 
-class ParquetPartitionFilterBackend(DRYPermissionFiltersBase):
-    action_routing = True
-
-    def filter_list_queryset(self, request, queryset, view):
-        return queryset.filter(
-            Q(
-                observed_file__monitored_paths__team__pk__in=get_user_auth_details(
-                    request
-                ).team_ids
-            )
-            | Q(
-                observed_file__read_access_level__in=[
-                    UserLevel.REGISTERED_USER.value,
-                    UserLevel.ANONYMOUS.value,
-                ]
-            )
-        )
 
 
 class ResourceFilterBackend(DRYPermissionFiltersBase):

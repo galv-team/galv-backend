@@ -39,7 +39,6 @@ from ..models import (
     Team,
     DataUnit,
     DataColumnType,
-    ParquetPartition,
     ColumnMapping,
     GalvStorageType,
     AdditionalS3StorageType,
@@ -333,19 +332,6 @@ class ObservedFileFactory(DjangoModelFactory):
     mapping = factory.SubFactory(ColumnMappingFactory)
     storage_type = factory.SubFactory(
         GalvStorageTypeFactory, lab=factory.SelfAttribute("..harvester.lab")
-    )
-
-
-class ParquetPartitionFactory(DjangoModelFactory):
-    class Meta:
-        model = ParquetPartition
-        django_get_or_create = ("observed_file", "partition_number")
-
-    observed_file = factory.SubFactory(ObservedFileFactory)
-    partition_number = factory.Faker("random_int", min=1, max=1000000)
-    storage_type = factory.SubFactory(
-        GalvStorageTypeFactory,
-        lab=factory.SelfAttribute("..observed_file.harvester.lab"),
     )
 
 
