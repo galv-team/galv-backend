@@ -1396,7 +1396,7 @@ harvester program to rerun the import process when it next scans the file.
 *Note*: This request may be overwritten if the file changes size before it is next scanned.
         """,
     ),
-    file=extend_schema(
+    zip=extend_schema(
         summary="Download file data as zipped CSV",
         description="""
 Download a file from the API. It will be returned as a zipped CSV file.
