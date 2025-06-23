@@ -510,7 +510,9 @@ class _StorageType(UUIDModel):
     enabled = models.BooleanField(
         default=True, help_text="Whether this storage type is enabled for writing to"
     )
-    quota_bytes = models.BigIntegerField(help_text="Maximum storage capacity in bytes")
+    quota_bytes = models.BigIntegerField(
+        help_text="Maximum storage capacity in bytes. 0 is unlimited"
+    )
     priority = models.SmallIntegerField(
         default=0,
         help_text="Priority for storage allocation. Higher values are higher priority.",
@@ -536,11 +538,12 @@ class _StorageType(UUIDModel):
             - [instance]: the instance that is being written to or read from storage
         """
         total = (
-            self.files.aggregate(x=Sum("bytes_required", default=0))["x"]
-            + self.arbitrary_files.aggregate(x=Sum("bytes_required", default=0))["x"]
+            self.files.aggregate(x=Sum("png_size", default=0))["x"]
+            + self.files.aggregate(x=Sum("zip_size", default=0))["x"]
+            + +self.arbitrary_files.aggregate(x=Sum("bytes_required", default=0))["x"]
         )
         if instance:
-            return total - (instance.bytes_required or 0)
+            return min(total - (instance.bytes_required or 0), 0)
         return total
 
     def get_storage(self, instance, adding=False) -> Storage:
@@ -615,7 +618,7 @@ class GalvStorageType(_StorageType):
         # This also means that storage quotas are not enforced for file edits.
         # To avoid this issue, we ensure that all consumers of the storage type
         # disallow editing of files.
-        # ParquetPartitions are never edited - if they change they are destroyed and recreated
+        # Zip files are never edited - if they change they are destroyed and recreated
         # PNG previews for ObservedFiles have a hard limit on size in the settings
         # ArbitraryFiles cannot be edited, only created or deleted
         if adding:
@@ -623,7 +626,7 @@ class GalvStorageType(_StorageType):
                 raise StorageLockedError(
                     f"Cannot save data: storage is locked for {self}"
                 )
-            if (
+            if self.quota_bytes != 0 and (
                 self.get_bytes_used(instance) + instance.bytes_required
                 >= self.quota_bytes
             ):
@@ -691,7 +694,7 @@ class AdditionalS3StorageType(_StorageType):
                 raise StorageLockedError(
                     f"Cannot save data: storage is locked for {self}"
                 )
-            if (
+            if self.quota_bytes != 0 and (
                 self.get_bytes_used(instance) + instance.bytes_required
                 >= self.quota_bytes
             ):
@@ -1480,9 +1483,6 @@ class ObservedFile(
     num_rows = models.PositiveIntegerField(
         null=True, help_text="Number of rows in the file"
     )
-    num_partitions = models.PositiveIntegerField(
-        null=True, help_text="Number of partitions in the file's parquet format"
-    )
     first_sample_no = models.PositiveIntegerField(
         null=True, help_text="Number of the first sample in the file"
     )
@@ -1513,8 +1513,18 @@ class ObservedFile(
         null=True, blank=True, help_text="Preview image of the file"
     )
     zip_file = LabDependentStorageFileField(
-        null=True, blank=True, help_text="Zipped CSV data"
+        null=True, blank=True, help_text="Zipped CSV data", default=None
     )
+
+    png_size = models.PositiveBigIntegerField(default=settings.MAX_PNG_PREVIEW_SIZE)
+    zip_size = models.PositiveBigIntegerField(default=0)
+
+    @property
+    def bytes_required(self) -> int:
+        """
+        Return the total size of the file and the PNG, if it exists.
+        """
+        return self.png_size + self.zip_size
 
     view_name = "observedfile-png"
     special_dump_fields = {
@@ -1540,10 +1550,6 @@ class ObservedFile(
         if self.harvester is not None:
             return self.harvester.lab
         return self.team.lab
-
-    # Expose get_lab as public so it can be retrieved in ParquetPartition
-    def get_lab(self):
-        return self._get_lab()
 
     @property
     def has_required_columns(self) -> bool:
@@ -1653,17 +1659,18 @@ class ObservedFile(
                 )
         super(ObservedFile, self).save(force_insert, force_update, using, update_fields)
 
-    def delete(self, using=None, keep_parents=False, delete_png=True):
-        if delete_png and self.png:
-            try:
-                self.png.delete()
-            except Exception as e:
-                logger.warning(f"Failed to delete PNG for {self.path}: {e}")
-        if self.zip_file:
-            try:
-                self.zip_file.delete()
-            except Exception as e:
-                logger.warning(f"Failed to delete zip for {self.path}: {e}")
+    def delete(self, using=None, keep_parents=False, delete_actual_files=True):
+        if delete_actual_files:
+            if self.png:
+                try:
+                    self.png.delete()
+                except Exception as e:
+                    logger.warning(f"Failed to delete PNG for {self.path}: {e}")
+            if self.zip_file:
+                try:
+                    self.zip_file.delete()
+                except Exception as e:
+                    logger.warning(f"Failed to delete zip for {self.path}: {e}")
         super(ObservedFile, self).delete(using, keep_parents)
 
     def __str__(self):
@@ -1806,11 +1813,12 @@ class MonitoredPath(UUIDModel, ResourceModelPermissionsMixin):
         help_text="Number of seconds files must remain stable to be processed",
     )
     max_partition_line_count = models.PositiveIntegerField(
-        default=100_000,
+        default=1_000_000,
         help_text=(
-            "Maximum number of lines per parquet partition. "
+            "Maximum number of lines per csv file. "
             "If your data are very wide, select a lower number. "
-            "For data with < 50 columns or so, 100,000 is a good starting point."
+            "For data with < 50 columns or so, "
+            "1_000,000 is a good starting point because it's close to the maximum number of rows supported by Excel."
         ),
     )
     active = models.BooleanField(default=True, null=False)

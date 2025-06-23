@@ -934,7 +934,7 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
         The stage field can be one of:
         - * file metadata: The harvester is beginning an import.
         - * column metadata: The harvester is reporting progress on an import.
-        - * upload parquet partitions: The harvester is uploading datafiles.
+        - * upload data: The harvester is uploading datafiles.
         - * upload complete: The harvester has completed uploading files.
         - harvest complete: The harvester has completed an import.
         - harvest failed: The harvester has failed to import a file.
@@ -960,7 +960,7 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
 
         A representation of the file will be returned.
 
-        If the stage is 'upload parquet partitions', a single ``zip_file`` containing CSV data must be uploaded
+        If the stage is 'upload data', a single ``zip_file`` containing CSV data must be uploaded
         alongside ``row_count`` describing the number of rows in the dataset.  The server will store the uploaded
         zip file against the ``ObservedFile`` instance and return a representation of that file.
 
@@ -1113,14 +1113,18 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                             return
                 file.state = FileState.AWAITING_MAP_ASSIGNMENT
 
-            def handle_upload_parquets(file, data, request):
+            def handle_upload_zip(file, data, request):
                 try:
                     file.num_rows = data["total_row_count"]
                     file.state = FileState.IMPORTING
                     file.save()
                     upload = request.FILES.get("zip_file")
-                    file.bytes_required = upload.size
+                    file.zip_size = upload.size
+                    upload.name = f"{os.path.splitext(os.path.basename(file.name or file.path))[0]}.zip"
                     file.zip_file = upload
+                    file.get_storage(
+                        True
+                    )  # Will raise StorageError if storage is misconfigured or full
                     file.save()
                 except StorageError as e:
                     file.state = FileState.AWAITING_STORAGE
@@ -1134,9 +1138,6 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                     ObservedFileSerializer(file, context={"request": request}).data
                 )
 
-            def handle_upload_complete(file, data):
-                file.successful_uploads = data.get("successes", 1)
-
             def handle_upload_png(file, _, request):
                 upload = request.FILES.get("png_file")
                 if upload.size > settings.MAX_PNG_PREVIEW_SIZE:
@@ -1144,7 +1145,8 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                         f"PNG file too large: {upload.size} > {settings.MAX_PNG_PREVIEW_SIZE}",
                         status=507,
                     )
-                file.bytes_required = upload.size
+                upload.name = f"{os.path.splitext(os.path.basename(file.name or file.path))[0]}.png"
+                file.png_size = upload.size
                 file.save()
                 file.png = upload
 
@@ -1183,10 +1185,10 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                         handle_file_metadata(file, data)
                     elif stage == settings.HARVEST_STAGE_DATA_SUMMARY:
                         handle_data_summary(file, data, request)
-                    elif stage == settings.HARVEST_STAGE_UPLOAD_PARQUET:
-                        return handle_upload_parquets(file, data, request)
-                    elif stage == settings.HARVEST_STAGE_UPLOAD_COMPLETE:
-                        handle_upload_complete(file, data)
+                    elif stage == settings.HARVEST_STAGE_UPLOAD_DATA:
+                        return handle_upload_zip(
+                            file, data, request
+                        )  # return because we return the zip
                     elif stage == settings.HARVEST_STAGE_UPLOAD_PNG:
                         handle_upload_png(file, data, request)
                     else:
@@ -1218,15 +1220,9 @@ class HarvesterViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
                 "stage": request.data.get("stage"),
                 "data": {"filename": request.data.get("filename")},
             }
-            if content["stage"] == settings.HARVEST_STAGE_UPLOAD_PARQUET:
+            if content["stage"] == settings.HARVEST_STAGE_UPLOAD_DATA:
                 content["data"]["total_row_count"] = int(
                     float(request.data.get("total_row_count"))
-                )
-                content["data"]["partition_number"] = int(
-                    float(request.data.get("partition_number"))
-                )
-                content["data"]["partition_count"] = int(
-                    float(request.data.get("partition_count"))
                 )
         else:
             content = content or {}
@@ -1400,6 +1396,20 @@ harvester program to rerun the import process when it next scans the file.
 *Note*: This request may be overwritten if the file changes size before it is next scanned.
         """,
     ),
+    file=extend_schema(
+        summary="Download file data as zipped CSV",
+        description="""
+Download a file from the API. It will be returned as a zipped CSV file.
+        """,
+        responses={200: OpenApiTypes.BINARY},
+    ),
+    png=extend_schema(
+        summary="Download the preview image for a file",
+        description="""
+Download a file's preview image from the API.
+        """,
+        responses={200: OpenApiTypes.BINARY},
+    ),
 )
 class ObservedFileViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
     """
@@ -1552,15 +1562,6 @@ class ColumnMappingViewSet(DescribeSelfMixin, viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
 
-@extend_schema_view(
-    file=extend_schema(
-        summary="Download a file",
-        description="""
-Download a file from the API.
-        """,
-        responses={200: OpenApiTypes.BINARY},
-    )
-)
 @extend_schema_view(
     list=extend_schema(
         summary="View Errors encountered while Harvesting",

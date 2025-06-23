@@ -14,7 +14,6 @@ from galv.models import (
     UserProxy,
     FileState,
     UserLevel,
-    ParquetPartition,
 )
 
 
@@ -123,7 +122,6 @@ class Command(BaseCommand):
             {
                 "name": "IDF Example",
                 "path": "seed_data/idf-example.idf",
-                "bytes_required": 1_105_000,
                 "summary": {
                     "amps": {
                         "0": "-3.61355E-05",
@@ -163,16 +161,12 @@ class Command(BaseCommand):
                     },
                 },
                 "mapping": ColumnMapping.objects.get(name="Ivium .idf"),
-                "png": "tmpmlwszjcd.idf.png",
-                "parquet_partitions": [
-                    "part.0.parquet",
-                    "part.1.parquet",
-                ],
+                "png": "idf-example.png",
+                "zip_file": "idf-example.zip",
             },
             {
                 "name": "MPR Example",
                 "path": "seed_data/mpr-example.mpr",
-                "bytes_required": 1_105_000,
                 "summary": {
                     "Ns": {
                         "0": 0,
@@ -548,10 +542,8 @@ class Command(BaseCommand):
                     },
                 },
                 "mapping": ColumnMapping.objects.get(name="Biologic .mpr"),
-                "png": "tmps61lcjpc.mpr.png",
-                "parquet_partitions": [
-                    "part.0_dRnVqa3.parquet",
-                ],
+                "png": "mpr-example.png",
+                "zip_file": "mpr-example.zip",
             },
         ]:
             f = ObservedFile.objects.filter(
@@ -560,14 +552,13 @@ class Command(BaseCommand):
             if f is not None:
                 self.stdout.write(f"- Removing existing Observed file: {file['name']}")
                 f.delete(
-                    delete_png=False
-                )  # Need to prevent deletion of png and parquet files
+                    delete_actual_files=False
+                )  # Need to prevent deletion of png and zip files
             new_file = ObservedFile.objects.create(
                 name=file["name"],
                 _storage_content_type=content_type,
                 _storage_object_id=storage_type.pk,
                 path=file["path"],
-                bytes_required=file["bytes_required"],
                 uploader=user,
                 state=FileState.IMPORTED,
                 summary=file["summary"],
@@ -575,19 +566,14 @@ class Command(BaseCommand):
                 read_access_level=UserLevel.ANONYMOUS.value,
                 team=team,
                 png=file["png"],
+                zip_file=file["zip_file"],
             )
-            for i, p in enumerate(file["parquet_partitions"]):
-                ParquetPartition.objects.create(
-                    observed_file=new_file,
-                    partition_number=i,
-                    parquet_file=p,
-                )
             new_file.state = (
                 FileState.IMPORTED
             )  # ColumnMapping.save() tries to overwrite this
             new_file.save()
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Created observed file: {file['name']} - {new_file.pk} (partitions: {len(file['parquet_partitions'])}; {file['png']})"
+                    f"Created observed file: {file['name']} - {new_file.pk}"
                 )
             )

@@ -62,7 +62,6 @@ from ..models import (
     ALLOWED_USER_LEVELS_DELETE,
     ALLOWED_USER_LEVELS_EDIT_PATH,
     ArbitraryFile,
-    ParquetPartition,
     ColumnMapping,
     get_user_auth_details,
     GalvStorageType,
@@ -1909,32 +1908,6 @@ class ColumnMappingSerializer(
         ]
 
 
-class ParquetPartitionSerializer(
-    serializers.HyperlinkedModelSerializer, PermissionsMixin
-):
-    observed_file = TruncatedHyperlinkedRelatedIdField(
-        "ObservedFileSerializer",
-        ["name", "state", "parser", "num_rows"],
-        "observedfile-detail",
-        read_only=True,
-        help_text="Observed File this Parquet Partition belongs to",
-    )
-
-    class Meta:
-        model = ParquetPartition
-        read_only_fields = [
-            "url",
-            "id",
-            "parquet_file",
-            "observed_file",
-            "partition_number",
-            "uploaded",
-            "upload_errors",
-            "permissions",
-        ]
-        fields = read_only_fields
-
-
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
@@ -1972,7 +1945,7 @@ class ParquetPartitionSerializer(
                     "Missing required column: Current_A",
                 ],
                 "upload_errors": [],
-                "zip_file": "http://localhost:8001/observed_files/1234/zip/",
+                "zip_file": "http://localhost:8001/observed_files/19b16096-737f-4d94-8cc6-802dbf129704/zip/",
                 "columns": [
                     {
                         "name": "column_0",
@@ -2066,7 +2039,7 @@ class ObservedFileSerializer(
         )
 
     def get_zip_file(self, instance) -> str | None:
-        if not instance.zip_file:
+        if not instance.zip_file or instance.zip_file.name == "":
             return None
         return reverse(
             "observedfile-zip",
@@ -2295,16 +2268,19 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
                 harvester.process_data()
                 try:
                     observed_file.zip_file = File(
-                        file=open(harvester.data_file_name, "rb"),
-                        name=os.path.basename(harvester.data_file_name),
+                        file=open(f"{harvester.data_file_name}.zip", "rb"),
+                        name=os.path.splitext(os.path.basename(file.name))[0] + ".zip",
                     )
+                    observed_file.get_storage(
+                        True
+                    )  # raise if storage not available/misconfigured
                 except FileNotFoundError:
                     logger.exception("Error saving zipped data")
                     raise
                 try:
                     observed_file.png = File(
                         file=open(harvester.png_file_name, "rb"),
-                        name=os.path.basename(harvester.png_file_name),
+                        name=os.path.splitext(os.path.basename(file.name))[0] + ".png",
                     )
                 except (
                     FileNotFoundError

@@ -68,7 +68,6 @@ def serializer_class_from_string(class_name: str):
         "CellChemistriesSerializer",
         "CellFormFactorsSerializer",
         "ScheduleIdentifiersSerializer",
-        "ParquetPartitionSerializer",
         "ArbitraryFileSerializer",
         "ColumnMappingSerializer",
     ]:

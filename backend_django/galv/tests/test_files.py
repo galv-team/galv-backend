@@ -356,7 +356,7 @@ class ObservedFileTests(GalvTestCase):
                     self.assertEqual(
                         observed_file.state, FileState.AWAITING_MAP_ASSIGNMENT
                     )
-                    self.assertIsNone(observed_file.zip_file)
+                    self.assertEqual(observed_file.zip_file.name, "")
 
             with self.subTest("Stage two - with mapping"):
                 if observed_file is None:

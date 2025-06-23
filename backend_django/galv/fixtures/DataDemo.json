@@ -122,7 +122,6 @@
       "name": "Ivium_Cell+1",
       "parser": "IviumInputFile",
       "num_rows": 165649,
-      "num_partitions": 2,
       "mapping": "fd64f179-ca0a-4549-80e3-8b07af10a6d2",
       "first_sample_no": 1,
       "last_sample_no": 165648,
@@ -1515,7 +1514,6 @@
       "parser": "BiologicMprInputFile",
       "mapping": "5e55cc2a-c088-4c09-b95b-8dc128549271",
       "num_rows": 8938,
-      "num_partitions": 1,
       "first_sample_no": 0,
       "last_sample_no": 8937,
       "core_metadata": {
@@ -1594,7 +1592,6 @@
       "parser": "BiologicMprInputFile",
       "mapping": "5e55cc2a-c088-4c09-b95b-8dc128549271",
       "num_rows": 95052,
-      "num_partitions": 1,
       "first_sample_no": 0,
       "last_sample_no": 95051,
       "core_metadata": {
@@ -1673,7 +1670,6 @@
       "parser": "MaccorInputFile",
       "mapping": "5e55cc2a-c088-4c09-b95b-8dc128549271",
       "num_rows": 401993,
-      "num_partitions": 5,
       "first_sample_no": 1,
       "last_sample_no": 401994,
       "core_metadata": {
@@ -1969,7 +1965,6 @@
       "parser": "BiologicMprInputFile",
       "mapping": "5e55cc2a-c088-4c09-b95b-8dc128549271",
       "num_rows": 55809,
-      "num_partitions": 1,
       "first_sample_no": 0,
       "last_sample_no": 55808,
       "core_metadata": {
@@ -2048,7 +2043,6 @@
       "parser": "DelimitedInputFile",
       "mapping": "8ba73561-bf79-46f6-951a-ccb752acb7cc",
       "num_rows": 4,
-      "num_partitions": 1,
       "first_sample_no": null,
       "last_sample_no": null,
       "core_metadata": {
@@ -2093,7 +2087,6 @@
       "parser": "DelimitedInputFile",
       "mapping": "8ba73561-bf79-46f6-951a-ccb752acb7cc",
       "num_rows": 4,
-      "num_partitions": 1,
       "first_sample_no": null,
       "last_sample_no": null,
       "core_metadata": {
@@ -2138,7 +2131,6 @@
       "parser": "DelimitedInputFile",
       "mapping": "8ba73561-bf79-46f6-951a-ccb752acb7cc",
       "num_rows": 4,
-      "num_partitions": 1,
       "first_sample_no": null,
       "last_sample_no": null,
       "core_metadata": {
@@ -2161,188 +2153,6 @@
           "has_data": true
         }
       }
-    }
-  },
-  {
-    "model": "galv.parquetpartition",
-    "pk": "1351a60e-26e2-4b36-aeb8-1747a2f1e2dc",
-    "fields": {
-      "created": "2024-04-10T15:39:53.581Z",
-      "modified": "2024-04-10T15:39:53.634Z",
-      "observed_file": "15ccbdd3-3873-48cc-8e46-4deff8051b49",
-      "parquet_file": "Jie_OCV1_C01.part_0.parquet",
-      "partition_number": 0,
-      "upload_errors": [],
-      "_storage_content_type_id": ["galv", "galvstoragetype"],
-      "_storage_object_id": "2f7b9a2d-c41d-4a44-9a44-7f72ab69b91e"
-    }
-  },
-  {
-    "model": "galv.parquetpartition",
-    "pk": "15218b1f-fab4-4b2b-aae6-50584d5bc7ef",
-    "fields": {
-      "created": "2024-04-10T15:41:05.557Z",
-      "modified": "2024-04-10T15:41:05.587Z",
-      "observed_file": "72eb4cd4-65f2-4128-b822-694207cb5454",
-      "parquet_file": "TPG1-Cell15-002.part_2.parquet",
-      "partition_number": 2,
-      "upload_errors": [],
-      "_storage_content_type_id": ["galv", "galvstoragetype"],
-      "_storage_object_id": "2f7b9a2d-c41d-4a44-9a44-7f72ab69b91e"
-    }
-  },
-  {
-    "model": "galv.parquetpartition",
-    "pk": "27d286a0-e851-4da8-b511-07f19024e47d",
-    "fields": {
-      "created": "2024-04-10T15:39:45.082Z",
-      "modified": "2024-04-10T15:39:45.131Z",
-      "observed_file": "90da92a2-fdd7-4298-84c5-79fe77e6ee04",
-      "parquet_file": "headerless.part_0.parquet",
-      "partition_number": 0,
-      "upload_errors": [],
-      "_storage_content_type_id": ["galv", "galvstoragetype"],
-      "_storage_object_id": "2f7b9a2d-c41d-4a44-9a44-7f72ab69b91e"
-    }
-  },
-  {
-    "model": "galv.parquetpartition",
-    "pk": "5461a0b0-f6e2-483a-8f84-9229d7c5bcc1",
-    "fields": {
-      "created": "2024-04-10T15:39:55.989Z",
-      "modified": "2024-04-10T15:39:56.036Z",
-      "observed_file": "fc9c92f7-dc9d-438f-8c4e-59593bcb8582",
-      "parquet_file": "preamble.part_0.parquet",
-      "partition_number": 0,
-      "upload_errors": [],
-      "_storage_content_type_id": ["galv", "galvstoragetype"],
-      "_storage_object_id": "2f7b9a2d-c41d-4a44-9a44-7f72ab69b91e"
-    }
-  },
-  {
-    "model": "galv.parquetpartition",
-    "pk": "56563915-80a9-49d5-9d31-110e86e9c252",
-    "fields": {
-      "created": "2024-04-10T15:41:05.211Z",
-      "modified": "2024-04-10T15:41:05.240Z",
-      "observed_file": "72eb4cd4-65f2-4128-b822-694207cb5454",
-      "parquet_file": "TPG1-Cell15-002.part_1.parquet",
-      "partition_number": 1,
-      "upload_errors": [],
-      "_storage_content_type_id": ["galv", "galvstoragetype"],
-      "_storage_object_id": "2f7b9a2d-c41d-4a44-9a44-7f72ab69b91e"
-    }
-  },
-  {
-    "model": "galv.parquetpartition",
-    "pk": "652b7926-1892-485e-8ac3-31b17fb83ff8",
-    "fields": {
-      "created": "2024-04-10T15:39:32.213Z",
-      "modified": "2024-04-10T15:39:32.247Z",
-      "observed_file": "8980ae95-61f3-4f7c-a1fd-c01bdca47e67",
-      "parquet_file": "adam_3_C05.part_0.parquet",
-      "partition_number": 0,
-      "upload_errors": [],
-      "_storage_content_type_id": ["galv", "galvstoragetype"],
-      "_storage_object_id": "2f7b9a2d-c41d-4a44-9a44-7f72ab69b91e"
-    }
-  },
-  {
-    "model": "galv.parquetpartition",
-    "pk": "8164dd17-16a1-495d-8f3a-7f5db52d6a5a",
-    "fields": {
-      "created": "2024-04-10T15:39:42.869Z",
-      "modified": "2024-04-10T15:39:42.916Z",
-      "observed_file": "b707ed99-512f-47b7-a320-df857395126d",
-      "parquet_file": "headered.part_0.parquet",
-      "partition_number": 0,
-      "upload_errors": [],
-      "_storage_content_type_id": ["galv", "galvstoragetype"],
-      "_storage_object_id": "2f7b9a2d-c41d-4a44-9a44-7f72ab69b91e"
-    }
-  },
-  {
-    "model": "galv.parquetpartition",
-    "pk": "82246d8e-fe6b-49d8-b719-b3af8aa82556",
-    "fields": {
-      "created": "2024-04-10T15:41:05.920Z",
-      "modified": "2024-04-10T15:41:05.956Z",
-      "observed_file": "72eb4cd4-65f2-4128-b822-694207cb5454",
-      "parquet_file": "TPG1-Cell15-002.part_3.parquet",
-      "partition_number": 3,
-      "upload_errors": [],
-      "_storage_content_type_id": ["galv", "galvstoragetype"],
-      "_storage_object_id": "2f7b9a2d-c41d-4a44-9a44-7f72ab69b91e"
-    }
-  },
-  {
-    "model": "galv.parquetpartition",
-    "pk": "ae55a69d-defc-48bd-b99d-3e8c8d11d11e",
-    "fields": {
-      "created": "2024-04-10T15:41:04.836Z",
-      "modified": "2024-04-10T15:41:04.865Z",
-      "observed_file": "72eb4cd4-65f2-4128-b822-694207cb5454",
-      "parquet_file": "TPG1-Cell15-002.part_0.parquet",
-      "partition_number": 0,
-      "upload_errors": [],
-      "_storage_content_type_id": ["galv", "galvstoragetype"],
-      "_storage_object_id": "2f7b9a2d-c41d-4a44-9a44-7f72ab69b91e"
-    }
-  },
-  {
-    "model": "galv.parquetpartition",
-    "pk": "b4ebd6ca-f865-4537-8014-dc9841902c32",
-    "fields": {
-      "created": "2024-04-10T15:39:49.804Z",
-      "modified": "2024-04-10T15:39:49.855Z",
-      "observed_file": "11a71e9d-5ff2-43a6-ac9c-7ba28f07c19e",
-      "parquet_file": "Ivium_Cell1.part_0.parquet",
-      "partition_number": 0,
-      "upload_errors": [],
-      "_storage_content_type_id": ["galv", "galvstoragetype"],
-      "_storage_object_id": "2f7b9a2d-c41d-4a44-9a44-7f72ab69b91e"
-    }
-  },
-  {
-    "model": "galv.parquetpartition",
-    "pk": "cbab23bf-25a3-4e81-8734-a0be53c6d100",
-    "fields": {
-      "created": "2024-04-10T15:39:50.196Z",
-      "modified": "2024-04-10T15:39:50.242Z",
-      "observed_file": "11a71e9d-5ff2-43a6-ac9c-7ba28f07c19e",
-      "parquet_file": "Ivium_Cell1.part_1.parquet",
-      "partition_number": 1,
-      "upload_errors": [],
-      "_storage_content_type_id": ["galv", "galvstoragetype"],
-      "_storage_object_id": "2f7b9a2d-c41d-4a44-9a44-7f72ab69b91e"
-    }
-  },
-  {
-    "model": "galv.parquetpartition",
-    "pk": "ded09055-84e9-44e7-8c70-0b87f8530898",
-    "fields": {
-      "created": "2024-04-10T15:39:40.385Z",
-      "modified": "2024-04-10T15:39:40.433Z",
-      "observed_file": "72bdae4a-60d0-4b22-9cca-980f4601da1b",
-      "parquet_file": "CCCV_-exp1_C01.part_0.parquet",
-      "partition_number": 0,
-      "upload_errors": [],
-      "_storage_content_type_id": ["galv", "galvstoragetype"],
-      "_storage_object_id": "2f7b9a2d-c41d-4a44-9a44-7f72ab69b91e"
-    }
-  },
-  {
-    "model": "galv.parquetpartition",
-    "pk": "f954df4b-d556-4b2f-be9d-3551c9f38b8e",
-    "fields": {
-      "created": "2024-04-10T15:41:06.210Z",
-      "modified": "2024-04-10T15:41:06.248Z",
-      "observed_file": "72eb4cd4-65f2-4128-b822-694207cb5454",
-      "parquet_file": "TPG1-Cell15-002.part_4.parquet",
-      "partition_number": 4,
-      "upload_errors": [],
-      "_storage_content_type_id": ["galv", "galvstoragetype"],
-      "_storage_object_id": "2f7b9a2d-c41d-4a44-9a44-7f72ab69b91e"
     }
   }
 ]
