@@ -2243,5 +2243,3 @@ class ArbitraryFile(_StorageTypeConsumerModel, ResourceModelPermissionsMixin):
 
     class Meta:
         unique_together = [["name", "team"], ["file", "team"]]
-
-

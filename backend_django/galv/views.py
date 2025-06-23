@@ -1561,8 +1561,6 @@ Download a file from the API.
         responses={200: OpenApiTypes.BINARY},
     )
 )
-
-
 @extend_schema_view(
     list=extend_schema(
         summary="View Errors encountered while Harvesting",

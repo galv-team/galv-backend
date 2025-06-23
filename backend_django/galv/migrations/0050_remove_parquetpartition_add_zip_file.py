@@ -1,6 +1,7 @@
 from django.db import migrations
 import galv.fields
 
+
 class Migration(migrations.Migration):
     dependencies = [
         ("galv", "0049_alter_additionals3storagetype_location"),

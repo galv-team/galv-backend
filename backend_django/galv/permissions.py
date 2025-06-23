@@ -91,8 +91,6 @@ class UserFilterBackend(DRYPermissionFiltersBase):
         return queryset.filter(pk__in=[u.pk for u in users_to_return])
 
 
-
-
 class ResourceFilterBackend(DRYPermissionFiltersBase):
     action_routing = True
 

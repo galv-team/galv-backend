@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import json
 import os.path
-from pathlib import Path
 import re
 import tempfile
 
@@ -2043,9 +2042,7 @@ class ObservedFileSerializer(
     summary = serializers.SerializerMethodField(
         help_text="First few rows of this file's data"
     )
-    zip_file = serializers.SerializerMethodField(
-        help_text="URL to zipped CSV data"
-    )
+    zip_file = serializers.SerializerMethodField(help_text="URL to zipped CSV data")
 
     def get_applicable_mappings(self, instance) -> str:
         return reverse(
