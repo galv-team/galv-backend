@@ -62,7 +62,9 @@ class LabDependentStorageFieldFile(FieldFile):
     def url(self):
         if not self.instance:
             return None
-        return reverse(self.instance.view_name, args=[self.instance.pk])
+        return reverse(
+            self.field.view_name or self.instance.view_name, args=[self.instance.pk]
+        )
 
     def backend_url(self):
         """
@@ -70,7 +72,8 @@ class LabDependentStorageFieldFile(FieldFile):
 
         Not a property because it takes a long time to run.
         """
-        return super().url
+        url = super().url
+        return url
 
 
 class LabDependentStorageFileField(models.FileField):
@@ -79,6 +82,12 @@ class LabDependentStorageFileField(models.FileField):
     The storage argument should be a function that returns a dummy storage class instance
      unless provided with a model instance.
     """
+
+    view_name = None
+
+    def __init__(self, *args, view_name=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.view_name = view_name
 
     attr_class = LabDependentStorageFieldFile
 

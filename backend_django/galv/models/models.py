@@ -17,7 +17,6 @@ from django.contrib.postgres.fields import ArrayField
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User, Group, AnonymousUser
-from rest_framework.reverse import reverse
 import random
 from jsonschema.exceptions import _WrappedReferencingError
 from rest_framework import serializers
@@ -1510,10 +1509,17 @@ class ObservedFile(
         related_name="observed_files",
     )
     png = LabDependentStorageFileField(
-        null=True, blank=True, help_text="Preview image of the file"
+        null=True,
+        blank=True,
+        help_text="Preview image of the file",
+        view_name="observedfile-png",
     )
     zip_file = LabDependentStorageFileField(
-        null=True, blank=True, help_text="Zipped CSV data", default=None
+        null=True,
+        blank=True,
+        help_text="Zipped CSV data",
+        default=None,
+        view_name="observedfile-zip",
     )
 
     png_size = models.PositiveBigIntegerField(default=settings.MAX_PNG_PREVIEW_SIZE)
@@ -1526,17 +1532,10 @@ class ObservedFile(
         """
         return self.png_size + self.zip_size
 
-    view_name = "observedfile-png"
     special_dump_fields = {
         **_StorageTypeConsumerModel.special_dump_fields,
         "png": lambda f, _m, _r, _s: f.url or "Not uploaded",
-        "zip_file": lambda f, m, r, s: reverse(
-            "observedfile-zip",
-            args=[m.pk],
-            request=r,
-        )
-        if f
-        else "Not uploaded",
+        "zip_file": lambda f, _m, _r, _s: f.url or "Not uploaded",
         "summary": None,
     }
 
