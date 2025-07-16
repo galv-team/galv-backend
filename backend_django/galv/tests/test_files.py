@@ -15,7 +15,7 @@ from .factories import (
     fake,
     ColumnMappingFactory,
 )
-from ..models import FileState, UserLevel, ObservedFile, ParquetPartition
+from ..models import FileState, UserLevel, ObservedFile
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
@@ -356,11 +356,7 @@ class ObservedFileTests(GalvTestCase):
                     self.assertEqual(
                         observed_file.state, FileState.AWAITING_MAP_ASSIGNMENT
                     )
-                    self.assertFalse(
-                        ParquetPartition.objects.filter(
-                            observed_file=observed_file
-                        ).exists()
-                    )
+                    self.assertEqual(observed_file.zip_file.name, "")
 
             with self.subTest("Stage two - with mapping"):
                 if observed_file is None:
@@ -384,11 +380,8 @@ class ObservedFileTests(GalvTestCase):
                     )
                     self.assertEqual(response.json()["id"], str(observed_file.id))
                     self.assertEqual(response.json()["state"], FileState.IMPORTED)
-                    self.assertTrue(
-                        ParquetPartition.objects.filter(
-                            observed_file=observed_file
-                        ).exists()
-                    )
+                    observed_file.refresh_from_db()
+                    self.assertIsNotNone(observed_file.zip_file)
 
 
 if __name__ == "__main__":

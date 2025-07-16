@@ -6,7 +6,6 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from django.core.files.uploadedfile import TemporaryUploadedFile
 from django.urls import reverse
 from rest_framework import status
 import logging
@@ -16,7 +15,6 @@ from .utils import assert_response_property, GalvTestCase
 from .factories import (
     HarvesterFactory,
     MonitoredPathFactory,
-    ParquetPartitionFactory,
     fake,
     ObservedFileFactory,
 )
@@ -320,8 +318,6 @@ class HarvesterTests(GalvTestCase):
     def test_report(self, *args):
         mp = MonitoredPathFactory.create(harvester=self.harvester)
         f = ObservedFileFactory.create(path="/a/b/c/d.ext", harvester=self.harvester)
-        for i in range(3):
-            ParquetPartitionFactory.create(observed_file=f, partition_number=i)
         self.client._credentials = {
             "HTTP_AUTHORIZATION": f"Harvester {self.harvester.api_key}"
         }
@@ -584,28 +580,6 @@ class HarvesterTests(GalvTestCase):
                     ),
                 ],
             },
-            {
-                "name": "upload_complete",
-                "data": {
-                    "status": settings.HARVESTER_STATUS_SUCCESS,
-                    "path": f.path,
-                    "monitored_path_id": mp.id,
-                    "content": {
-                        "task": settings.HARVESTER_TASK_IMPORT,
-                        "stage": settings.HARVEST_STAGE_UPLOAD_COMPLETE,
-                        "data": {
-                            "successes": 2,
-                            "errors": {1: str(BaseException("test"))},
-                        },
-                    },
-                },
-                "checks": [
-                    lambda r: check_response(r, r.status_code, status.HTTP_200_OK),
-                    lambda r: check_response(
-                        r, r.json()["id"], str(ObservedFile.objects.get(path=f.path).id)
-                    ),
-                ],
-            },
         ]:
             with self.subTest(report=report["name"]):
                 response = self.client.post(url, report["data"], format="json")
@@ -613,10 +587,10 @@ class HarvesterTests(GalvTestCase):
                     check(response)
 
     @patch("boto3.client", return_value=MockBoto3Client())
-    def test_parquet_upload(self, mock_boto3_client):
+    def test_zip_upload(self, mock_boto3_client):
         """
-        Test that the parquet upload works.
-        We upload a file, along with some data, and check that we receive a ParquetPartition object in response.
+        Test that the zip upload works.
+        We upload a file, along with some data, and check that we receive an ObservedFile object in response.
         """
         mp = MonitoredPathFactory.create(harvester=self.harvester)
         f = ObservedFileFactory.create(path="/a/b/c/d/e.ext", harvester=self.harvester)
@@ -632,18 +606,16 @@ class HarvesterTests(GalvTestCase):
                 "path": f.path,
                 "monitored_path_id": mp.id,
                 "task": settings.HARVESTER_TASK_IMPORT,
-                "stage": settings.HARVEST_STAGE_UPLOAD_PARQUET,
+                "stage": settings.HARVEST_STAGE_UPLOAD_DATA,
                 "total_row_count": 500,
-                "partition_number": 0,
-                "partition_count": 1,
-                "filename": "filename.part0.parquet",
-                "parquet_file": tempfile.TemporaryFile(),
+                "filename": "data.zip",
+                "zip_file": tempfile.TemporaryFile(),
             },
             format="multipart",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(
-            response.json()["observed_file"].endswith(
+            response.json()["url"].endswith(
                 f"{ObservedFile.objects.get(path=f.path).id}/"
             )
         )
@@ -651,31 +623,33 @@ class HarvesterTests(GalvTestCase):
         # We should get an error if storage is full
         with self.subTest("Cannot save when storage is over quota"):
             storages = self.lab.get_all_storage_types()
-            storages[0].quota_bytes = 0
+            storages[0].quota_bytes = 1
             storages[0].save()
-            response = self.client.post(
-                url,
-                {
-                    "format": "flat",
-                    "status": settings.HARVESTER_STATUS_SUCCESS,
-                    "path": f.path,
-                    "monitored_path_id": mp.id,
-                    "task": settings.HARVESTER_TASK_IMPORT,
-                    "stage": settings.HARVEST_STAGE_UPLOAD_PARQUET,
-                    "total_row_count": 500,
-                    "partition_number": 0,
-                    "partition_count": 1,
-                    "filename": "filename.part0.parquet",
-                    "parquet_file": TemporaryUploadedFile(
-                        name=fake.file_name(),
-                        content_type="application/octet-stream",
-                        size=100_000,
-                        charset="utf-8",
-                    ),
-                },
-                format="multipart",
-            )
-            self.assertEqual(response.status_code, status.HTTP_507_INSUFFICIENT_STORAGE)
+            with tempfile.TemporaryFile(prefix=fake.file_name()) as tmp_file:
+                # Dump some data into the temporary file
+                tmp_file.write(b"test,data\n")
+                for _ in range(1000):
+                    tmp_file.write(b"0,1\n")
+                    tmp_file.seek(0)
+
+                response = self.client.post(
+                    url,
+                    {
+                        "format": "flat",
+                        "status": settings.HARVESTER_STATUS_SUCCESS,
+                        "path": f.path,
+                        "monitored_path_id": mp.id,
+                        "task": settings.HARVESTER_TASK_IMPORT,
+                        "stage": settings.HARVEST_STAGE_UPLOAD_DATA,
+                        "total_row_count": 1000,
+                        "filename": "data.zip",
+                        "zip_file": tmp_file,
+                    },
+                    format="multipart",
+                )
+                self.assertEqual(
+                    response.status_code, status.HTTP_507_INSUFFICIENT_STORAGE
+                )
 
     def test_png_upload(self):
         mp = MonitoredPathFactory.create(harvester=self.harvester)

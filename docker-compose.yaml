@@ -5,8 +5,6 @@
 # This docker-compose setup is for local dev purposes only.
 # Its role is to connect the backend to a postgres database.
 
-version: "3.8"
-
 services:
   app:
     image: app

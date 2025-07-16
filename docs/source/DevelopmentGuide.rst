@@ -160,6 +160,7 @@ logic in ``views.py``.
 
 Harvesters have an ``api_key`` they use to authenticate with the server.
 This is created the first time the Harvester model is saved in ``models.py``.
+Harvesters upload processed data as a single ``.zip`` file containing CSV data.
 
 Documentation
 ================================================================================
