@@ -192,8 +192,6 @@ def lab_dependent_file_fetcher(
         ):
             # Send the file directly via the upstream nginx proxy
             response = HttpResponse()
-            for k, v in headers(file).items():
-                response[k] = v
             response["X-Accel-Redirect"] = file.backend_url()
         else:
             # Redirect to S3
@@ -202,6 +200,9 @@ def lab_dependent_file_fetcher(
                 response["Galv-Storage-Redirect-URL"] = file.backend_url()
             else:
                 response = HttpResponseRedirect(file.backend_url())
+
+        for k, v in headers(file).items():
+            response[k] = v
         return response
     return error_response("File not uploaded")
 
