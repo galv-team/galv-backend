@@ -1,9 +1,9 @@
 name: Redeploy demo instance
 
 on:
-  schedule:
+  # schedule:
     # every week
-    - cron: '42 0 * * 1'
+  #   - cron: '42 0 * * 1'
   workflow_dispatch:
 
 concurrency:
