@@ -27,10 +27,11 @@ services:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
       DJANGO_EMAIL_HOST: "email-smtp.eu-west-2.amazonaws.com"
-      DJANGO_EMAIL_HOST_USER: "${DJANGO_EMAIL_HOST_USER}"
-      DJANGO_EMAIL_HOST_PASSWORD: "${DJANGO_EMAIL_HOST_PASSWORD}"
+      DJANGO_EMAIL_HOST_USER: ${DJANGO_EMAIL_HOST_USER}
+      DJANGO_EMAIL_HOST_PASSWORD: ${DJANGO_EMAIL_HOST_PASSWORD}
       DJANGO_EMAIL_USE_TLS: "True"
       DJANGO_EMAIL_USE_SSL: "True"
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
     ports:
       - "8000:80"
     restart: unless-stopped
