@@ -18,6 +18,12 @@ services:
       # copy logs for easy access
       - ./.dev/logs:/var/log/galv
       - ./.dev/logs_harvester:/opt/project/backend_django/.harvester
+    env_file:
+      - .env.secret
+      # Include these:
+      # DJANGO_EMAIL_HOST_USER: ${DJANGO_EMAIL_HOST_USER}
+      # DJANGO_EMAIL_HOST_PASSWORD: ${DJANGO_EMAIL_HOST_PASSWORD}
+      # DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
     environment:
       VIRTUAL_HOST: "galv-demo-api.oxrse.uk"
       FRONTEND_VIRTUAL_HOST: "http://galv-demo.oxrse.uk,https://galv-demo.oxrse.uk"
@@ -27,11 +33,8 @@ services:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
       DJANGO_EMAIL_HOST: "email-smtp.eu-west-2.amazonaws.com"
-      DJANGO_EMAIL_HOST_USER: ${DJANGO_EMAIL_HOST_USER}
-      DJANGO_EMAIL_HOST_PASSWORD: ${DJANGO_EMAIL_HOST_PASSWORD}
       DJANGO_EMAIL_USE_TLS: "True"
       DJANGO_EMAIL_USE_SSL: "True"
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
     ports:
       - "8000:80"
     restart: unless-stopped
