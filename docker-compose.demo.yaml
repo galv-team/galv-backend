@@ -57,7 +57,7 @@ services:
     build: nginx
     environment:
       NGINX_PROXY_CONTAINER: nginx-proxy
-      LETSENCRYPT_HOST: galv-demo.oxrse.uk
+      LETSENCRYPT_HOST: galv-demo-api.oxrse.uk
       LETSENCRYPT_EMAIL: matt.jaquiery@dtc.ox.ac.uk
       ACME_CA_URI: ${ACME_CA_URI:-https://acme-staging-v02.api.letsencrypt.org/directory}
     restart: always
@@ -83,7 +83,7 @@ services:
     image: nginxproxy/acme-companion
     environment:
       NGINX_PROXY_CONTAINER: nginx-proxy
-      LETSENCRYPT_HOST: galv-demo.oxrse.uk
+      LETSENCRYPT_HOST: galv-demo-api.oxrse.uk
       LETSENCRYPT_EMAIL: matt.jaquiery@dtc.ox.ac.uk
       ACME_CA_URI: ${ACME_CA_URI:-https://acme-staging-v02.api.letsencrypt.org/directory}
     volumes:
