@@ -1,0 +1,101 @@
+services:
+  app:
+    image: app
+    build:
+      dockerfile: Dockerfile
+      context: .
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend_django:/code/backend_django
+      - ./.dev/spec:/spec
+      # datafiles should be mounted to DATA_ROOT in the container
+      - ./.dev/datafiles:/galv_files/data
+      # staticfiles to STATIC_ROOT
+      - ./.dev/.static_files:/galv_files/static
+      # and media files to MEDIA_ROOT
+      - ./.dev/.media_files:/galv_files/media
+      # copy logs for easy access
+      - ./.dev/logs:/var/log/galv
+      - ./.dev/logs_harvester:/opt/project/backend_django/.harvester
+    environment:
+      VIRTUAL_HOST: "localhost"
+      FRONTEND_VIRTUAL_HOST: "http://galv-demo.oxrse.uk,https://galv-demo.oxrse.uk"
+      DJANGO_LOCAL_DATA_STORAGE: "True"
+      POSTGRES_HOST: "postgres"
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      DJANGO_EMAIL_HOST: "email-smtp.eu-west-2.amazonaws.com"
+      DJANGO_EMAIL_HOST_USER: "${DJANGO_EMAIL_HOST_USER}"
+      DJANGO_EMAIL_HOST_PASSWORD: "${DJANGO_EMAIL_HOST_PASSWORD}"
+      DJANGO_EMAIL_USE_TLS: "True"
+      DJANGO_EMAIL_USE_SSL: "True"
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+  postgres:
+    image: "postgres:14"
+    stop_signal: SIGINT                 # Fast Shutdown mode
+    volumes:
+      - "./.dev/data:/var/lib/postgresql/data"
+    environment:
+      # variables listed as defaults in backend_django/config/settings_dev.py
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: "galv"
+      POSTGRES_PORT: "5432"
+    restart: unless-stopped
+
+  nginx-proxy:
+    container_name: nginx-proxy
+    build: nginx
+    environment:
+      NGINX_PROXY_CONTAINER: nginx-proxy
+      LETSENCRYPT_HOST: galv-demo.oxrse.uk
+      LETSENCRYPT_EMAIL: matt.jaquiery@dtc.ox.ac.uk
+      ACME_CA_URI: ${ACME_CA_URI:-https://acme-staging-v02.api.letsencrypt.org/directory}
+    restart: always
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - static_files:/app/static
+      - /home/ec2-user/certs:/etc/nginx/certs
+      - html:/usr/share/nginx/html
+      - vhost:/etc/nginx/vhost.d
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    depends_on:
+      - app
+    healthcheck:
+      test: [ "CMD-SHELL", "nginx -t" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  nginx-proxy-acme-companion:
+    image: nginxproxy/acme-companion
+    environment:
+      NGINX_PROXY_CONTAINER: nginx-proxy
+      LETSENCRYPT_HOST: galv-demo.oxrse.uk
+      LETSENCRYPT_EMAIL: matt.jaquiery@dtc.ox.ac.uk
+      ACME_CA_URI: ${ACME_CA_URI:-https://acme-staging-v02.api.letsencrypt.org/directory}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /home/ec2-user/certs:/etc/nginx/certs
+      - html:/usr/share/nginx/html
+      - vhost:/etc/nginx/vhost.d
+      - acme:/etc/acme.sh
+    depends_on:
+      - nginx-proxy
+
+volumes:
+  redis_data:
+  certs:
+  html:
+  vhost:
+  acme:
+  static_files:
+  redcap_data:
