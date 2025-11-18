@@ -19,7 +19,7 @@ services:
       - ./.dev/logs:/var/log/galv
       - ./.dev/logs_harvester:/opt/project/backend_django/.harvester
     environment:
-      VIRTUAL_HOST: "localhost"
+      VIRTUAL_HOST: "galv-demo-api.oxrse.uk"
       FRONTEND_VIRTUAL_HOST: "http://galv-demo.oxrse.uk,https://galv-demo.oxrse.uk"
       DJANGO_LOCAL_DATA_STORAGE: "True"
       POSTGRES_HOST: "postgres"
@@ -32,7 +32,7 @@ services:
       DJANGO_EMAIL_USE_TLS: "True"
       DJANGO_EMAIL_USE_SSL: "True"
     ports:
-      - "80:80"
+      - "8000:80"
     restart: unless-stopped
 
   postgres:
