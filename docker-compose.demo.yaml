@@ -43,7 +43,7 @@ services:
     image: "postgres:14"
     stop_signal: SIGINT                 # Fast Shutdown mode
     volumes:
-      - "./.dev/data:/var/lib/postgresql/data"
+      - "./.pg-data:/var/lib/postgresql/data"
     environment:
       # variables listed as defaults in backend_django/config/settings_dev.py
       POSTGRES_USER: "postgres"
