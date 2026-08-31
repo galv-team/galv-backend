@@ -1,21 +1,22 @@
 # SPDX-License-Identifier: BSD-2-Clause
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
+import logging
 import tempfile
 import unittest
+
 from django.urls import reverse
 from rest_framework import status
-import logging
 
-from .utils import assert_response_property, GalvTestCase
+from ..models import FileState, ObservedFile, UserLevel
 from .factories import (
+    ColumnMappingFactory,
     HarvesterFactory,
     MonitoredPathFactory,
     ObservedFileFactory,
     fake,
-    ColumnMappingFactory,
 )
-from ..models import FileState, UserLevel, ObservedFile
+from .utils import GalvTestCase, assert_response_property
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)

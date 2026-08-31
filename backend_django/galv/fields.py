@@ -9,7 +9,7 @@ from .storages import MediaStorage
 # TODO: remove when squashing migrations
 class DynamicStorageFieldFile(FieldFile):
     def __init__(self, instance, field, name):
-        super(DynamicStorageFieldFile, self).__init__(instance, field, name)
+        super().__init__(instance, field, name)
         self.storage = field.storage
 
     def update_acl(self):
@@ -36,7 +36,7 @@ class DynamicStorageFileField(models.FileField):
             self.storage.default_acl = "private"
             self.storage.querystring_auth = True
 
-        file = super(DynamicStorageFileField, self).pre_save(model_instance, add)
+        file = super().pre_save(model_instance, add)
 
         if file and file._committed:
             # This update_acl method we have already defined
