@@ -5,7 +5,7 @@
 import os
 import re
 
-from .models import MonitoredPath, Harvester, ObservedFile
+from .models import Harvester, MonitoredPath, ObservedFile
 
 
 def get_monitored_paths(
