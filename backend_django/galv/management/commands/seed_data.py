@@ -1,19 +1,20 @@
 # SPDX-License-Identifier: BSD-2-Clause
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
-from django.contrib.contenttypes.models import ContentType
-from django.core.management.base import BaseCommand
 import os
 
+from django.contrib.contenttypes.models import ContentType
+from django.core.management.base import BaseCommand
+
 from galv.models import (
-    Lab,
-    Team,
     AdditionalS3StorageType,
-    ObservedFile,
     ColumnMapping,
-    UserProxy,
     FileState,
+    Lab,
+    ObservedFile,
+    Team,
     UserLevel,
+    UserProxy,
 )
 
 

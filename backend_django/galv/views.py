@@ -4,142 +4,140 @@
 from __future__ import annotations
 
 import datetime
+import json
+import logging
+import os
+import time
 
 import knox.auth
-import os
-
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseRedirect
-from django.urls import NoReverseMatch
 from django.db.models.base import ModelBase
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404
+from django.urls import NoReverseMatch
+from django.utils import timezone
 from django.utils.module_loading import import_string
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
-from dry_rest_permissions.generics import DRYPermissions
-from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.mixins import ListModelMixin
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from rest_framework.renderers import JSONRenderer
-from rest_framework.reverse import reverse
-
-from .serializers import (
-    HarvesterSerializer,
-    HarvesterCreateSerializer,
-    HarvesterConfigSerializer,
-    MonitoredPathSerializer,
-    ObservedFileSerializer,
-    CellSerializer,
-    EquipmentSerializer,
-    DataUnitSerializer,
-    UserSerializer,
-    TransparentGroupSerializer,
-    HarvestErrorSerializer,
-    KnoxTokenSerializer,
-    KnoxTokenFullSerializer,
-    CellFamilySerializer,
-    EquipmentFamilySerializer,
-    ScheduleSerializer,
-    CyclerTestSerializer,
-    ScheduleFamilySerializer,
-    DataColumnTypeSerializer,
-    ExperimentSerializer,
-    LabSerializer,
-    TeamSerializer,
-    ValidationSchemaSerializer,
-    SchemaValidationSerializer,
-    ArbitraryFileSerializer,
-    ArbitraryFileCreateSerializer,
-    ColumnMappingSerializer,
-    GalvStorageTypeSerializer,
-    AdditionalS3StorageTypeSerializer,
-    ObservedFileCreateSerializer,
-)
-from .models import (
-    Harvester,
-    HarvestError,
-    MonitoredPath,
-    ObservedFile,
-    Cell,
-    Equipment,
-    DataUnit,
-    DataColumnType,
-    FileState,
-    KnoxAuthToken,
-    CellFamily,
-    EquipmentTypes,
-    EquipmentModels,
-    EquipmentManufacturers,
-    CellModels,
-    CellManufacturers,
-    CellChemistries,
-    CellFormFactors,
-    ScheduleIdentifiers,
-    EquipmentFamily,
-    Schedule,
-    CyclerTest,
-    ScheduleFamily,
-    ValidationSchema,
-    Experiment,
-    Lab,
-    Team,
-    UserProxy,
-    GroupProxy,
-    ValidatableBySchemaMixin,
-    SchemaValidation,
-    UserActivation,
-    ALLOWED_USER_LEVELS_READ,
-    ALLOWED_USER_LEVELS_EDIT,
-    ALLOWED_USER_LEVELS_DELETE,
-    ALLOWED_USER_LEVELS_EDIT_PATH,
-    ArbitraryFile,
-    StorageError,
-    ColumnMapping,
-    GalvStorageType,
-    AdditionalS3StorageType,
-    PasswordReset,
-)
-from .permissions import (
-    HarvesterFilterBackend,
-    TeamFilterBackend,
-    LabFilterBackend,
-    GroupFilterBackend,
-    ResourceFilterBackend,
-    ObservedFileFilterBackend,
-    UserFilterBackend,
-    SchemaValidationFilterBackend,
-    LabResourceFilterBackend,
-)
-from .serializers.utils import (
-    get_GetOrCreateTextStringSerializer,
-    DumpSerializer,
-    SerializerDescriptionSerializer,
-)
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
-from rest_framework import viewsets, serializers, permissions
-from rest_framework.decorators import (
-    action,
-    api_view,
-    renderer_classes,
-    parser_classes,
-    permission_classes,
-)
-from rest_framework.response import Response
-from knox.views import LoginView as KnoxLoginView
-from knox.views import LogoutView as KnoxLogoutView
-from knox.views import LogoutAllView as KnoxLogoutAllView
-from knox.models import AuthToken
-from rest_framework.authentication import BasicAuthentication
 from drf_spectacular.utils import (
+    OpenApiResponse,
     extend_schema,
     extend_schema_view,
     inline_serializer,
-    OpenApiResponse,
 )
-import json
-import time
-import logging
+from dry_rest_permissions.generics import DRYPermissions
+from knox.models import AuthToken
+from knox.views import LoginView as KnoxLoginView
+from knox.views import LogoutAllView as KnoxLogoutAllView
+from knox.views import LogoutView as KnoxLogoutView
+from rest_framework import permissions, serializers, viewsets
+from rest_framework.authentication import BasicAuthentication
+from rest_framework.decorators import (
+    action,
+    api_view,
+    parser_classes,
+    permission_classes,
+    renderer_classes,
+)
+from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.mixins import ListModelMixin
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.renderers import JSONRenderer
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
 
+from .models import (
+    ALLOWED_USER_LEVELS_DELETE,
+    ALLOWED_USER_LEVELS_EDIT,
+    ALLOWED_USER_LEVELS_EDIT_PATH,
+    ALLOWED_USER_LEVELS_READ,
+    AdditionalS3StorageType,
+    ArbitraryFile,
+    Cell,
+    CellChemistries,
+    CellFamily,
+    CellFormFactors,
+    CellManufacturers,
+    CellModels,
+    ColumnMapping,
+    CyclerTest,
+    DataColumnType,
+    DataUnit,
+    Equipment,
+    EquipmentFamily,
+    EquipmentManufacturers,
+    EquipmentModels,
+    EquipmentTypes,
+    Experiment,
+    FileState,
+    GalvStorageType,
+    GroupProxy,
+    Harvester,
+    HarvestError,
+    KnoxAuthToken,
+    Lab,
+    MonitoredPath,
+    ObservedFile,
+    PasswordReset,
+    Schedule,
+    ScheduleFamily,
+    ScheduleIdentifiers,
+    SchemaValidation,
+    StorageError,
+    Team,
+    UserActivation,
+    UserProxy,
+    ValidatableBySchemaMixin,
+    ValidationSchema,
+)
+from .permissions import (
+    GroupFilterBackend,
+    HarvesterFilterBackend,
+    LabFilterBackend,
+    LabResourceFilterBackend,
+    ObservedFileFilterBackend,
+    ResourceFilterBackend,
+    SchemaValidationFilterBackend,
+    TeamFilterBackend,
+    UserFilterBackend,
+)
+from .serializers import (
+    AdditionalS3StorageTypeSerializer,
+    ArbitraryFileCreateSerializer,
+    ArbitraryFileSerializer,
+    CellFamilySerializer,
+    CellSerializer,
+    ColumnMappingSerializer,
+    CyclerTestSerializer,
+    DataColumnTypeSerializer,
+    DataUnitSerializer,
+    EquipmentFamilySerializer,
+    EquipmentSerializer,
+    ExperimentSerializer,
+    GalvStorageTypeSerializer,
+    HarvesterConfigSerializer,
+    HarvesterCreateSerializer,
+    HarvestErrorSerializer,
+    HarvesterSerializer,
+    KnoxTokenFullSerializer,
+    KnoxTokenSerializer,
+    LabSerializer,
+    MonitoredPathSerializer,
+    ObservedFileCreateSerializer,
+    ObservedFileSerializer,
+    ScheduleFamilySerializer,
+    ScheduleSerializer,
+    SchemaValidationSerializer,
+    TeamSerializer,
+    TransparentGroupSerializer,
+    UserSerializer,
+    ValidationSchemaSerializer,
+)
+from .serializers.utils import (
+    DumpSerializer,
+    SerializerDescriptionSerializer,
+    get_GetOrCreateTextStringSerializer,
+)
 from .storages import LocalDataStorage
 
 logger = logging.getLogger(__name__)
@@ -212,9 +210,9 @@ class MethodPermissionMixin(viewsets.GenericViewSet):
         if (
             hasattr(self, "action")
             and self.action is not None
-            and hasattr(self, getattr(self, "action"))
+            and hasattr(self, self.action)
         ):
-            action = getattr(self, getattr(self, "action"))
+            action = getattr(self, self.action)
             if hasattr(action, "permission_classes"):
                 return [p() for p in action.permission_classes]
         return super().get_permissions()
@@ -352,10 +350,8 @@ def activate_user(request):
             return error_response(f"Unable to send activation email for {username}")
     if not token:
         return error_response(
-            (
-                f"No token provided. To send another token to your email address, "
-                f"visit {reverse('activate_user', request=request)}?username={username}&resend=true"
-            )
+            f"No token provided. To send another token to your email address, "
+            f"visit {reverse('activate_user', request=request)}?username={username}&resend=true"
         )
     try:
         activation = UserActivation.objects.get(user=user, token=token)
@@ -507,7 +503,7 @@ class LoginView(KnoxLoginView):
         from django.contrib.auth.base_user import AbstractBaseUser
 
         if isinstance(request.user, AbstractBaseUser):
-            return super(LoginView, self).post(request=request, format=fmt)
+            return super().post(request=request, format=fmt)
         return Response({"detail": "Anonymous login not allowed"}, status=401)
 
     def get_post_response_data(self, request, token, instance):

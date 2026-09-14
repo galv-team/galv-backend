@@ -4,7 +4,8 @@
 
 from django.db.models import Q
 from dry_rest_permissions.generics import DRYPermissionFiltersBase
-from .models import UserLevel, Lab, Team, GroupProxy, get_user_auth_details
+
+from .models import GroupProxy, Lab, Team, UserLevel, get_user_auth_details
 
 
 class HarvesterFilterBackend(DRYPermissionFiltersBase):

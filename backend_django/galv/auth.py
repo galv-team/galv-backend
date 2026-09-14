@@ -1,6 +1,6 @@
-from rest_framework import exceptions, HTTP_HEADER_ENCODING
-from rest_framework.authentication import get_authorization_header, BaseAuthentication
 from django.utils.translation import gettext_lazy as _
+from rest_framework import HTTP_HEADER_ENCODING, exceptions
+from rest_framework.authentication import BaseAuthentication, get_authorization_header
 
 from .models import Harvester, HarvesterUser
 
