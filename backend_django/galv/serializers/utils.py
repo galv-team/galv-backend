@@ -1,20 +1,20 @@
 import json
 from collections import OrderedDict
-from typing import Union, Literal, Any, Tuple
+from typing import Any, Literal
 
 import django.db.models
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.module_loading import import_string
 from drf_spectacular.utils import extend_schema_field
 from dry_rest_permissions.generics import DRYPermissionsField
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from django.core.exceptions import ValidationError as DjangoValidationError
-
-from galv.models import GroupProxy, UserProxy, VALIDATION_MOCK_ENDPOINT
 from rest_framework.fields import DictField
 from rest_framework.relations import ManyRelatedField
 from typing_extensions import TypedDict
+
+from galv.models import VALIDATION_MOCK_ENDPOINT, GroupProxy, UserProxy
 
 url_help_text = "Canonical URL for this object"
 
@@ -440,7 +440,6 @@ class ValidationPresentationMixin(serializers.Serializer):
                 }
         except Exception as e:
             print(e)
-            pass
         return super().to_representation(instance)
 
 
@@ -609,15 +608,7 @@ class DumpSerializer(serializers.Serializer):
 
 
 class SerializerDescription(TypedDict):
-    type: Union[
-        Literal["url"],
-        Literal["number"],
-        Literal["datetime"],
-        Literal["boolean"],
-        Literal["string"],
-        Literal["choice"],
-        Literal["json"],
-    ]
+    type: Literal["url", "number", "datetime", "boolean", "string", "choice", "json"]
     galv_resource: bool
     help_text: str
     required: bool
@@ -640,7 +631,7 @@ class SerializerDescriptionSerializer(serializers.Serializer):
                 "SerializerDescriptionSerializer instance must be a Serializer"
             )
 
-    def _get_type(self, field) -> Tuple[str, bool]:
+    def _get_type(self, field) -> tuple[str, bool]:
         """
         Return the type of a field and whether it is a Galv resource (i.e. has its own serializer)
 
