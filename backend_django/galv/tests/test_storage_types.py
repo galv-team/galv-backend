@@ -2,13 +2,13 @@
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 
-import unittest
 import logging
+import unittest
 
 from rest_framework.reverse import reverse
 
+from .factories import AdditionalS3StorageTypeFactory, GalvStorageTypeFactory, fake
 from .utils import GalvTestCase
-from .factories import fake, GalvStorageTypeFactory, AdditionalS3StorageTypeFactory
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
@@ -86,8 +86,10 @@ class StorageResourceTestCase(GalvTestCase):
             "strange_lab_admin": {
                 "login": self.strange_lab_admin,
                 # GalvStorageType is automatically created for the lab, so Strange Lab will have one
-                "response": lambda r: len(r.json()["results"])
-                == int(self.__class__.__name__ == "GalvStorageTypeTests"),
+                "response": lambda r: (
+                    len(r.json()["results"])
+                    == int(self.__class__.__name__ == "GalvStorageTypeTests")
+                ),
             },
             "anonymous": {
                 "login": lambda: self.client.logout(),
@@ -313,8 +315,9 @@ class GalvStorageTypeTests(StorageResourceTestCase):
             "admin": {"login": self.admin, "response": lambda r: r.status_code == 403},
             "lab_admin": {
                 "login": self.lab_admin,
-                "response": lambda r: r.json()["quota_bytes"]
-                > 10,  # should not have changed
+                "response": lambda r: (
+                    r.json()["quota_bytes"] > 10
+                ),  # should not have changed
             },
             "strange_lab_admin": {
                 "login": self.strange_lab_admin,

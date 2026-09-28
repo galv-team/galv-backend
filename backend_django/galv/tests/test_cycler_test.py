@@ -2,11 +2,11 @@
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 
-import unittest
 import logging
+import unittest
 
+from .factories import CellFactory, CyclerTestFactory
 from .utils import GalvTeamResourceTestCase
-from .factories import CyclerTestFactory, CellFactory
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
