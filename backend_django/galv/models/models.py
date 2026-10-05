@@ -3,47 +3,46 @@
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 import logging
 import os
+import random
 import re
 
 import jsonschema
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser, Group, User
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.postgres.fields import ArrayField
 from django.core.files.storage import Storage
 from django.db import models
 from django.db.models import Sum
 from django.test import RequestFactory
 from django.utils import timezone
 from django.utils.crypto import get_random_string
-from django.contrib.postgres.fields import ArrayField
-from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.auth.models import User, Group, AnonymousUser
-import random
 from jsonschema.exceptions import _WrappedReferencingError
 from rest_framework import serializers
 
+from ..fields import LabDependentStorageFileField
+from ..storages import LocalDataStorage, S3DataStorage
+from .autocomplete_entries import (
+    CellChemistries,
+    CellFormFactors,
+    CellManufacturers,
+    CellModels,
+    EquipmentManufacturers,
+    EquipmentModels,
+    EquipmentTypes,
+    ScheduleIdentifiers,
+)
 from .choices import FileState, UserLevel, ValidationStatus
-
 from .utils import (
     CustomPropertiesModel,
     JSONModel,
     LDSources,
-    render_pybamm_schedule,
+    TimestampedModel,
     UUIDModel,
     combine_rdf_props,
-    TimestampedModel,
+    render_pybamm_schedule,
 )
-from .autocomplete_entries import (
-    EquipmentTypes,
-    EquipmentModels,
-    EquipmentManufacturers,
-    CellModels,
-    CellManufacturers,
-    CellChemistries,
-    CellFormFactors,
-    ScheduleIdentifiers,
-)
-from ..fields import LabDependentStorageFileField
-from ..storages import LocalDataStorage, S3DataStorage
 
 logger = logging.getLogger(__file__)
 
@@ -203,9 +202,7 @@ class UserActivation(TimestampedModel):
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
-        super(UserActivation, self).save(
-            force_insert, force_update, using, update_fields
-        )
+        super().save(force_insert, force_update, using, update_fields)
         if not self.user.is_active:
             if self.token is None or self.get_is_expired():
                 self.generate_token()
@@ -765,7 +762,7 @@ class Lab(TimestampedModel):
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
-        super(Lab, self).save(force_insert, force_update, using, update_fields)
+        super().save(force_insert, force_update, using, update_fields)
         if self.admin_group is None:
             # Create groups for Lab
             self.admin_group = GroupProxy.objects.create(name=f"Lab {self.pk} admins")
@@ -773,7 +770,7 @@ class Lab(TimestampedModel):
 
     def delete(self, using=None, keep_parents=False):
         self.admin_group.delete()
-        super(Lab, self).delete(using, keep_parents)
+        super().delete(using, keep_parents)
 
     def get_all_storage_types(self) -> list[_StorageType]:
         """
@@ -864,7 +861,7 @@ class Team(TimestampedModel):
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
-        super(Team, self).save(force_insert, force_update, using, update_fields)
+        super().save(force_insert, force_update, using, update_fields)
         if self.admin_group is None or self.member_group is None:
             if self.admin_group is None:
                 # Create groups for Team
@@ -880,7 +877,7 @@ class Team(TimestampedModel):
     def delete(self, using=None, keep_parents=False):
         self.admin_group.delete()
         self.member_group.delete()
-        super(Team, self).delete(using, keep_parents)
+        super().delete(using, keep_parents)
 
     class Meta:
         unique_together = [["name", "lab"]]
@@ -932,13 +929,9 @@ class ResourceModelPermissionsMixin(TimestampedModel):
         Ensure that access levels are valid.
         Read <= Edit <= Delete
         """
-        if self.read_access_level > self.edit_access_level:
-            self.read_access_level = self.edit_access_level
-        if self.edit_access_level > self.delete_access_level:
-            self.edit_access_level = self.delete_access_level
-        super(ResourceModelPermissionsMixin, self).save(
-            force_insert, force_update, using, update_fields
-        )
+        self.read_access_level = min(self.read_access_level, self.edit_access_level)
+        self.edit_access_level = min(self.edit_access_level, self.delete_access_level)
+        super().save(force_insert, force_update, using, update_fields)
 
     def has_object_read_permission(self, request):
         return self.get_user_level(request) >= self.read_access_level
@@ -986,9 +979,7 @@ class ValidatableBySchemaMixin(TimestampedModel):
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
-        super(ValidatableBySchemaMixin, self).save(
-            force_insert, force_update, using, update_fields
-        )
+        super().save(force_insert, force_update, using, update_fields)
         # TODO: stop this happening for minor updates to Files, e.g. when last checked time is updated
         self.register_validation()
 
@@ -1086,7 +1077,7 @@ class CellFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
         return self.cells.count() > 0
 
     def __str__(self):
-        return f"{str(self.manufacturer)} {str(self.model)} ({str(self.chemistry)}, {str(self.form_factor)})"
+        return f"{self.manufacturer!s} {self.model!s} ({self.chemistry!s}, {self.form_factor!s})"
 
     class Meta(CustomPropertiesModel.Meta):
         unique_together = [["model", "manufacturer"]]
@@ -1094,7 +1085,7 @@ class CellFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
-        super(CellFamily, self).save(force_insert, force_update, using, update_fields)
+        super().save(force_insert, force_update, using, update_fields)
 
 
 class Cell(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
@@ -1120,7 +1111,7 @@ class Cell(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
         return self.cycler_tests.count() > 0
 
     def __str__(self):
-        return f"{self.identifier} [{str(self.family)}]"
+        return f"{self.identifier} [{self.family!s}]"
 
     def __json_ld__(self):
         return combine_rdf_props(
@@ -1169,7 +1160,7 @@ class EquipmentFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
         return self.equipment.count() > 0
 
     def __str__(self):
-        return f"{str(self.manufacturer)} {str(self.model)} ({str(self.type)})"
+        return f"{self.manufacturer!s} {self.model!s} ({self.type!s})"
 
 
 class Equipment(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
@@ -1198,7 +1189,7 @@ class Equipment(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMix
         return self.cycler_tests.count() > 0
 
     def __str__(self):
-        return f"{self.identifier} [{str(self.family)}]"
+        return f"{self.identifier} [{self.family!s}]"
 
     def __json_ld__(self):
         return {
@@ -1247,7 +1238,7 @@ class ScheduleFamily(CustomPropertiesModel, ResourceModelPermissionsMixin):
         return self.schedules.count() > 0
 
     def __str__(self):
-        return f"{str(self.identifier)}"
+        return f"{self.identifier!s}"
 
 
 class Schedule(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixin):
@@ -1277,7 +1268,7 @@ class Schedule(JSONModel, ResourceModelPermissionsMixin, ValidatableBySchemaMixi
         return self.cycler_tests.count() > 0
 
     def __str__(self):
-        return f"{str(self.id)} [{str(self.family)}]"
+        return f"{self.id!s} [{self.family!s}]"
 
 
 class Harvester(UUIDModel):
@@ -1358,7 +1349,7 @@ class Harvester(UUIDModel):
                 + "!$%^&*-=+"
             )
             self.api_key = f"galv_hrv_{''.join(random.choices(text, k=60))}"
-        super(Harvester, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class ColumnMapping(UUIDModel, ResourceModelPermissionsMixin):
@@ -1427,9 +1418,7 @@ class ColumnMapping(UUIDModel, ResourceModelPermissionsMixin):
         except ColumnMapping.DoesNotExist:
             old_self = None
         update_files = old_self is not None and self.pk and self.map != old_self.map
-        super(ColumnMapping, self).save(
-            force_insert, force_update, using, update_fields
-        )
+        super().save(force_insert, force_update, using, update_fields)
         if update_files:
             for file in self.observed_files.all():
                 file.state = FileState.MAP_ASSIGNED
@@ -1656,7 +1645,7 @@ class ObservedFile(
                     if self.mapping
                     else FileState.AWAITING_MAP_ASSIGNMENT
                 )
-        super(ObservedFile, self).save(force_insert, force_update, using, update_fields)
+        super().save(force_insert, force_update, using, update_fields)
 
     def delete(self, using=None, keep_parents=False, delete_actual_files=True):
         if delete_actual_files:
@@ -1670,7 +1659,7 @@ class ObservedFile(
                     self.zip_file.delete()
                 except Exception as e:
                     logger.warning(f"Failed to delete zip for {self.path}: {e}")
-        super(ObservedFile, self).delete(using, keep_parents)
+        super().delete(using, keep_parents)
 
     def __str__(self):
         return self.path
@@ -2042,16 +2031,14 @@ class KnoxAuthToken(TimestampedModel):
         from knox.models import AuthToken
 
         AuthToken.objects.filter(token_key=self.knox_token_key).delete()
-        super(KnoxAuthToken, self).delete(using, keep_parents)
+        super().delete(using, keep_parents)
 
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
         if self.user is None:
             raise ValueError("User must be set before saving")
-        super(KnoxAuthToken, self).save(
-            force_insert, force_update, using, update_fields
-        )
+        super().save(force_insert, force_update, using, update_fields)
 
 
 class HarvesterUser(AnonymousUser):
@@ -2100,9 +2087,7 @@ class ValidationSchema(CustomPropertiesModel, ResourceModelPermissionsMixin):
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
-        super(ValidationSchema, self).save(
-            force_insert, force_update, using, update_fields
-        )
+        super().save(force_insert, force_update, using, update_fields)
         SchemaValidation.objects.filter(schema=self).update(
             status=ValidationStatus.UNCHECKED, detail=None
         )
@@ -2243,7 +2228,7 @@ class ArbitraryFile(_StorageTypeConsumerModel, ResourceModelPermissionsMixin):
 
     def delete(self, using=None, keep_parents=False):
         self.file.delete()
-        super(ArbitraryFile, self).delete(using, keep_parents)
+        super().delete(using, keep_parents)
 
     def __str__(self):
         return self.name
