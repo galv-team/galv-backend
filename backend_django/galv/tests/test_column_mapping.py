@@ -1,20 +1,19 @@
 # SPDX-License-Identifier: BSD-2-Clause
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
+import logging
 import unittest
 
 from rest_framework import status
-import logging
-
 from rest_framework.reverse import reverse
 
-from .utils import assert_response_property, GalvTestCase
 from .factories import (
     ColumnMappingFactory,
     DataColumnTypeFactory,
-    ObservedFileFactory,
     MonitoredPathFactory,
+    ObservedFileFactory,
 )
+from .utils import GalvTestCase, assert_response_property
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)

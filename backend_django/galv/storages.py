@@ -3,11 +3,12 @@
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 
 # adapted from https://backendengineer.io/store-django-static-and-media-files-in-aws-s3/
+import os
+
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from storages.backends.s3boto3 import S3Boto3Storage
 from storages.utils import clean_name
-import os
 
 
 class StaticStorage(S3Boto3Storage):
