@@ -2,15 +2,16 @@
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 
+import logging
 import unittest
+
+from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
-import logging
 
 from ..models import UserActivation
-from .utils import assert_response_property, APITestCaseWrapper
-from .factories import UserFactory, LabFactory, TeamFactory
-from django.contrib.auth.models import User
+from .factories import LabFactory, TeamFactory, UserFactory
+from .utils import APITestCaseWrapper, assert_response_property
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
