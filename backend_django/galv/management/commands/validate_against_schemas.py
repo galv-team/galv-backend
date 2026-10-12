@@ -3,6 +3,7 @@
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 
 from django.core.management.base import BaseCommand
+
 from galv.models import SchemaValidation, ValidationStatus
 
 
