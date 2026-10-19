@@ -5,47 +5,47 @@
 import os
 from functools import partial
 
-import factory
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import transaction, IntegrityError
-from factory.base import StubObject
-import faker
 import django.conf.global_settings
+import factory
+import faker
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import IntegrityError, transaction
+from factory.base import StubObject
 
 from ..models import (
-    EquipmentFamily,
-    Harvester,
-    MonitoredPath,
-    ObservedFile,
+    AdditionalS3StorageType,
+    ArbitraryFile,
     Cell,
-    CellFamily,
-    Equipment,
-    ScheduleFamily,
-    Schedule,
-    CyclerTest,
-    ScheduleIdentifiers,
-    CellFormFactors,
     CellChemistries,
+    CellFamily,
+    CellFormFactors,
     CellManufacturers,
     CellModels,
+    ColumnMapping,
+    CyclerTest,
+    DataColumnType,
+    DataUnit,
+    Equipment,
+    EquipmentFamily,
     EquipmentManufacturers,
     EquipmentModels,
     EquipmentTypes,
     Experiment,
-    ValidationSchema,
-    GroupProxy,
-    UserProxy,
-    Lab,
-    Team,
-    DataUnit,
-    DataColumnType,
-    ColumnMapping,
     GalvStorageType,
-    AdditionalS3StorageType,
-    ArbitraryFile,
+    GroupProxy,
+    Harvester,
+    Lab,
+    MonitoredPath,
+    ObservedFile,
+    Schedule,
+    ScheduleFamily,
+    ScheduleIdentifiers,
+    Team,
+    UserProxy,
+    ValidationSchema,
 )
-from ..models.choices import UserLevel
 from ..models.autocomplete_entries import AutoCompleteEntry
+from ..models.choices import UserLevel
 
 fake = faker.Faker(django.conf.global_settings.LANGUAGE_CODE)
 
@@ -60,10 +60,10 @@ class DjangoModelFactory(factory.django.DjangoModelFactory):
     def create(cls, *args, **kwargs):
         try:
             with transaction.atomic():
-                return super(DjangoModelFactory, cls).create(*args, **kwargs)
+                return super().create(*args, **kwargs)
         except IntegrityError:
             id = cls._meta.model.objects.count() + 100
-            return super(DjangoModelFactory, cls).create(*args, **kwargs, pk=id)
+            return super().create(*args, **kwargs, pk=id)
 
 
 def to_type_value_notation(obj):
