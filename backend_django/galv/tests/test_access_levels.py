@@ -2,20 +2,20 @@
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 
-import unittest
 import logging
+import unittest
 import uuid
 
 from rest_framework.reverse import reverse
 
 from ..models import (
-    UserLevel,
-    ALLOWED_USER_LEVELS_READ,
-    ALLOWED_USER_LEVELS_EDIT,
     ALLOWED_USER_LEVELS_DELETE,
+    ALLOWED_USER_LEVELS_EDIT,
+    ALLOWED_USER_LEVELS_READ,
+    UserLevel,
 )
-from .utils import _GalvTeamResourceTestCase
 from .factories import CellFactory
+from .utils import _GalvTeamResourceTestCase
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)

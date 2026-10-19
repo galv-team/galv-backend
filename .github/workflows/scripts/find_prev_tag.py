@@ -1,6 +1,5 @@
 import os
 import sys
-from typing import Optional
 
 if len(sys.argv) < 3:
     print("Usage: find_prev_tag.py <tags.txt file> <clean_version string>")
@@ -32,7 +31,7 @@ def patch(s):
     return int(s.split(".")[2].split("-")[0])
 
 
-def note(s) -> Optional[str]:
+def note(s) -> str | None:
     return s.split(".")[2].split("-")[1] if "-" in s.split(".")[2] else None
 
 
