@@ -14,10 +14,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
-import os  # noqa: F401
+import os
+
 import dj_database_url
 
-from .settings_base import *  # noqa: F401, F403, E402
+from .settings_base import *
 
 key = os.environ.get("DJANGO_SECRET_KEY")
 if not key:
@@ -33,7 +34,7 @@ DEBUG_TOOLBAR_CONFIG = {
 }
 
 CSRF_TRUSTED_ORIGINS = [
-    *CORS_ALLOWED_ORIGINS,  # noqa: F405
+    *CORS_ALLOWED_ORIGINS,
     f"https://{os.environ.get('VIRTUAL_HOST')}",
 ]
 
