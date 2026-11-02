@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: BSD-2-Clause
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
+import json
 import os
 import re
 import uuid
-import json
 
-from django_json_field_schema_validator.validators import JSONFieldSchemaValidator
 from django.db import models
+from django_json_field_schema_validator.validators import JSONFieldSchemaValidator
 
 with open(f"{os.path.dirname(__file__)}/../schemas/typedObjectStrict.json") as f:
     TYPED_OBJECT_SCHEMA = json.load(f)
@@ -118,7 +118,7 @@ class JSONModel(CustomPropertiesModel):
         # Unpack any RDF properties from the additional properties
         custom_properties = self.custom_properties.copy()
         return combine_rdf_props(
-            {"@id": f"{get_namespace()}{str(self.id)}"}, unpack_rdf(custom_properties)
+            {"@id": f"{get_namespace()}{self.id!s}"}, unpack_rdf(custom_properties)
         )
 
     class Meta(CustomPropertiesModel.Meta):
@@ -170,11 +170,11 @@ def render_pybamm_schedule(schedule, cell, validate=True) -> list[str] | None:
         for v in schedule.family.pybamm_template_variable_names():
             if not isinstance(variables[v], (int, float)):
                 if v in cell.custom_properties:
-                    source = f"{str(cell)} (additional properties)"
+                    source = f"{cell!s} (additional properties)"
                 elif v in cell.__dict__:
                     source = cell
                 elif v in cell.family.custom_properties:
-                    source = f"{str(cell.family)} (additional properties)"
+                    source = f"{cell.family!s} (additional properties)"
                 elif v in cell.family.__dict__:
                     source = cell.family
                 else:

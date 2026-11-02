@@ -2,23 +2,23 @@
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 import json
+import logging
 import tempfile
 import unittest
 from unittest.mock import patch
 
+from django.conf import settings
 from django.urls import reverse
 from rest_framework import status
-import logging
-from django.conf import settings
 
-from .utils import assert_response_property, GalvTestCase
+from ..models import FileState, HarvestError, ObservedFile
 from .factories import (
     HarvesterFactory,
     MonitoredPathFactory,
-    fake,
     ObservedFileFactory,
+    fake,
 )
-from ..models import HarvestError, ObservedFile, FileState
+from .utils import GalvTestCase, assert_response_property
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
