@@ -6,13 +6,12 @@ from uuid import UUID
 from django.core.files.base import File
 from django.test import override_settings
 from django.urls import reverse
-from rest_framework.test import APITestCase
-
 from openapi_tester import SchemaTester
 from openapi_tester.clients import OpenAPIClient
+from rest_framework.test import APITestCase
 
+from ..models import GroupProxy, Lab, Team, UserLevel, UserProxy
 from .factories import LabFactory, TeamFactory, UserFactory, generate_create_dict
-from ..models import UserLevel, Lab, Team, UserProxy, GroupProxy
 
 
 def assert_response_property(self, response, assertion, *args, **kwargs):

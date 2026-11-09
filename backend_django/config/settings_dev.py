@@ -14,19 +14,20 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
-import os  # noqa: F401
+import os
+
 import dj_database_url
 
-from .settings_base import *  # noqa: F401, F403, E402
+from .settings_base import *
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-dev-key")
 
-ALLOWED_HOSTS = [*ALLOWED_HOSTS, "localhost", "host.docker.internal"]  # noqa: F405
+ALLOWED_HOSTS = [*ALLOWED_HOSTS, "localhost", "host.docker.internal"]
 
-CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS  # noqa: F405
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 
 # for django-debug-toolbar
 DEBUG_TOOLBAR_CONFIG = {
