@@ -2,15 +2,15 @@
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 
+import logging
 import unittest
+
 from django.urls import reverse
 from rest_framework import status
-import logging
 
 from ..models import KnoxAuthToken
-
-from .utils import APITestCaseWrapper, assert_response_property
 from .factories import UserFactory
+from .utils import APITestCaseWrapper, assert_response_property
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)

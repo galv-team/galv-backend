@@ -4,92 +4,90 @@
 from __future__ import annotations
 
 import json
+import logging
 import os.path
 import re
 import tempfile
 
 import jsonschema
 from django.conf import settings
+from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
 from django.core.files import File
 from django.db import transaction
+from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
-from galv_harvester.parse.exceptions import UnsupportedFileTypeError
-from rest_framework.reverse import reverse
 from drf_spectacular.utils import (
+    OpenApiExample,
     extend_schema_field,
     extend_schema_serializer,
-    OpenApiExample,
 )
+from galv_harvester.parse.exceptions import UnsupportedFileTypeError
+from knox.models import AuthToken
+from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_403_FORBIDDEN
 
 from ..models import (
+    ALLOWED_USER_LEVELS_DELETE,
+    ALLOWED_USER_LEVELS_EDIT,
+    ALLOWED_USER_LEVELS_EDIT_PATH,
+    ALLOWED_USER_LEVELS_READ,
+    AdditionalS3StorageType,
+    ArbitraryFile,
+    Cell,
+    CellChemistries,
+    CellFamily,
+    CellFormFactors,
+    CellManufacturers,
+    CellModels,
+    ColumnMapping,
+    CyclerTest,
+    DataColumnType,
+    DataUnit,
+    Equipment,
+    EquipmentFamily,
+    EquipmentManufacturers,
+    EquipmentModels,
+    EquipmentTypes,
+    Experiment,
+    FileState,
+    GalvStorageType,
+    GroupProxy,
     Harvester,
     HarvesterEnvVar,
     HarvestError,
+    KnoxAuthToken,
+    Lab,
     MonitoredPath,
     ObservedFile,
-    Cell,
-    Equipment,
-    DataUnit,
-    DataColumnType,
-    KnoxAuthToken,
-    CellFamily,
-    EquipmentTypes,
-    CellFormFactors,
-    CellChemistries,
-    CellModels,
-    CellManufacturers,
-    EquipmentManufacturers,
-    EquipmentModels,
-    EquipmentFamily,
+    PasswordReset,
     Schedule,
-    ScheduleIdentifiers,
-    CyclerTest,
-    render_pybamm_schedule,
     ScheduleFamily,
-    ValidationSchema,
-    Experiment,
-    Lab,
-    Team,
-    GroupProxy,
-    UserProxy,
+    ScheduleIdentifiers,
     SchemaValidation,
+    StorageError,
+    Team,
     UserActivation,
     UserLevel,
-    ALLOWED_USER_LEVELS_READ,
-    ALLOWED_USER_LEVELS_EDIT,
-    ALLOWED_USER_LEVELS_DELETE,
-    ALLOWED_USER_LEVELS_EDIT_PATH,
-    ArbitraryFile,
-    ColumnMapping,
+    UserProxy,
+    ValidationSchema,
     get_user_auth_details,
-    GalvStorageType,
-    AdditionalS3StorageType,
-    PasswordReset,
-    StorageError,
-    FileState,
+    render_pybamm_schedule,
 )
 from ..models.utils import ScheduleRenderError
-from django.utils import timezone
-from django.conf.global_settings import DATA_UPLOAD_MAX_MEMORY_SIZE
-from rest_framework import serializers
-from knox.models import AuthToken
-
 from .utils import (
+    CreateOnlyMixin,
     CustomPropertiesModelSerializer,
     GetOrCreateTextField,
+    PasswordField,
+    PermissionsMixin,
+    TruncatedHyperlinkedRelatedIdField,
+    TruncatedUserHyperlinkedRelatedIdField,
+    ValidationPresentationMixin,
     augment_extra_kwargs,
     url_help_text,
-    PermissionsMixin,
-    TruncatedUserHyperlinkedRelatedIdField,
-    TruncatedHyperlinkedRelatedIdField,
-    CreateOnlyMixin,
-    ValidationPresentationMixin,
-    PasswordField,
 )
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -825,20 +823,16 @@ class WithTeamMixin(serializers.Serializer):
             v = UserLevel(value)
         except ValueError:
             raise ValidationError(
-                (
-                    f"Invalid access level '{value}'. "
-                    f"Expected one of {[v.value for v in allowed_values]}"
-                )
+                f"Invalid access level '{value}'. "
+                f"Expected one of {[v.value for v in allowed_values]}"
             )
         if self.instance is not None:
             try:
                 assert v in allowed_values
             except BaseException:
                 raise ValidationError(
-                    (
-                        f"Invalid read access level '{value}'. "
-                        f"Expected one of {[v.value for v in allowed_values]}"
-                    )
+                    f"Invalid read access level '{value}'. "
+                    f"Expected one of {[v.value for v in allowed_values]}"
                 )
         return v.value
 
@@ -1832,7 +1826,7 @@ class ColumnMappingSerializer(
                     f"Invalid column_type id '{v.get('column_type')}' for column '{k}'"
                 )
             if column_type.pk in required_column_ids:
-                if column_type.pk in required_columns_supplied.keys():
+                if column_type.pk in required_columns_supplied:
                     raise ValidationError(
                         f"Cannot assign column '{k}' to required column {column_type.name}. "
                         f"Column {column_type.name} is already assigned to column '{required_columns_supplied[column_type.pk]}'"
@@ -2286,7 +2280,6 @@ class ObservedFileCreateSerializer(ObservedFileSerializer, WithTeamMixin):
                     FileNotFoundError
                 ):  # don't fail the whole process if the PNG can't be saved
                     logger.exception("Error saving PNG")
-                    pass
                 observed_file.state = FileState.IMPORTED
             else:
                 observed_file.state = FileState.AWAITING_MAP_ASSIGNMENT

@@ -2,9 +2,10 @@
 # Copyright  (c) 2020-2023, The Chancellor, Masters and Scholars of the University
 # of Oxford, and the 'Galv' Developers. All rights reserved.
 
-from django.core.management.base import BaseCommand
-from django.contrib.auth.models import User
 import os
+
+from django.contrib.auth.models import User
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
