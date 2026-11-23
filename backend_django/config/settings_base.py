@@ -14,14 +14,14 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
-import corsheaders.defaults
-from pathlib import Path
-import boto3
-import botocore.exceptions
-from csp.constants import SELF
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 import os
+from pathlib import Path
+
+import boto3
+import botocore.exceptions
+import corsheaders.defaults
+from csp.constants import SELF
 
 API_VERSION = "3.0.0"
 

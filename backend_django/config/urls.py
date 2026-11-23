@@ -27,8 +27,8 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
-from rest_framework import routers
 from galv import views
+from rest_framework import routers
 
 router = routers.DefaultRouter()
 
